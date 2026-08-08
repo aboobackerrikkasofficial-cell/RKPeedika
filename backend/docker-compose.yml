@@ -1,0 +1,41 @@
+version: '3.8'
+
+services:
+  # 1. Express E-commerce Application Server
+  api:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/kriti_db?schema=public
+      - REDIS_URL=redis://cache:6379
+      - JWT_SECRET=kriti_secret_jwt_key_2026
+    depends_on:
+      - db
+      - cache
+
+  # 2. PostgreSQL Relational Database Service
+  db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=kriti_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  # 3. Redis In-Memory Performance Cache Service
+  cache:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+
+volumes:
+  pgdata:
+  redisdata:

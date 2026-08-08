@@ -1,0 +1,14 @@
+{
+  "name": "kriti-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev:backend": "npm --prefix backend run start",
+    "dev:customer": "npm --prefix customer-app run dev",
+    "dev:admin": "npm --prefix admin-dashboard run dev",
+    "dev": "concurrently --kill-others \"npm run dev:backend\" \"npm run dev:customer\" \"npm run dev:admin\""
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

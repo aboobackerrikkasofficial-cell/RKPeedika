@@ -1,0 +1,461 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                  String         @id @default(uuid())
+  email               String?        @unique
+  password            String?
+  name                String?
+  role                String         @default("customer") // customer, admin, seller
+  phone               String?        @unique
+  status              String         @default("active") // active, banned
+  failedLoginAttempts Int            @default(0)
+  lockUntil           DateTime?
+  gender              String?
+  dob                 DateTime?
+  profileImage        String?
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+
+  addresses     Address[]
+  orders        Order[]
+  cartItems     CartItem[]
+  wishlistItems WishlistItem[]
+  reviews       Review[]
+  notifications Notification[]
+  sessions      UserSession[]
+  refreshTokens RefreshToken[]
+  loginHistory  LoginHistory[]
+}
+
+model Address {
+  id              String   @id @default(uuid())
+  userId          String
+  fullName        String   @default("")
+  phone           String   @default("")
+  alternatePhone  String?
+  houseFlatNumber String   @default("")
+  streetRoadName  String   @default("")
+  areaLocality    String   @default("")
+  landmark        String?
+  directions      String?
+  city            String   @default("")
+  district        String   @default("")
+  state           String   @default("")
+  pincode         String   @default("")
+  addressType     String   @default("home") // home, work, other
+  isDefault       Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  slug        String    @unique
+  description String?
+  image       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  products    Product[]
+}
+
+model Product {
+  id                    String         @id @default(uuid())
+  name                  String
+  tagline               String?
+  description           String?
+  price                 Float
+  originalPrice         Float?
+  categoryId            String
+  stock                 Int            @default(0)
+  seller                String
+  images                String         @default("[]") // Array of image URLs stored as JSON string
+  rating                Float          @default(0.0)
+  status                String         @default("active") // active, draft, archived
+  codPrice              Float?
+  onlinePrice           Float?
+  onlineDiscount        Float?
+  enableOnlineDiscount  Boolean        @default(false)
+  codAvailable          Boolean        @default(true)
+  inStock               Boolean        @default(true)
+  estimatedDeliveryDays Int            @default(3)
+  highlights            String?        // Stores bullet highlights as JSON string or comma-separated
+  specifications        String?        // Stores specifications as JSON string
+  variants              String?        // Stores variants as JSON string
+  relatedProducts       String?        // Stores related product IDs as JSON string
+  reviewCount           Int            @default(0)
+  averageRating         Float          @default(0.0)
+  purchaseCount         Int            @default(0)
+  showPurchaseCount     Boolean        @default(true)
+  purchaseCountMode     String         @default("auto")
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+
+  category      Category       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  cartItems     CartItem[]
+  wishlistItems WishlistItem[]
+  reviews       Review[]
+  orderItems    OrderItem[]
+  inventoryLogs InventoryLog[]
+}
+
+model InventoryLog {
+  id             String   @id @default(uuid())
+  productId      String
+  quantityChange Int      // Positive for restocks, negative for sales
+  type           String   // restock, sale, return, adjustment
+  reason         String?
+  createdAt      DateTime @default(now())
+
+  product        Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model Order {
+  id               String         @id @default(uuid())
+  orderId          String         @unique // Formatted user-facing ID like ODR-XXXXXX
+  invoiceNumber    String?        @unique // e.g. INV-20260806-000001
+  userId           String
+  amount           Float
+  status           String         @default("pending") // confirmed, packed, shipped, out_for_delivery, delivered, exchange_requested, completed, cancelled
+  paymentMethod    String         @default("COD") // COD, UPI, Card, Netbanking
+  paymentStatus    String         @default("pending") // pending, awaiting, paid, failed, refunded
+  transactionType  String         @default("COD") // COD, ONLINE
+  pincode          String
+  addressId        String?
+  shippingCost     Float          @default(0.0)
+  discountAmount   Float          @default(0.0)
+  couponCode       String?
+  trackingNumber   String?
+  estimatedDelivery DateTime?
+  idempotencyKey   String?        @unique // Prevent duplicate orders
+  razorpayOrderId      String?        @unique
+  razorpayPaymentId    String?
+  razorpaySignature    String?
+  paidAt               DateTime?
+  paymentFailureReason String?
+  paymentAttemptCount  Int            @default(0)
+  
+  // Tracking specifics
+  courier               String?
+  trackingUrl           String?
+  shippedAt             DateTime?
+  deliveredAt           DateTime?
+  internalNotes         String?
+  customerStatusMessage String?
+
+  // Shipping address snapshot (frozen at order time)
+  shippingName     String?
+  shippingPhone    String?
+  shippingStreet   String?
+  shippingCity     String?
+  shippingState    String?
+  shippingPincode  String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orderItems     OrderItem[]
+  returns        ReturnRequest[]
+  payments       Payment[]
+  trackingEvents OrderTrackingEvent[]
+}
+
+model OrderTrackingEvent {
+  id        String   @id @default(uuid())
+  orderId   String
+  status    String
+  message   String
+  eventDate DateTime @default(now())
+  createdAt DateTime @default(now())
+  createdBy String   @default("admin") // admin, system
+
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model OrderItem {
+  id          String   @id @default(uuid())
+  orderId     String
+  productId   String
+  quantity    Int
+  price       Float
+  productName String?  // Snapshot of product name at order time
+  productImage String? // Snapshot of product image at order time
+  createdAt   DateTime @default(now())
+
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+}
+
+model ReturnRequest {
+  id           String   @id @default(uuid())
+  orderId      String
+  reason       String
+  status       String   @default("pending") // pending, approved, rejected
+  refundAmount Float    @default(0.0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  order        Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model Payment {
+  id                String   @id @default(uuid())
+  orderId           String?
+  userId            String
+  gatewayName       String   // razorpay, cashfree, phonepe, stripe
+  gatewayOrderId    String?  // Order ID from gateway
+  gatewayPaymentId  String?  // Payment ID from gateway
+  gatewaySignature  String?  // Signature for verification
+  amount            Float
+  currency          String   @default("INR")
+  status            String   @default("created") // created, attempted, paid, failed, refunded
+  method            String?  // upi, card, netbanking, wallet
+  upiId             String?  // e.g. user@okaxis
+  gatewayResponse   String?  // Full JSON response from gateway
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  order             Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+}
+
+model PaymentGatewayConfig {
+  id             String   @id @default(uuid())
+  gatewayName    String   @unique // razorpay, cashfree, phonepe, stripe
+  displayName    String   // "Razorpay", "Cashfree", etc.
+  isEnabled      Boolean  @default(false)
+  environment    String   @default("sandbox") // sandbox, production
+  keyId          String?
+  keySecret      String?
+  webhookSecret  String?
+  callbackUrl    String?
+  webhookUrl     String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model Coupon {
+  id          String    @id @default(uuid())
+  code        String    @unique
+  type        String    // percentage, flat
+  value       Float
+  minSpend    Float     @default(0.0)
+  maxDiscount Float?
+  expiresAt   DateTime?
+  status      String    @default("active") // active, expired, disabled
+  usageLimit  Int?
+  usageCount  Int       @default(0)
+  createdAt   DateTime  @default(now())
+}
+
+model Review {
+  id           String   @id @default(uuid())
+  productId    String
+  userId       String
+  rating       Int
+  comment      String
+  status       String   @default("pending") // pending, approved, rejected, hidden
+  customerName String?
+  orderId      String?
+  title        String?
+  images       ReviewImage[]
+  reply        String?
+  ipAddress    String?
+  device       String?
+  helpfulUsers String   @default("[]") // JSON array of userIds who voted helpful
+  purchaseMonth String?
+  createdAt    DateTime @default(now())
+
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model WishlistItem {
+  id        String   @id @default(uuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+}
+
+model CartItem {
+  id        String   @id @default(uuid())
+  userId    String
+  productId String
+  quantity  Int      @default(1)
+  size      String   @default("")
+  color     String   @default("")
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId, size, color])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String?  // Nullable if broadcast to all users
+  title     String
+  detail    String
+  type      String   @default("system") // system, order, inventory
+  unread    Boolean  @default(true)
+  createdAt DateTime @default(now())
+
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model NewsletterSubscriber {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  status       String   @default("active") // active, unsubscribed
+  subscribedAt DateTime @default(now())
+}
+
+model ExchangeRequest {
+  id           String   @id @default(uuid())
+  orderId      String
+  customerName String
+  phone        String
+  reason       String
+  images       String   @default("[]") // Array of uploaded image filenames stored as JSON string
+  notes        String?
+  status       String   @default("pending") // pending, approved, rejected
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model TrustBadge {
+  id          String   @id @default(uuid())
+  title       String
+  description String
+  iconName    String
+  isVisible   Boolean  @default(true)
+  order       Int      @default(0)
+  actionUrl   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model StoreSetting {
+  id              String   @id @default("default")
+  storeName       String   @default("RikkasHub")
+  storeLogo       String?
+  storeEmail      String   @default("rikkas.aboo@gmail.com")
+  supportEmail    String   @default("support@kritimarketplace.com")
+  supportPhone    String   @default("+91 9876543210")
+  whatsappNumber  String   @default("+91 9876543210")
+  gstNumber       String   @default("07AAACK8432K1ZX")
+  footerContent   String   @default("Discover useful everyday products, trending gadgets, fashion, home essentials and more at affordable prices with secure shopping and Cash on Delivery.")
+  instagramLink   String   @default("https://instagram.com/dropbyrikkas")
+  facebookLink    String   @default("https://facebook.com/ikaasseey")
+  returnPolicy    String   @default("Return or exchange requests must be submitted within 3 days of delivery. Products must be unused and in original condition. Image upload is mandatory. Only exchanges are available.")
+  privacyPolicy   String   @default("Information collected: Order information, Address, Phone, Email, Cookies, Payment info. We implement strict security to protect details.")
+  termsConditions String   @default("Order Acceptance: We reserve the right to cancel orders. Prices and stocks are subject to change. Secure checkout is provided.")
+  announcementBar String   @default("✨ Special Savings on Online Payments | Use Code: RIKKAS")
+  onlineDiscount  Float    @default(12)
+  shippingCharges Float    @default(0)
+  
+  // Business information details
+  businessName    String   @default("RikkasHub")
+  businessAddress String   @default("24, Taj Road, Jaipur, Rajasthan - 302001")
+  supportHours    String   @default("Mon-Sat: 10AM - 6PM")
+
+  // Return policy parameters
+  returnWindow            Int     @default(3)
+  exchangeWindow          Int     @default(3)
+  cancellationRules       String  @default("Orders can be cancelled before shipping. Once shipped, cancellation is not possible.")
+  refundRules             String  @default("Exchange only. No refunds unless wrong/damaged items cannot be replaced.")
+  damagedProductRules     String  @default("Report damaged products within 24 hours of delivery. Photo evidence is required.")
+  photoRequirement        Boolean @default(true)
+  nonReturnableConditions String  @default("Hygiene products, custom orders, and products without original tags/packaging are non-returnable.")
+  processingTime          String  @default("Returns processed within 3-5 business days.")
+
+  updatedAt       DateTime @updatedAt
+}
+
+model ReviewImage {
+  id           String   @id @default(uuid())
+  reviewId     String
+  productId    String
+  imageUrl     String
+  thumbnailUrl String?
+  status       String   @default("active") // active, rejected, deleted
+  createdAt    DateTime @default(now())
+
+  review       Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+}
+
+model UserSession {
+  id           String    @id @default(uuid())
+  userId       String
+  refreshToken String    @unique
+  loginTime    DateTime  @default(now())
+  lastActivity DateTime  @default(now())
+  lastLogin    DateTime  @default(now())
+  logoutTime   DateTime?
+  deviceInfo   String?
+  ipAddress    String?
+  status       String    @default("active") // active, revoked
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model OtpCode {
+  id        String   @id @default(uuid())
+  phone     String
+  otp       String
+  hashed    String
+  expiresAt DateTime @map("expires_at")
+  attempts  Int      @default(0)
+  verified  Boolean  @default(false)
+  ip        String?
+  device    String?
+  browser   String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("otp_codes")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model LoginHistory {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  ip        String?
+  device    String?
+  browser   String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("login_history")
+}

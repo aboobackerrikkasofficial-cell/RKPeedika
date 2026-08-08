@@ -1,0 +1,41 @@
+{
+  "name": "kriti-backend",
+  "version": "1.0.0",
+  "description": "Premium E-commerce REST Backend powered by Node, Express, and Prisma PostgreSQL",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "seed": "node prisma/seed.js",
+    "seed:demo": "node prisma/seed.js --demo"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.12.1",
+    "axios": "^1.19.0",
+    "bcryptjs": "^2.4.3",
+    "cheerio": "^1.2.0",
+    "cloudinary": "^2.10.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "helmet": "^7.1.0",
+    "ioredis": "^6.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "morgan": "^1.10.0",
+    "multer": "^2.2.0",
+    "nodemailer": "^9.0.4",
+    "razorpay": "^2.9.2",
+    "swagger-jsdoc": "^6.3.0",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.0",
+    "prisma": "^5.12.1"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  }
+}

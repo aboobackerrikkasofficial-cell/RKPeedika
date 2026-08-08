@@ -89,7 +89,7 @@ export default function Profile({ adminUser, onProfileUpdate }) {
           <div className="h-16 w-16 rounded-full bg-[#FFE8CC] text-[#F7941D] font-black text-2xl flex items-center justify-center border border-orange-100 uppercase mb-3">
             {profileData.name ? profileData.name.trim().charAt(0) : 'A'}
           </div>
-          <h3 className="text-sm font-bold text-gray-900">{profileData.name || "Admin Staff"}</h3>
+          <h3 className="text-sm font-bold text-gray-900">{profileData.name || "Admin"}</h3>
           <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wide mt-1">{profileData.role}</p>
           <div className="mt-4 pt-3.5 border-t border-gray-100 w-full text-[10px] text-gray-400 font-semibold space-y-1.5">
             <p className="flex items-center gap-1.5 justify-center"><Award className="h-4 w-4 text-[#F7941D]" /> Admin Control Panel</p>

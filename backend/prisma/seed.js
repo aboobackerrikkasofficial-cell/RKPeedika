@@ -14,27 +14,33 @@ async function main() {
   }
 
   // 1. Create Default Admin User
-  const adminEmail = 'rikkas.aboo@gmail.com';
-  const existingAdmin = await prisma.user.findUnique({ where: { email: adminEmail } });
-  let adminUser = existingAdmin;
-  
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash('9188072646', salt);
+  const adminEmail = process.env.ADMIN_EMAIL;
+  const adminPassword = process.env.ADMIN_PASSWORD;
 
-  if (!existingAdmin) {
-    // Clean up any legacy placeholder admin accounts
-    await prisma.user.delete({ where: { email: 'admin@kritimarketplace.com' } }).catch(() => {});
-    await prisma.user.delete({ where: { email: '9188072646@gmail.com' } }).catch(() => {});
+  if (adminEmail && adminPassword) {
+    const existingAdmin = await prisma.user.findUnique({ where: { email: adminEmail } });
+    let adminUser = existingAdmin;
+    
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(adminPassword, salt);
 
-    adminUser = await prisma.user.create({
-      data: {
-        email: adminEmail,
-        password: hashedPassword,
-        name: 'Admin Staff',
-        role: 'admin'
-      }
-    });
-    console.log('✔ Default administrator account generated.');
+    if (!existingAdmin) {
+      // Clean up any legacy placeholder admin accounts
+      await prisma.user.delete({ where: { email: 'admin@kritimarketplace.com' } }).catch(() => {});
+      await prisma.user.delete({ where: { email: '9188072646@gmail.com' } }).catch(() => {});
+
+      adminUser = await prisma.user.create({
+        data: {
+          email: adminEmail,
+          password: hashedPassword,
+          name: 'Admin',
+          role: 'admin'
+        }
+      });
+      console.log('✔ Default administrator account generated.');
+    }
+  } else {
+    console.log('⚠ ADMIN_EMAIL or ADMIN_PASSWORD not provided, skipping default admin creation.');
   }
 
   // Clean relations to prevent constraints violation / clear existing demo data
@@ -448,14 +454,14 @@ async function main() {
       displayName: 'Razorpay',
       isEnabled: true,
       environment: 'sandbox',
-      keyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_TNAbuMJ3O3uSQk'
+      keyId: process.env.RAZORPAY_KEY_ID || ''
     },
     create: {
       gatewayName: 'razorpay',
       displayName: 'Razorpay',
       isEnabled: true,
       environment: 'sandbox',
-      keyId: process.env.RAZORPAY_KEY_ID || 'rzp_test_TNAbuMJ3O3uSQk'
+      keyId: process.env.RAZORPAY_KEY_ID || ''
     }
   });
   console.log('✔ Razorpay payment gateway config upserted.');

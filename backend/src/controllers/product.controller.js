@@ -167,13 +167,8 @@ export const updateProduct = async (req, res, next) => {
     if (updateData.codAvailable !== undefined) {
       updateData.codAvailable = updateData.codAvailable !== false && updateData.codAvailable !== 'false';
     }
-    if (updateData.inStock !== undefined) {
-      updateData.inStock = updateData.inStock !== false && updateData.inStock !== 'false';
-    }
 
-    if (updateData.images && typeof updateData.images === 'object') {
-      updateData.images = JSON.stringify(updateData.images);
-    }
+    // Keep arrays/objects as strings if provided as JSON
     if (updateData.highlights && typeof updateData.highlights === 'object') {
       updateData.highlights = JSON.stringify(updateData.highlights);
     }
@@ -183,25 +178,15 @@ export const updateProduct = async (req, res, next) => {
     if (updateData.variants && typeof updateData.variants === 'object') {
       updateData.variants = JSON.stringify(updateData.variants);
     }
-    if (updateData.relatedProducts && typeof updateData.relatedProducts === 'object') {
-      updateData.relatedProducts = JSON.stringify(updateData.relatedProducts);
-    }
 
     const product = await prisma.product.update({
       where: { id },
       data: updateData
     });
 
-    // Clear caches
-    const keys = await redisClient.keys('products:*');
-    for (const key of keys) {
-      await redisClient.del(key);
-    }
-
     res.json({
       success: true,
-      message: "Product details updated",
-      product: formatProduct(product)
+      product
     });
   } catch (error) {
     next(error);
@@ -209,23 +194,18 @@ export const updateProduct = async (req, res, next) => {
 };
 
 export const deleteProduct = async (req, res, next) => {
-  const { id } = req.params;
-
   try {
-    await prisma.product.delete({ where: { id } });
-
-    // Clear caches
-    const keys = await redisClient.keys('products:*');
-    for (const key of keys) {
-      await redisClient.del(key);
-    }
+    const { id } = req.params;
+    
+    await prisma.product.delete({
+      where: { id }
+    });
 
     res.json({
       success: true,
-      message: "Product listing deleted permanently"
+      message: 'Product deleted successfully'
     });
   } catch (error) {
     next(error);
   }
 };
-

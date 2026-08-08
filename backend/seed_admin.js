@@ -4,8 +4,13 @@ import bcrypt from 'bcryptjs';
 const prisma = new PrismaClient();
 
 async function seed() {
-  const email = 'admin@kritimarketplace.com';
-  const password = 'adminpassword';
+  const email = process.env.ADMIN_EMAIL;
+  const password = process.env.ADMIN_PASSWORD;
+  
+  if (!email || !password) {
+    console.warn("ADMIN_EMAIL and ADMIN_PASSWORD must be provided in the environment to seed admin user.");
+    return;
+  }
   
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);

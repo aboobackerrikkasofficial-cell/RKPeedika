@@ -37,7 +37,16 @@ app.use(helmet({
   contentSecurityPolicy: false // Allow swagger assets to load cleanly
 }));
 app.use(morgan('dev'));
-app.use(cors({ origin: '*' }));
+
+const allowedOrigins = process.env.FRONTEND_URL 
+  ? process.env.FRONTEND_URL.split(',') 
+  : '*';
+
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
+
 app.use(express.json({ 
   limit: '50mb',
   verify: (req, res, buf) => {
@@ -57,14 +66,17 @@ app.use((req, res, next) => {
   next();
 });
 
-// Health Check Endpoint
+// Health Check Endpoints
 app.get('/', (req, res) => {
   res.json({
     status: "Healthy",
     service: "Kriti Indian Marketplace E-commerce API",
-    timestamp: new Date().toISOString(),
-    sandboxMode: true
+    timestamp: new Date().toISOString()
   });
+});
+
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
 // Swagger API Documentations UI Endpoint

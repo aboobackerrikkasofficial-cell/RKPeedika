@@ -306,7 +306,7 @@ export default function DashboardLayout({ children }) {
                 <div className="h-6.5 w-6.5 rounded-full bg-[#FFE8CC] text-[#F7941D] font-black flex items-center justify-center border border-orange-100 uppercase">
                   {adminUser?.name ? adminUser.name.trim().charAt(0) : 'A'}
                 </div>
-                <span className="hidden md:inline text-gray-600 font-bold">{adminUser?.name || 'Admin Staff'}</span>
+                <span className="hidden md:inline text-gray-600 font-bold">{adminUser?.name || 'Admin'}</span>
               </button>
 
               <AnimatePresence>

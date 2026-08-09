@@ -57,6 +57,12 @@ fs.mkdirSync(importedDirectory, {
 app.use(
   helmet({
     contentSecurityPolicy: false,
+
+    // Allow customer website on Vercel to load images
+    // from the Render backend.
+    crossOriginResourcePolicy: {
+      policy: 'cross-origin',
+    },
   })
 );
 
@@ -115,8 +121,22 @@ app.use(
 app.use(
   '/uploads',
   express.static(uploadDirectory, {
-    maxAge: '1d',
-    etag: true,
+    setHeaders: (res) => {
+      res.setHeader(
+        'Access-Control-Allow-Origin',
+        '*'
+      );
+
+      res.setHeader(
+        'Cross-Origin-Resource-Policy',
+        'cross-origin'
+      );
+
+      res.setHeader(
+        'Cache-Control',
+        'public, max-age=86400'
+      );
+    },
   })
 );
 

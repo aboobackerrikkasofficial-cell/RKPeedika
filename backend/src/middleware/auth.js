@@ -1,40 +1,126 @@
 import jwt from 'jsonwebtoken';
-import { UnauthorizedError, ForbiddenError } from '../utils/appError.js';
 import prisma from '../config/db.js';
+import {
+  UnauthorizedError,
+  ForbiddenError
+} from '../utils/appError.js';
 
-export const authenticate = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+const JWT_SECRET = process.env.JWT_SECRET || 'secret';
 
-  if (!token) {
-    return next(new UnauthorizedError("Access Denied: Missing Authorization Header Token"));
-  }
+export const authenticate = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
 
-  jwt.verify(token, process.env.JWT_SECRET || 'secret', async (err, decoded) => {
-    if (err) {
-      return next(new ForbiddenError("Forbidden: Session expired or signature verification failed"));
+    // Authorization header must exist
+    if (!authHeader) {
+      return next(
+        new UnauthorizedError(
+          'Access Denied: Authorization token is required.'
+        )
+      );
     }
+
+    // Expected:
+    // Authorization: Bearer <token>
+    if (!authHeader.startsWith('Bearer ')) {
+      return next(
+        new UnauthorizedError(
+          'Access Denied: Invalid Authorization header format.'
+        )
+      );
+    }
+
+    const token = authHeader.substring(7).trim();
+
+    if (!token) {
+      return next(
+        new UnauthorizedError(
+          'Access Denied: Empty Authorization token.'
+        )
+      );
+    }
+
+    // Verify JWT
+    let decoded;
+
     try {
-      const user = await prisma.user.findUnique({ where: { id: decoded.id } });
-      if (!user) {
-        return next(new UnauthorizedError("Forbidden: User account no longer exists."));
+      decoded = jwt.verify(token, JWT_SECRET);
+    } catch (jwtError) {
+      if (jwtError.name === 'TokenExpiredError') {
+        return next(
+          new UnauthorizedError(
+            'Session expired. Please sign in again.'
+          )
+        );
       }
-      if (user.status === 'banned') {
-        return next(new ForbiddenError("Forbidden: Your account has been suspended by an administrator."));
-      }
-      req.user = user;
-      next();
-    } catch (dbErr) {
-      next(dbErr);
+
+      return next(
+        new UnauthorizedError(
+          'Invalid authentication token.'
+        )
+      );
     }
-  });
+
+    // Make sure JWT contains user ID
+    if (!decoded || !decoded.id) {
+      return next(
+        new UnauthorizedError(
+          'Invalid authentication token: user ID missing.'
+        )
+      );
+    }
+
+    // Find current user
+    const user = await prisma.user.findUnique({
+      where: {
+        id: decoded.id
+      }
+    });
+
+    if (!user) {
+      return next(
+        new UnauthorizedError(
+          'User account no longer exists.'
+        )
+      );
+    }
+
+    // Check account status
+    if (user.status === 'banned') {
+      return next(
+        new ForbiddenError(
+          'Your account has been suspended by an administrator.'
+        )
+      );
+    }
+
+    // Attach user to request
+    req.user = user;
+
+    next();
+  } catch (error) {
+    next(error);
+  }
 };
 
 export const authorize = (...roles) => {
   return (req, res, next) => {
-    if (!req.user || !roles.includes(req.user.role)) {
-      return next(new ForbiddenError(`Forbidden: Role '${req.user?.role || 'anonymous'}' is unauthorized.`));
+    if (!req.user) {
+      return next(
+        new UnauthorizedError(
+          'Authentication required.'
+        )
+      );
     }
+
+    if (!roles.includes(req.user.role)) {
+      return next(
+        new ForbiddenError(
+          `Role '${req.user.role}' is not authorized to perform this action.`
+        )
+      );
+    }
+
     next();
   };
 };

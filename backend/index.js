@@ -6,18 +6,11 @@ import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
 import path from 'path';
 import fs from 'fs';
-import { fileURLToPath } from 'url';
 
-// ---------------------------------------------------------
-// Load configurations & utilities
-// ---------------------------------------------------------
 import logger from './src/utils/logger.js';
 import errorHandler from './src/middleware/errorHandler.js';
 import swaggerSpec from './src/config/swagger.js';
 
-// ---------------------------------------------------------
-// Load routes
-// ---------------------------------------------------------
 import authRoutes from './src/routes/auth.routes.js';
 import productRoutes from './src/routes/product.routes.js';
 import categoryRoutes from './src/routes/category.routes.js';
@@ -32,397 +25,209 @@ import badgeRoutes from './src/routes/badge.routes.js';
 import settingRoutes from './src/routes/setting.routes.js';
 import paymentRoutes from './src/routes/payment.routes.js';
 import storeRoutes from './src/routes/store.routes.js';
+import uploadRoutes from './src/routes/upload.routes.js';
 
-// ---------------------------------------------------------
-// Environment
-// ---------------------------------------------------------
 dotenv.config();
 
-// ---------------------------------------------------------
-// ES Module directory paths
-// ---------------------------------------------------------
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// ---------------------------------------------------------
-// App
-// ---------------------------------------------------------
 const app = express();
 
 const PORT = process.env.PORT || 5000;
 
-// ---------------------------------------------------------
-// Upload directory
-//
-// Your project structure is expected to be:
-//
-// backend/
-// ├── index.js
-// └── src/
-//     └── uploads/
-//         └── imported/
-//             ├── image1.jpg
-//             ├── image2.webp
-//             └── ...
-// ---------------------------------------------------------
-const uploadsDirectory = path.join(
-  __dirname,
+/**
+ * Upload directory.
+ */
+const uploadDirectory = path.resolve(
+  process.cwd(),
   'src',
   'uploads'
 );
 
 const importedDirectory = path.join(
-  uploadsDirectory,
+  uploadDirectory,
   'imported'
 );
 
-// Create directories if they don't exist
-if (!fs.existsSync(uploadsDirectory)) {
-  fs.mkdirSync(uploadsDirectory, {
-    recursive: true
-  });
-}
+fs.mkdirSync(importedDirectory, {
+  recursive: true,
+});
 
-if (!fs.existsSync(importedDirectory)) {
-  fs.mkdirSync(importedDirectory, {
-    recursive: true
-  });
-}
-
-// ---------------------------------------------------------
-// Basic information
-// ---------------------------------------------------------
-logger.info(
-  `📁 Upload directory: ${uploadsDirectory}`
-);
-
-logger.info(
-  `📁 Imported images directory: ${importedDirectory}`
-);
-
-// ---------------------------------------------------------
-// Security middleware
-// ---------------------------------------------------------
+/**
+ * Security.
+ */
 app.use(
   helmet({
-    contentSecurityPolicy: false
+    contentSecurityPolicy: false,
   })
 );
 
-// ---------------------------------------------------------
-// HTTP request logger
-// ---------------------------------------------------------
+/**
+ * Logging.
+ */
 app.use(morgan('dev'));
 
-// ---------------------------------------------------------
-// CORS
-// ---------------------------------------------------------
-const frontendUrl =
-  process.env.FRONTEND_URL || '*';
-
-const allowedOrigins =
-  frontendUrl === '*'
-    ? '*'
-    : frontendUrl
-      .split(',')
-      .map((origin) => origin.trim())
-      .filter(Boolean);
+/**
+ * CORS.
+ */
+const configuredOrigins = process.env.FRONTEND_URL
+  ? process.env.FRONTEND_URL
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+  : [];
 
 app.use(
   cors({
-    origin: allowedOrigins,
-    credentials: true
+    origin:
+      configuredOrigins.length > 0
+        ? configuredOrigins
+        : true,
+    credentials: true,
   })
 );
 
-// ---------------------------------------------------------
-// Body parsers
-// ---------------------------------------------------------
+/**
+ * Body parsers.
+ */
 app.use(
   express.json({
     limit: '50mb',
 
-    verify: (req, res, buf) => {
+    verify: (req, _res, buf) => {
       req.rawBody = buf.toString();
-    }
+    },
   })
 );
 
 app.use(
   express.urlencoded({
     limit: '50mb',
-    extended: true
+    extended: true,
   })
 );
 
-// ---------------------------------------------------------
-// STATIC UPLOAD FILES
-//
-// Browser URL:
-//
-// https://rkpeedika.onrender.com/uploads/imported/file.jpg
-//
-// maps to:
-//
-// backend/src/uploads/imported/file.jpg
-// ---------------------------------------------------------
+/**
+ * Static uploaded images.
+ *
+ * Example:
+ *
+ * https://rkpeedika.onrender.com/uploads/imported/image.jpg
+ */
 app.use(
   '/uploads',
-  express.static(uploadsDirectory, {
-    index: false,
-
-    // Allow browser to cache product images.
-    maxAge: '7d',
-
-    setHeaders: (res) => {
-      res.setHeader(
-        'Access-Control-Allow-Origin',
-        '*'
-      );
-
-      res.setHeader(
-        'Cross-Origin-Resource-Policy',
-        'cross-origin'
-      );
-    }
+  express.static(uploadDirectory, {
+    maxAge: '1d',
+    etag: true,
   })
 );
 
-// ---------------------------------------------------------
-// Upload test endpoint
-//
-// Open this in browser:
-//
-// https://rkpeedika.onrender.com/uploads-status
-// ---------------------------------------------------------
-app.get(
-  '/uploads-status',
-  (req, res) => {
-    let importedFiles = [];
+/**
+ * Health check.
+ */
+app.get('/', (_req, res) => {
+  res.json({
+    status: 'Healthy',
+    service: 'RK Peedika Indian Marketplace E-commerce API',
+    timestamp: new Date().toISOString(),
+  });
+});
 
-    try {
-      importedFiles = fs
-        .readdirSync(importedDirectory)
-        .slice(0, 20);
-    } catch (error) {
-      logger.error(
-        `Unable to read imported directory: ${error.message}`
-      );
-    }
+app.get('/health', (_req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+  });
+});
 
-    res.json({
-      success: true,
+/**
+ * Simple upload status endpoint.
+ */
+app.get('/uploads-status', (_req, res) => {
+  res.json({
+    success: true,
+    uploadDirectory: '/uploads',
+    importedDirectory: '/uploads/imported',
+    message: 'Upload service is available.',
+  });
+});
 
-      uploadsDirectory,
-
-      importedDirectory,
-
-      importedFiles,
-
-      uploadBaseUrl:
-        `${req.protocol}://${req.get('host')}/uploads`
-    });
-  }
-);
-
-// ---------------------------------------------------------
-// API cache-control
-//
-// Don't cache API responses.
-// Static images above are handled separately.
-// ---------------------------------------------------------
-app.use(
-  '/api',
-  (req, res, next) => {
-    res.set(
-      'Cache-Control',
-      'no-store, no-cache, must-revalidate, private'
-    );
-
-    res.set(
-      'Expires',
-      '-1'
-    );
-
-    res.set(
-      'Pragma',
-      'no-cache'
-    );
-
-    next();
-  }
-);
-
-// ---------------------------------------------------------
-// Health check
-// ---------------------------------------------------------
-app.get(
-  '/',
-  (req, res) => {
-    res.json({
-      status: 'Healthy',
-
-      service:
-        'RK Peedika Indian Marketplace E-commerce API',
-
-      timestamp:
-        new Date().toISOString()
-    });
-  }
-);
-
-app.get(
-  '/health',
-  (req, res) => {
-    res.status(200).json({
-      status: 'ok',
-
-      timestamp:
-        new Date().toISOString()
-    });
-  }
-);
-
-// ---------------------------------------------------------
-// Swagger
-// ---------------------------------------------------------
+/**
+ * Swagger.
+ */
 app.use(
   '/api-docs',
   swaggerUi.serve,
   swaggerUi.setup(swaggerSpec)
 );
 
-// ---------------------------------------------------------
-// API ROUTES
-// ---------------------------------------------------------
+/**
+ * API routes.
+ */
+app.use('/api/auth', authRoutes);
 
-// Authentication
-app.use(
-  '/api/auth',
-  authRoutes
-);
+app.use('/api/products', productRoutes);
 
-// Products
-app.use(
-  '/api/products',
-  productRoutes
-);
+app.use('/api/categories', categoryRoutes);
 
-// Categories
-app.use(
-  '/api/categories',
-  categoryRoutes
-);
+app.use('/api/orders', orderRoutes);
 
-// Orders
-app.use(
-  '/api/orders',
-  orderRoutes
-);
+app.use('/api/coupons', couponRoutes);
 
-// Coupons
-app.use(
-  '/api/coupons',
-  couponRoutes
-);
+app.use('/api/reviews', reviewRoutes);
 
-// Reviews
-app.use(
-  '/api/reviews',
-  reviewRoutes
-);
+app.use('/api/users', userRoutes);
 
-// Users
-app.use(
-  '/api/users',
-  userRoutes
-);
+app.use('/api/admin', adminRoutes);
 
-// Admin
-app.use(
-  '/api/admin',
-  adminRoutes
-);
+app.use('/api/newsletter', newsletterRoutes);
 
-// Newsletter
-app.use(
-  '/api/newsletter',
-  newsletterRoutes
-);
+app.use('/api/exchanges', exchangeRoutes);
 
-// Exchanges
-app.use(
-  '/api/exchanges',
-  exchangeRoutes
-);
+app.use('/api/badges', badgeRoutes);
 
-// Badges
-app.use(
-  '/api/badges',
-  badgeRoutes
-);
+app.use('/api/settings', settingRoutes);
 
-// Settings
-app.use(
-  '/api/settings',
-  settingRoutes
-);
+app.use('/api/payments', paymentRoutes);
 
-// Payments
-app.use(
-  '/api/payments',
-  paymentRoutes
-);
+app.use('/api/store', storeRoutes);
 
-// Store
-app.use(
-  '/api/store',
-  storeRoutes
-);
+app.use('/api/admin/store', storeRoutes);
 
-// Admin Store
-app.use(
-  '/api/admin/store',
-  storeRoutes
-);
+/**
+ * Product image upload.
+ */
+app.use('/api/uploads', uploadRoutes);
 
-// ---------------------------------------------------------
-// 404 HANDLER
-// ---------------------------------------------------------
-app.use(
-  (req, res, next) => {
-    res.status(404).json({
-      status: 'fail',
+/**
+ * 404.
+ */
+app.use((req, res) => {
+  res.status(404).json({
+    status: 'fail',
+    error: {
+      message:
+        `Route endpoint ${req.originalUrl} not found on this server.`,
+    },
+  });
+});
 
-      error: {
-        message:
-          `Route endpoint ${req.originalUrl} not found on this server.`
-      }
-    });
-  }
-);
-
-// ---------------------------------------------------------
-// GLOBAL ERROR HANDLER
-// ---------------------------------------------------------
+/**
+ * Global error handler.
+ */
 app.use(errorHandler);
 
-// ---------------------------------------------------------
-// START SERVER
-// ---------------------------------------------------------
-app.listen(
-  PORT,
-  () => {
-    logger.info(
-      `🚀 RK Peedika E-commerce API running on port ${PORT}`
-    );
+/**
+ * Start server.
+ */
+app.listen(PORT, () => {
+  logger.info(
+    `🚀 Scalable E-commerce API running on port ${PORT}`
+  );
 
-    logger.info(
-      `📖 Swagger documentation UI: http://localhost:${PORT}/api-docs`
-    );
+  logger.info(
+    `📖 Swagger documentation UI: http://localhost:${PORT}/api-docs`
+  );
 
-    logger.info(
-      `🖼️ Product images available at: /uploads/`
-    );
-  }
-);
+  logger.info(
+    `📁 Product uploads: ${importedDirectory}`
+  );
+});

@@ -3,32 +3,56 @@ import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
-async function seed() {
+async function main() {
   const email = process.env.ADMIN_EMAIL;
   const password = process.env.ADMIN_PASSWORD;
-  
+
   if (!email || !password) {
-    console.warn("ADMIN_EMAIL and ADMIN_PASSWORD must be provided in the environment to seed admin user.");
-    return;
+    console.error(
+      '❌ ADMIN_EMAIL and ADMIN_PASSWORD are required.'
+    );
+    process.exit(1);
   }
-  
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(password, salt);
-  
-  await prisma.user.upsert({
-    where: { email },
-    update: { password: hashedPassword, role: 'admin', phone: '9876543210' },
+
+  console.log(`🔐 Preparing admin account: ${email}`);
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const admin = await prisma.user.upsert({
+    where: {
+      email: email.toLowerCase().trim()
+    },
+
+    update: {
+      password: hashedPassword,
+      role: 'admin',
+      status: 'active'
+    },
+
     create: {
-      email,
+      email: email.toLowerCase().trim(),
       password: hashedPassword,
       name: 'Super Admin',
       phone: '9876543210',
-      role: 'admin'
+      role: 'admin',
+      status: 'active'
     }
   });
-  console.log('Admin user seeded/updated with phone: 9876543210');
+
+  console.log('======================================');
+  console.log('✅ ADMIN ACCOUNT READY');
+  console.log(`📧 Email: ${admin.email}`);
+  console.log(`👤 Role: ${admin.role}`);
+  console.log('🔑 Password: configured from ADMIN_PASSWORD');
+  console.log('======================================');
 }
 
-seed()
-  .catch(console.error)
-  .finally(() => prisma.$disconnect());
+main()
+  .catch((error) => {
+    console.error('❌ Admin seed failed:');
+    console.error(error);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

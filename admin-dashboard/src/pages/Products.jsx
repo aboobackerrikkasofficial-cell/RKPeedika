@@ -12,36 +12,39 @@ const productSchema = z.object({
   name: z.string().min(3, "Product name must be at least 3 characters long"),
   tagline: z.string().min(5, "Tagline must be at least 5 characters long"),
   price: z.preprocess(
-    (val) => (val === "" ? undefined : Number(val)), 
+    (val) => (val === "" ? undefined : Number(val)),
     z.number({ invalid_type_error: "Price must be a valid number" }).min(1, "Price must be greater than 0")
   ),
-  categoryId: z.string(),
+  categoryId: z
+    .string()
+    .trim()
+    .min(1, "Please select a product category"),
   stock: z.preprocess(
-    (val) => (val === "" ? undefined : Number(val)), 
+    (val) => (val === "" ? undefined : Number(val)),
     z.number({ invalid_type_error: "Stock must be a valid number" }).min(0, "Stock cannot be negative")
   ),
   seller: z.string().min(3, "Seller name must be at least 3 characters long"),
   originalPrice: z.preprocess(
-    (val) => (val === "" ? undefined : Number(val)), 
+    (val) => (val === "" ? undefined : Number(val)),
     z.number().optional()
   ),
   codPrice: z.preprocess(
-    (val) => (val === "" ? undefined : Number(val)), 
+    (val) => (val === "" ? undefined : Number(val)),
     z.number().optional()
   ),
   onlinePrice: z.preprocess(
-    (val) => (val === "" ? undefined : Number(val)), 
+    (val) => (val === "" ? undefined : Number(val)),
     z.number().optional()
   ),
   onlineDiscount: z.preprocess(
-    (val) => (val === "" ? undefined : Number(val)), 
+    (val) => (val === "" ? undefined : Number(val)),
     z.number().optional()
   ),
   enableOnlineDiscount: z.boolean().default(false),
   codAvailable: z.boolean().default(true),
   inStock: z.boolean().default(true),
   estimatedDeliveryDays: z.preprocess(
-    (val) => (val === "" ? undefined : Number(val)), 
+    (val) => (val === "" ? undefined : Number(val)),
     z.number().default(3)
   ),
   imagesText: z.string(),
@@ -53,7 +56,7 @@ const productSchema = z.object({
   showPurchaseCount: z.boolean().default(true),
   purchaseCountMode: z.string().default("auto"),
   purchaseCount: z.preprocess(
-    (val) => (val === "" ? undefined : Number(val)), 
+    (val) => (val === "" ? undefined : Number(val)),
     z.number().optional()
   )
 });
@@ -77,12 +80,12 @@ export default function Products() {
   const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   // Hook-form initialization
-  const { 
-    register, 
-    handleSubmit, 
+  const {
+    register,
+    handleSubmit,
     reset,
     setValue,
-    formState: { errors, isSubmitting } 
+    formState: { errors, isSubmitting }
   } = useForm({
     resolver: zodResolver(productSchema),
     defaultValues: {
@@ -121,23 +124,66 @@ export default function Products() {
   const fetchProducts = async () => {
     try {
       const res = await apiClient.get('/products');
+
+      let productList = [];
+
       if (Array.isArray(res.data)) {
-        setProductsList(res.data);
-      } else if (res.data && Array.isArray(res.data.products)) {
-        setProductsList(res.data.products);
+        productList = res.data;
+      } else if (Array.isArray(res.data?.products)) {
+        productList = res.data.products;
+      } else if (Array.isArray(res.data?.data)) {
+        productList = res.data.data;
       }
+
+      setProductsList(productList);
     } catch (err) {
-      console.error("Failed to load products", err);
-      showStatus('error', "Could not connect to database to fetch products. Login session may have expired.");
+      console.error("Failed to load products:", err);
+      showStatus(
+        'error',
+        err.response?.data?.message ||
+        "Could not connect to database to fetch products. Login session may have expired."
+      );
     }
   };
 
   const fetchCategories = async () => {
     try {
       const res = await apiClient.get('/categories');
-      setCategories(res.data || []);
+
+      console.log("Categories API response:", res.data);
+
+      let categoryList = [];
+
+      if (Array.isArray(res.data)) {
+        categoryList = res.data;
+      } else if (Array.isArray(res.data?.categories)) {
+        categoryList = res.data.categories;
+      } else if (Array.isArray(res.data?.data)) {
+        categoryList = res.data.data;
+      }
+
+      const validCategories = categoryList.filter(
+        (category) => category?.id && category?.name
+      );
+
+      setCategories(validCategories);
+
+      if (validCategories.length === 0) {
+        showStatus(
+          'error',
+          'No product categories found. Please create a category first.'
+        );
+      }
     } catch (err) {
-      console.error("Failed to load categories", err);
+      console.error("Failed to load categories:", err);
+
+      setCategories([]);
+
+      showStatus(
+        'error',
+        err.response?.data?.message ||
+        "Could not load product categories."
+      );
     }
   };
 
@@ -151,7 +197,7 @@ export default function Products() {
       window.showAlert("Please paste a Meesho product link or raw HTML page source.", "Missing Information");
       return;
     }
-    
+
     setFetchingMeesho(true);
     try {
       const res = await apiClient.post('/admin/import/meesho', {
@@ -160,14 +206,24 @@ export default function Products() {
         markupType,
         markupValue
       });
-      
+
       if (res.data && res.data.success) {
         const prod = res.data.data;
-        
-        // Auto map category
-        let catId = categories[0]?.id || "";
-        if (prod.categoryId) {
-          catId = prod.categoryId;
+
+        // Auto map category.
+        // Only use the imported categoryId if it actually exists in our category list.
+        const importedCategory = prod.categoryId
+          ? categories.find((category) => category.id === prod.categoryId)
+          : null;
+
+        const catId = importedCategory?.id || categories[0]?.id || "";
+
+        if (!catId) {
+          showStatus(
+            'error',
+            'Product imported, but no valid category is available. Create a category first.'
+          );
+          return;
         }
 
         // Set form values
@@ -175,22 +231,22 @@ export default function Products() {
         setValue("tagline", prod.brand ? `Brand: ${prod.brand}` : "Imported high quality product.");
         setValue("price", prod.price || "");
         setValue("originalPrice", prod.originalPrice || "");
-        setValue("categoryId", catId);
+        setValue("categoryId", String(catId), { shouldValidate: true });
         setValue("stock", 100); // default stock
         setValue("seller", prod.brand || "Meesho Dropshipper");
         setValue("description", prod.description || "");
-        
+
         // Format lists for the text inputs
         const imagesText = Array.isArray(prod.images) ? prod.images.join(', ') : '';
         setValue("imagesText", imagesText);
-        
+
         const highlightsText = Array.isArray(prod.highlights) ? prod.highlights.join('\n') : '';
         setValue("highlightsText", highlightsText);
-        
+
         setValue("specificationsText", JSON.stringify(prod.specifications || {}, null, 2));
         setValue("variantsText", JSON.stringify(prod.variants || {}, null, 2));
         setValue("estimatedDeliveryDays", prod.estimatedDeliveryDays || 3);
-        
+
         setMeeshoPreview(prod);
         showStatus('success', "Product details successfully imported from Meesho!");
       } else {
@@ -211,103 +267,245 @@ export default function Products() {
   };
 
   const onSubmit = async (data) => {
-    // Process input data
+    // ------------------------------------------------------------
+    // Extra validation before sending anything to the backend.
+    // This specifically prevents the "categoryId is required" error.
+    // ------------------------------------------------------------
+    const normalizedCategoryId = String(data.categoryId || "").trim();
+
+    if (!normalizedCategoryId) {
+      showStatus('error', 'Please select a product category.');
+      return;
+    }
+
+    const selectedCategory = categories.find(
+      (category) => String(category.id) === normalizedCategoryId
+    );
+
+    if (!selectedCategory) {
+      showStatus(
+        'error',
+        'The selected category is invalid or no longer exists. Please select another category.'
+      );
+      return;
+    }
+
+    // Process image URLs.
     let images = [];
     try {
-      images = data.imagesText.split(',').map(img => img.trim()).filter(Boolean);
+      images = String(data.imagesText || "")
+        .split(',')
+        .map((img) => img.trim())
+        .filter(Boolean);
     } catch (e) {
       images = [];
     }
 
+    if (images.length === 0) {
+      showStatus('error', 'Please add at least one product image URL.');
+      return;
+    }
+
+    // Process highlights.
     let highlights = [];
     if (data.highlightsText) {
-      highlights = data.highlightsText.split('\n').map(h => h.trim()).filter(Boolean);
+      highlights = String(data.highlightsText)
+        .split('\n')
+        .map((h) => h.trim())
+        .filter(Boolean);
     }
 
+    // Process specifications JSON.
     let specifications = {};
-    if (data.specificationsText) {
+    if (data.specificationsText && String(data.specificationsText).trim()) {
       try {
         specifications = JSON.parse(data.specificationsText);
+
+        if (
+          specifications === null ||
+          typeof specifications !== 'object' ||
+          Array.isArray(specifications)
+        ) {
+          window.showAlert(
+            "Specifications must be a valid JSON object.",
+            "JSON Parse Error"
+          );
+          return;
+        }
       } catch (e) {
-        window.showAlert("Invalid Specifications JSON format. Please correct it.", "JSON Parse Error");
+        window.showAlert(
+          "Invalid Specifications JSON format. Please correct it.",
+          "JSON Parse Error"
+        );
         return;
       }
     }
 
+    // Process variants JSON.
     let variants = {};
-    if (data.variantsText) {
+    if (data.variantsText && String(data.variantsText).trim()) {
       try {
         variants = JSON.parse(data.variantsText);
+
+        if (
+          variants === null ||
+          typeof variants !== 'object' ||
+          Array.isArray(variants)
+        ) {
+          window.showAlert(
+            "Variants must be a valid JSON object.",
+            "JSON Parse Error"
+          );
+          return;
+        }
       } catch (e) {
-        window.showAlert("Invalid Variants JSON format. Please correct it.", "JSON Parse Error");
+        window.showAlert(
+          "Invalid Variants JSON format. Please correct it.",
+          "JSON Parse Error"
+        );
         return;
       }
     }
 
+    // Process related product IDs.
     let relatedProducts = [];
     if (data.relatedProductsText) {
-      relatedProducts = data.relatedProductsText.split(',').map(id => id.trim()).filter(Boolean);
+      relatedProducts = String(data.relatedProductsText)
+        .split(',')
+        .map((id) => id.trim())
+        .filter(Boolean);
     }
 
+    // Normalize optional numeric values.
+    const toOptionalNumber = (value) => {
+      if (value === "" || value === null || value === undefined) {
+        return null;
+      }
+
+      const numberValue = Number(value);
+      return Number.isFinite(numberValue) ? numberValue : null;
+    };
+
     const payload = {
-      name: data.name,
-      tagline: data.tagline,
-      description: data.description || "",
-      price: data.price,
-      originalPrice: data.originalPrice || null,
-      categoryId: data.categoryId,
-      stock: data.stock,
-      seller: data.seller,
+      name: String(data.name || "").trim(),
+      tagline: String(data.tagline || "").trim(),
+      description: String(data.description || "").trim(),
+
+      price: Number(data.price),
+      originalPrice: toOptionalNumber(data.originalPrice),
+
+      // IMPORTANT: always send the real database category ID.
+      categoryId: normalizedCategoryId,
+
+      stock: Number(data.stock),
+      seller: String(data.seller || "").trim(),
+
       images,
-      codPrice: data.codPrice || null,
-      onlinePrice: data.onlinePrice || null,
-      onlineDiscount: data.onlineDiscount || null,
-      enableOnlineDiscount: data.enableOnlineDiscount,
-      codAvailable: data.codAvailable,
-      inStock: data.inStock,
-      estimatedDeliveryDays: data.estimatedDeliveryDays,
+
+      codPrice: toOptionalNumber(data.codPrice),
+      onlinePrice: toOptionalNumber(data.onlinePrice),
+      onlineDiscount: toOptionalNumber(data.onlineDiscount),
+
+      enableOnlineDiscount: Boolean(data.enableOnlineDiscount),
+      codAvailable: Boolean(data.codAvailable),
+      inStock: Boolean(data.inStock),
+
+      estimatedDeliveryDays: Number(data.estimatedDeliveryDays || 3),
+
       highlights,
       specifications,
       variants,
       relatedProducts,
-      showPurchaseCount: data.showPurchaseCount,
-      purchaseCountMode: data.purchaseCountMode,
-      purchaseCount: data.purchaseCount
+
+      showPurchaseCount: Boolean(data.showPurchaseCount),
+      purchaseCountMode: data.purchaseCountMode || "auto",
+      purchaseCount: toOptionalNumber(data.purchaseCount)
     };
+
+    // Final payload guard.
+    if (!payload.name || payload.name.length < 3) {
+      showStatus('error', 'Product name must be at least 3 characters long.');
+      return;
+    }
+
+    if (!Number.isFinite(payload.price) || payload.price <= 0) {
+      showStatus('error', 'Please enter a valid product price.');
+      return;
+    }
+
+    if (!Number.isFinite(payload.stock) || payload.stock < 0) {
+      showStatus('error', 'Please enter a valid stock quantity.');
+      return;
+    }
+
+    if (!payload.seller || payload.seller.length < 3) {
+      showStatus('error', 'Seller name must be at least 3 characters long.');
+      return;
+    }
+
+    console.log("CREATE/UPDATE PRODUCT PAYLOAD:", payload);
+    console.log("SELECTED CATEGORY:", selectedCategory);
 
     try {
       if (editingProduct) {
         // Edit flow
-        const res = await apiClient.put(`/products/${editingProduct.id}`, payload);
-        if (res.data.success) {
+        const res = await apiClient.put(
+          `/products/${editingProduct.id}`,
+          payload
+        );
+
+        if (res.data?.success !== false) {
           showStatus('success', "Product details updated successfully.");
         }
       } else {
         // Add flow
         const res = await apiClient.post('/products', payload);
-        if (res.data.success) {
+
+        if (res.data?.success !== false) {
           showStatus('success', "New product published successfully.");
         }
       }
+
       setIsModalOpen(false);
       setEditingProduct(null);
       reset();
-      fetchProducts();
+      handleClearMeesho();
+      setShowPreviewModal(false);
+
+      await fetchProducts();
     } catch (err) {
-      console.error("Save product failed", err);
-      showStatus('error', err.response?.data?.message || "Failed to publish product updates.");
+      console.error("Save product failed:", err);
+
+      const backendMessage =
+        err.response?.data?.error?.message ||
+        err.response?.data?.error ||
+        err.response?.data?.message ||
+        err.message;
+
+      showStatus(
+        'error',
+        backendMessage || "Failed to publish product updates."
+      );
     }
   };
 
   const handleEdit = (product) => {
     setEditingProduct(product);
-    
+
     // Prefill form
     setValue("name", product.name);
     setValue("tagline", product.tagline || "");
     setValue("price", product.price);
     setValue("originalPrice", product.originalPrice || "");
-    setValue("categoryId", product.categoryId);
+    setValue(
+      "categoryId",
+      product.categoryId
+        ? String(product.categoryId)
+        : categories[0]?.id
+          ? String(categories[0].id)
+          : "",
+      { shouldValidate: true }
+    );
     setValue("stock", product.stock);
     setValue("seller", product.seller);
     setValue("codPrice", product.codPrice || "");
@@ -355,23 +553,28 @@ export default function Products() {
   };
 
   // Search logic
-  const filteredProducts = productsList.filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (p.category?.name || p.category || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredProducts = productsList.filter((p) => {
+    const name = String(p?.name || "").toLowerCase();
+    const category = String(
+      p?.category?.name || p?.category || ""
+    ).toLowerCase();
+    const query = searchTerm.toLowerCase();
+
+    return name.includes(query) || category.includes(query);
+  });
 
   const columns = [
     { key: "id", label: "SKU ID", sortable: true },
     { key: "name", label: "Product Name", sortable: true },
-    { 
-      key: "category", 
-      label: "Category", 
+    {
+      key: "category",
+      label: "Category",
       sortable: true,
       render: (row) => <span>{row.category?.name || row.category || 'General'}</span>
     },
-    { 
-      key: "price", 
-      label: "Pricing (Base/COD/Online)", 
+    {
+      key: "price",
+      label: "Pricing (Base/COD/Online)",
       render: (row) => (
         <div className="flex flex-col text-[10px]">
           <span className="font-bold text-charcoal">Base: ₹{row.price}</span>
@@ -380,9 +583,9 @@ export default function Products() {
         </div>
       )
     },
-    { 
-      key: "stock", 
-      label: "Stock Count", 
+    {
+      key: "stock",
+      label: "Stock Count",
       sortable: true,
       render: (row) => (
         <span className={`font-bold ${row.stock <= 5 ? 'text-red-500' : 'text-gray-700'}`}>
@@ -396,13 +599,13 @@ export default function Products() {
       label: "Options",
       render: (row) => (
         <div className="flex space-x-1">
-          <button 
+          <button
             onClick={() => handleEdit(row)}
             className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-50 hover:text-[#F7941D] transition-all"
           >
             <Edit className="h-4 w-4" />
           </button>
-          <button 
+          <button
             onClick={() => handleDelete(row.id)}
             className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-50 hover:text-red-500 transition-all"
           >
@@ -415,23 +618,37 @@ export default function Products() {
 
   return (
     <div className="p-6 md:p-8 space-y-6">
-      
+
       {/* Header section */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl font-black text-gray-900 tracking-tight">Products Catalog</h2>
-          <p className="text-xs font-semibold text-gray-400 mt-1">Publish new items, check stock levels, and audit merchant assignments.</p>
+          <p className="text-xs font-semibold text-gray-400 mt-1">
+            Publish new items, check stock levels, and audit merchant assignments.
+            <span className={`ml-2 ${categories.length === 0 ? 'text-red-500' : 'text-emerald-600'}`}>
+              {categories.length} categor{categories.length === 1 ? 'y' : 'ies'} available
+            </span>
+          </p>
         </div>
-        
-        <button 
+
+        <button
           onClick={() => {
+            if (categories.length === 0) {
+              showStatus(
+                'error',
+                'No product categories are available. Please create a category before adding a product.'
+              );
+              return;
+            }
+
             setEditingProduct(null);
+
             reset({
               name: "",
               tagline: "",
               price: "",
               originalPrice: "",
-              categoryId: categories[0]?.id || "",
+              categoryId: String(categories[0].id),
               stock: "",
               seller: "",
               codPrice: "",
@@ -451,6 +668,9 @@ export default function Products() {
               purchaseCountMode: "auto",
               purchaseCount: ""
             });
+
+            handleClearMeesho();
+            setShowPreviewModal(false);
             setIsModalOpen(true);
           }}
           className="w-max flex items-center justify-center gap-1.5 rounded-xl bg-[#F7941D] px-4 py-2.5 text-xs font-bold text-white hover:bg-[#E07D10] transition-all shadow-sm"
@@ -461,9 +681,8 @@ export default function Products() {
 
       {/* Status Messages */}
       {statusMsg.text && (
-        <div className={`p-4 rounded-xl flex items-center gap-2 text-xs font-bold ${
-          statusMsg.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
-        }`}>
+        <div className={`p-4 rounded-xl flex items-center gap-2 text-xs font-bold ${statusMsg.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
+          }`}>
           {statusMsg.type === 'success' ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
           {statusMsg.text}
         </div>
@@ -472,8 +691,8 @@ export default function Products() {
       {/* Search Input Filter */}
       <div className="flex items-center rounded-xl border border-gray-100 bg-white px-3 py-2.5 text-xs shadow-sm max-w-md">
         <Search className="h-4 w-4 text-gray-400 mr-2" />
-        <input 
-          type="text" 
+        <input
+          type="text"
           placeholder="Search products by title or category..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
@@ -482,7 +701,7 @@ export default function Products() {
       </div>
 
       {/* Products table */}
-      <Table 
+      <Table
         columns={columns}
         data={filteredProducts}
         itemsPerPage={10}
@@ -497,7 +716,7 @@ export default function Products() {
               <h3 className="text-base font-extrabold text-charcoal flex items-center gap-2">
                 📂 {editingProduct ? `Edit SKU: ${editingProduct.id}` : 'Add Catalog Product'}
               </h3>
-              <button 
+              <button
                 onClick={() => { setIsModalOpen(false); setEditingProduct(null); reset(); }}
                 className="rounded-full p-1 text-gray-400 hover:bg-gray-100"
               >
@@ -507,13 +726,13 @@ export default function Products() {
 
             {/* Validation Form */}
             <form onSubmit={handleSubmit(onSubmit)} className="flex-1 overflow-y-auto no-scrollbar space-y-5 pr-1 text-xs">
-              
+
               {!editingProduct && (
                 <div className="bg-gray-50 border border-gray-150 p-4 rounded-xl space-y-3">
                   <h4 className="text-xs font-extrabold text-charcoal flex items-center gap-1">
                     📦 Import Product from Meesho
                   </h4>
-                  
+
                   <div className="flex flex-col gap-2">
                     <label className="text-[10px] font-bold text-gray-400 uppercase">Paste Meesho Product Link</label>
                     <input
@@ -523,9 +742,9 @@ export default function Products() {
                       placeholder="e.g. https://www.meesho.com/classy-retro-men-shirts/p/2v9y7q"
                       className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-xs text-charcoal outline-none focus:border-[#F7941D]"
                     />
-                    
+
                     <div className="flex justify-between items-center mt-0.5">
-                      <span 
+                      <span
                         onClick={() => setShowHtmlPaste(!showHtmlPaste)}
                         className="text-[10px] font-bold text-[#F7941D] hover:underline cursor-pointer flex items-center gap-1"
                       >
@@ -600,9 +819,9 @@ export default function Products() {
                   </div>
                 </div>
               )}
-              
+
               <div className="grid grid-cols-2 gap-4">
-                <FormInput 
+                <FormInput
                   label="Product Name *"
                   name="name"
                   placeholder="e.g. Copper Water Carafe"
@@ -610,7 +829,7 @@ export default function Products() {
                   error={errors.name}
                 />
 
-                <FormInput 
+                <FormInput
                   label="Tagline / Short Details *"
                   name="tagline"
                   placeholder="e.g. Pure copper hammered water container."
@@ -620,7 +839,7 @@ export default function Products() {
               </div>
 
               <div className="grid grid-cols-3 gap-4">
-                <FormInput 
+                <FormInput
                   label="Base Price (₹) *"
                   name="price"
                   type="number"
@@ -629,7 +848,7 @@ export default function Products() {
                   error={errors.price}
                 />
 
-                <FormInput 
+                <FormInput
                   label="Original MRP Price (₹)"
                   name="originalPrice"
                   type="number"
@@ -638,7 +857,7 @@ export default function Products() {
                   error={errors.originalPrice}
                 />
 
-                <FormInput 
+                <FormInput
                   label="Stock Qty *"
                   name="stock"
                   type="number"
@@ -649,7 +868,7 @@ export default function Products() {
               </div>
 
               <div className="grid grid-cols-3 gap-4 border-t pt-4 border-gray-50">
-                <FormInput 
+                <FormInput
                   label="COD Price (₹)"
                   name="codPrice"
                   type="number"
@@ -658,7 +877,7 @@ export default function Products() {
                   error={errors.codPrice}
                 />
 
-                <FormInput 
+                <FormInput
                   label="Online Payment Price (₹)"
                   name="onlinePrice"
                   type="number"
@@ -667,7 +886,7 @@ export default function Products() {
                   error={errors.onlinePrice}
                 />
 
-                <FormInput 
+                <FormInput
                   label="Online Discount Value (₹)"
                   name="onlineDiscount"
                   type="number"
@@ -682,7 +901,7 @@ export default function Products() {
                   <input type="checkbox" {...register("enableOnlineDiscount")} id="enableOnlineDiscount" className="w-4 h-4 text-[#F7941D]" />
                   <label htmlFor="enableOnlineDiscount" className="font-bold text-gray-700">Enable Online Discount</label>
                 </div>
-                
+
                 <div className="flex items-center gap-1.5">
                   <input type="checkbox" {...register("codAvailable")} id="codAvailable" className="w-4 h-4 text-[#F7941D]" />
                   <label htmlFor="codAvailable" className="font-bold text-gray-700">COD Available</label>
@@ -693,7 +912,7 @@ export default function Products() {
                   <label htmlFor="inStock" className="font-bold text-gray-700">In Stock</label>
                 </div>
 
-                <FormInput 
+                <FormInput
                   label="Est Delivery (Days)"
                   name="estimatedDeliveryDays"
                   type="number"
@@ -710,7 +929,7 @@ export default function Products() {
 
                 <div className="flex flex-col space-y-1">
                   <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Purchase Count Mode</label>
-                  <select 
+                  <select
                     {...register("purchaseCountMode")}
                     className="rounded-xl border border-gray-200 px-3.5 py-2.5 text-xs text-charcoal bg-white outline-none focus:border-[#F7941D]"
                   >
@@ -719,7 +938,7 @@ export default function Products() {
                   </select>
                 </div>
 
-                <FormInput 
+                <FormInput
                   label="Manual Purchase Count"
                   name="purchaseCount"
                   type="number"
@@ -732,17 +951,32 @@ export default function Products() {
               <div className="grid grid-cols-2 gap-4 border-t pt-4 border-gray-50">
                 <div className="flex flex-col space-y-1">
                   <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Category *</label>
-                  <select 
+                  <select
                     {...register("categoryId")}
-                    className="rounded-xl border border-gray-200 px-3.5 py-2.5 text-xs text-charcoal bg-white outline-none focus:border-[#F7941D]"
+                    disabled={categories.length === 0}
+                    className="rounded-xl border border-gray-200 px-3.5 py-2.5 text-xs text-charcoal bg-white outline-none focus:border-[#F7941D] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
-                    {categories.map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
+                    <option value="">
+                      {categories.length === 0
+                        ? "No categories available"
+                        : "Select a category"}
+                    </option>
+
+                    {categories.map((category) => (
+                      <option key={category.id} value={String(category.id)}>
+                        {category.name}
+                      </option>
                     ))}
                   </select>
+
+                  {errors.categoryId && (
+                    <span className="text-[10px] text-red-500 font-bold">
+                      {errors.categoryId.message}
+                    </span>
+                  )}
                 </div>
 
-                <FormInput 
+                <FormInput
                   label="Verified Seller Name *"
                   name="seller"
                   placeholder="e.g. Saharanpur Guild"
@@ -753,7 +987,7 @@ export default function Products() {
 
               <div className="flex flex-col space-y-1">
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Product Images (Comma-separated URLs) *</label>
-                <textarea 
+                <textarea
                   {...register("imagesText")}
                   rows={2}
                   placeholder="e.g. /images/coffee_maker_1.jpg, /images/coffee_maker_2.jpg"
@@ -764,7 +998,7 @@ export default function Products() {
 
               <div className="flex flex-col space-y-1">
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Description</label>
-                <textarea 
+                <textarea
                   {...register("description")}
                   rows={3}
                   placeholder="Detailed description of the product..."
@@ -774,7 +1008,7 @@ export default function Products() {
 
               <div className="flex flex-col space-y-1">
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Highlights (One bullet point per line)</label>
-                <textarea 
+                <textarea
                   {...register("highlightsText")}
                   rows={3}
                   placeholder="e.g. 100% Pure copper&#10;Handmade by local artisans&#10;Includes 2 cups"
@@ -785,7 +1019,7 @@ export default function Products() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="flex flex-col space-y-1">
                   <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Specifications (JSON Object)</label>
-                  <textarea 
+                  <textarea
                     {...register("specificationsText")}
                     rows={4}
                     placeholder='e.g. {&#10;  "Material": "Pure Copper",&#10;  "Weight": "500g"&#10;}'
@@ -795,7 +1029,7 @@ export default function Products() {
 
                 <div className="flex flex-col space-y-1">
                   <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Variants Configuration (JSON Object)</label>
-                  <textarea 
+                  <textarea
                     {...register("variantsText")}
                     rows={4}
                     placeholder='e.g. {&#10;  "sizes": ["Small", "Large (+ ₹300)"],&#10;  "colors": ["Gold", "Silver"]&#10;}'
@@ -806,24 +1040,30 @@ export default function Products() {
 
               <div className="flex flex-col space-y-1">
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Related Product IDs (Comma-separated)</label>
-                <input 
+                <input
                   type="text"
                   {...register("relatedProductsText")}
-                  placeholder="e.g. prod-1, prod-3" 
+                  placeholder="e.g. prod-1, prod-3"
                   className="rounded-xl border border-gray-200 px-3.5 py-2.5 text-xs text-charcoal outline-none focus:border-[#F7941D]"
                 />
               </div>
 
               {/* Action buttons */}
               <div className="pt-4 border-t border-gray-100 flex gap-2.5 justify-end">
-                <button 
+                <button
                   type="button"
-                  onClick={() => { setIsModalOpen(false); setEditingProduct(null); reset(); }}
+                  onClick={() => {
+                    setIsModalOpen(false);
+                    setEditingProduct(null);
+                    reset();
+                    handleClearMeesho();
+                    setShowPreviewModal(false);
+                  }}
                   className="rounded-xl border border-gray-200 px-4 py-2.5 text-xs font-bold text-gray-500 hover:bg-gray-50 transition-all"
                 >
                   Cancel
                 </button>
-                <button 
+                <button
                   type="submit"
                   disabled={isSubmitting}
                   className="rounded-xl bg-[#F7941D] px-6 py-2.5 text-xs font-bold text-white hover:bg-[#E07D10] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow"
@@ -845,19 +1085,19 @@ export default function Products() {
               <h3 className="text-base font-extrabold text-charcoal flex items-center gap-2">
                 🔍 Import Product Preview
               </h3>
-              <button 
+              <button
                 onClick={() => setShowPreviewModal(false)}
                 className="rounded-full p-1 text-gray-400 hover:bg-gray-100"
               >
                 <XIcon className="h-5 w-5" />
               </button>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto no-scrollbar space-y-4 pr-1 text-xs">
               <div className="flex gap-4">
-                <img 
-                  src={meeshoPreview.images?.[0] ? (meeshoPreview.images[0].startsWith('http') ? meeshoPreview.images[0] : meeshoPreview.images[0]) : '/images/coffee_maker_1.jpg'} 
-                  alt={meeshoPreview.name} 
+                <img
+                  src={meeshoPreview.images?.[0] ? (meeshoPreview.images[0].startsWith('http') ? meeshoPreview.images[0] : meeshoPreview.images[0]) : '/images/coffee_maker_1.jpg'}
+                  alt={meeshoPreview.name}
                   className="w-24 h-24 object-cover rounded-xl border border-gray-100"
                 />
                 <div className="space-y-1">
@@ -903,7 +1143,7 @@ export default function Products() {
                 </div>
               )}
             </div>
-            
+
             <button
               onClick={() => setShowPreviewModal(false)}
               className="mt-4 w-full bg-[#1C1917] text-white py-2.5 rounded-xl font-bold hover:bg-gray-800 transition"

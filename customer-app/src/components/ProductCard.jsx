@@ -1,6 +1,60 @@
 import React, { useContext, useState } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Heart, Star, ShoppingCart } from 'lucide-react';
+import {
+  Heart,
+  Star,
+  ShoppingCart,
+} from 'lucide-react';
+
+/*
+|--------------------------------------------------------------------------
+| IMAGE URL HELPER
+|--------------------------------------------------------------------------
+| Product images may come from:
+|
+|   /uploads/imported/image.jpg
+|   uploads/imported/image.jpg
+|   https://rkpeedika.onrender.com/uploads/...
+|
+| We normalize all of them to the backend server.
+|--------------------------------------------------------------------------
+*/
+
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  'https://rkpeedika.onrender.com/api';
+
+const BACKEND_URL = API_URL.replace(/\/api\/?$/, '');
+
+function getImageUrl(image) {
+  if (!image) return '';
+
+  const value = String(image).trim();
+
+  if (!value) return '';
+
+  // Already an absolute URL
+  if (
+    value.startsWith('http://') ||
+    value.startsWith('https://') ||
+    value.startsWith('data:')
+  ) {
+    return value;
+  }
+
+  // Remove accidental leading spaces
+  const cleanPath = value.startsWith('/')
+    ? value
+    : `/${value}`;
+
+  return `${BACKEND_URL}${cleanPath}`;
+}
+
+/*
+|--------------------------------------------------------------------------
+| PRODUCT CARD
+|--------------------------------------------------------------------------
+*/
 
 function ProductCard({ product }) {
   const {
@@ -12,139 +66,344 @@ function ProductCard({ product }) {
     setCurrentView,
     userPincode,
     pincodeDatabase,
-    searchQuery
+    searchQuery,
   } = useContext(AppContext);
 
   const [hovered, setHovered] = useState(false);
+  const [imageIndex, setImageIndex] = useState(0);
+  const [imageFailed, setImageFailed] = useState(false);
 
-  const isLiked = wishlist?.includes(product.id);
+  const isLiked =
+    wishlist?.includes(product?.id);
+
+  /*
+  |--------------------------------------------------------------------------
+  | DISCOUNT
+  |--------------------------------------------------------------------------
+  */
+
+  const price = Number(product?.price || 0);
+
+  const originalPrice = Number(
+    product?.originalPrice || 0
+  );
 
   const discount =
-    product.originalPrice && product.originalPrice > product.price
+    originalPrice > price && price > 0
       ? Math.round(
-        ((product.originalPrice - product.price) /
-          product.originalPrice) *
+        ((originalPrice - price) /
+          originalPrice) *
         100
       )
       : 0;
 
+  /*
+  |--------------------------------------------------------------------------
+  | DELIVERY
+  |--------------------------------------------------------------------------
+  */
+
   const pincodeData =
-    pincodeDatabase?.[userPincode] || { days: 3 };
+    pincodeDatabase?.[userPincode] || {
+      days: 3,
+    };
 
   const deliveryDays =
-    product.estimatedDeliveryDays || pincodeData.days;
+    Number(product?.estimatedDeliveryDays) ||
+    pincodeData.days ||
+    3;
 
   const deliveryDateObj = new Date(
-    Date.now() + deliveryDays * 24 * 60 * 60 * 1000
+    Date.now() +
+    deliveryDays *
+    24 *
+    60 *
+    60 *
+    1000
   );
 
   const formattedDeliveryDate =
-    deliveryDateObj.toLocaleDateString('en-IN', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric'
-    });
+    deliveryDateObj.toLocaleDateString(
+      'en-IN',
+      {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+      }
+    );
 
-  const images = Array.isArray(product.images)
-    ? product.images
-    : [];
+  /*
+  |--------------------------------------------------------------------------
+  | IMAGES
+  |--------------------------------------------------------------------------
+  */
+
+  let images = [];
+
+  if (Array.isArray(product?.images)) {
+    images = product.images.filter(Boolean);
+  } else if (typeof product?.images === 'string') {
+    try {
+      const parsed = JSON.parse(
+        product.images
+      );
+
+      if (Array.isArray(parsed)) {
+        images = parsed.filter(Boolean);
+      }
+    } catch {
+      images = product.images
+        ? [product.images]
+        : [];
+    }
+  }
+
+  const normalizedImages =
+    images.map(getImageUrl);
 
   const imageUrl =
-    hovered && images[1]
-      ? images[1]
-      : images[0];
+    normalizedImages[imageIndex] ||
+    normalizedImages[0] ||
+    '';
+
+  /*
+  |--------------------------------------------------------------------------
+  | CARD CLICK
+  |--------------------------------------------------------------------------
+  */
 
   const handleCardClick = () => {
+    if (!product?.id) return;
+
     setSelectedProductId(product.id);
     setCurrentView('product');
 
     window.scrollTo({
       top: 0,
-      behavior: 'smooth'
+      behavior: 'smooth',
     });
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | IMAGE ERROR
+  |--------------------------------------------------------------------------
+  */
+
+  const handleImageError = () => {
+    setImageFailed(true);
+
+    /*
+     * If the second image fails, try the first image.
+     */
+    if (
+      imageIndex !== 0 &&
+      normalizedImages[0]
+    ) {
+      setImageIndex(0);
+      setImageFailed(false);
+    }
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | IMAGE HOVER
+  |--------------------------------------------------------------------------
+  */
+
+  const handleMouseEnter = () => {
+    setHovered(true);
+
+    if (normalizedImages.length > 1) {
+      setImageIndex(1);
+      setImageFailed(false);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    setHovered(false);
+
+    setImageIndex(0);
+    setImageFailed(false);
   };
 
   return (
     <article
       className="
-        group relative flex h-full min-w-0 flex-col
-        overflow-hidden rounded-xl border border-gray-100
-        bg-white shadow-premium
+        group
+        relative
+        flex
+        h-full
+        min-w-0
+        flex-col
+        overflow-hidden
+        rounded-2xl
+        border
+        border-gray-100
+        bg-white
+        shadow-premium
         transition-premium
         hover:border-gray-200
         hover:shadow-premium-hover
+
+        /* Mobile */
+        min-h-[500px]
+
+        /* Desktop */
+        md:min-h-[600px]
       "
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={handleMouseEnter}
+      onMouseLeave={handleMouseLeave}
     >
-      {/* IMAGE */}
+      {/* =========================================================
+          IMAGE AREA
+      ========================================================== */}
+
       <div
         onClick={handleCardClick}
         className="
-          relative w-full cursor-pointer
-          overflow-hidden bg-gray-50
-          aspect-square
-          sm:aspect-[4/5]
-          md:h-[280px] md:aspect-auto
+          relative
+          w-full
+          cursor-pointer
+          overflow-hidden
+          bg-gray-50
+
+          /* Mobile image */
+          h-[230px]
+
+          /* Larger phones */
+          min-[400px]:h-[250px]
+
+          /* Tablet */
+          sm:h-[270px]
+
+          /* Desktop */
+          md:h-[300px]
         "
       >
-        {imageUrl ? (
+        {imageUrl && !imageFailed ? (
           <img
+            key={imageUrl}
             src={imageUrl}
-            alt={product.name || 'Product'}
+            alt={product?.name || 'Product'}
             loading="lazy"
             decoding="async"
             className="
-              block h-full w-full
+              block
+              h-full
+              w-full
               object-cover
-              transition-transform duration-500
+              object-center
+              transition-transform
+              duration-500
+              ease-out
               group-hover:scale-[1.03]
             "
-            onError={(e) => {
-              e.currentTarget.style.display = 'none';
-            }}
+            onError={handleImageError}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-gray-400">
-            <div className="text-center">
-              <ShoppingCart className="mx-auto mb-2 h-8 w-8 opacity-40" />
-              <span className="text-xs">
-                Image unavailable
-              </span>
+          <div
+            className="
+              flex
+              h-full
+              w-full
+              flex-col
+              items-center
+              justify-center
+              bg-gray-50
+              text-gray-400
+            "
+          >
+            <div
+              className="
+                mb-3
+                flex
+                h-14
+                w-14
+                items-center
+                justify-center
+                rounded-full
+                bg-white
+                shadow-sm
+              "
+            >
+              <ShoppingCart
+                className="
+                  h-7
+                  w-7
+                  text-gray-300
+                "
+              />
             </div>
+
+            <span
+              className="
+                text-sm
+                font-medium
+              "
+            >
+              Image unavailable
+            </span>
           </div>
         )}
 
-        {/* DISCOUNT */}
+        {/* =======================================================
+            DISCOUNT
+        ======================================================== */}
+
         {discount > 0 && (
           <span
             className="
-              absolute left-2 top-2
-              rounded-full bg-red-500
-              px-2 py-1
-              text-[9px] font-bold
+              absolute
+              left-3
+              top-3
+              z-10
+              rounded-full
+              bg-red-500
+              px-2.5
+              py-1
+              text-[10px]
+              font-bold
+              leading-none
               text-white
-              sm:text-[10px]
+              shadow-sm
+
+              sm:text-xs
             "
           >
             {discount}% OFF
           </span>
         )}
 
-        {/* WISHLIST */}
+        {/* =======================================================
+            WISHLIST
+        ======================================================== */}
+
         <button
           type="button"
+          aria-label="Add to wishlist"
           onClick={(e) => {
             e.stopPropagation();
+
             toggleWishlist(product.id);
           }}
           className={`
-            absolute right-2 top-2
-            flex h-8 w-8 items-center justify-center
-            rounded-full bg-white/95
-            shadow-sm backdrop-blur
+            absolute
+            right-3
+            top-3
+            z-10
+            flex
+            h-10
+            w-10
+            items-center
+            justify-center
+            rounded-full
+            bg-white/95
+            shadow-md
+            backdrop-blur
             transition
             hover:scale-105
+
             ${isLiked
               ? 'text-red-500'
               : 'text-gray-400 hover:text-red-500'
@@ -152,191 +411,419 @@ function ProductCard({ product }) {
           `}
         >
           <Heart
-            className="h-4 w-4"
-            fill={isLiked ? 'currentColor' : 'none'}
+            className="h-5 w-5"
+            fill={
+              isLiked
+                ? 'currentColor'
+                : 'none'
+            }
           />
         </button>
 
-        {/* DELIVERY */}
+        {/* =======================================================
+            DELIVERY
+        ======================================================== */}
+
         <div
           className="
-            absolute bottom-2 left-2
-            rounded bg-black/70
-            px-2 py-1
-            text-[9px] font-semibold
+            absolute
+            bottom-3
+            left-3
+            rounded-md
+            bg-black/75
+            px-2.5
+            py-1.5
+            text-[10px]
+            font-semibold
+            leading-none
             text-white
+            shadow-sm
             backdrop-blur-sm
+
+            sm:text-xs
           "
         >
-          Delivery by {formattedDeliveryDate}
+          Delivery by{' '}
+          {formattedDeliveryDate}
         </div>
       </div>
 
-      {/* PRODUCT INFO */}
+      {/* =========================================================
+          PRODUCT INFORMATION
+      ========================================================== */}
+
       <div
         className="
-          flex flex-1 flex-col
-          p-3
-          sm:p-4
+          flex
+          flex-1
+          flex-col
+
+          /* More breathing room on mobile */
+          p-4
+
+          sm:p-5
+          md:p-5
         "
       >
-        {/* CATEGORY / STOCK */}
-        <div className="mb-1 flex items-center justify-between gap-2">
+        {/* =======================================================
+            CATEGORY + STOCK
+        ======================================================== */}
+
+        <div
+          className="
+            mb-2
+            flex
+            items-center
+            justify-between
+            gap-2
+          "
+        >
           <span
             className="
-              min-w-0 truncate
-              text-[9px] font-bold uppercase
-              tracking-wide text-[#F7941D]
-              sm:text-[10px]
+              min-w-0
+              truncate
+              text-[10px]
+              font-bold
+              uppercase
+              tracking-wider
+              text-[#F7941D]
+
+              sm:text-xs
             "
           >
-            {typeof product.category === 'object'
-              ? product.category?.name
-              : product.category}
+            {typeof product?.category ===
+              'object'
+              ? product?.category?.name
+              : product?.category ||
+              'General'}
           </span>
 
           <span
             className={`
-              shrink-0 text-[9px] font-semibold
-              sm:text-[10px]
-              ${product.inStock
+              shrink-0
+              text-[10px]
+              font-semibold
+
+              sm:text-xs
+
+              ${product?.inStock
                 ? 'text-emerald-600'
                 : 'text-red-500'
               }
             `}
           >
-            {product.inStock
+            {product?.inStock
               ? '● In Stock'
               : 'Out of Stock'}
           </span>
         </div>
 
-        {/* NAME */}
+        {/* =======================================================
+            PRODUCT NAME
+        ======================================================== */}
+
         <h3
           onClick={handleCardClick}
           className="
-            mb-2
-            line-clamp-2
-            min-h-[36px]
+            mb-3
+            min-h-[42px]
             cursor-pointer
-            text-xs font-bold
-            leading-tight
+            line-clamp-2
+            text-sm
+            font-bold
+            leading-[1.3]
             text-charcoal
             transition
             hover:text-[#F7941D]
-            sm:min-h-[40px]
-            sm:text-sm
+
+            sm:min-h-[48px]
+            sm:text-base
           "
         >
-          {product.name}
+          {product?.name ||
+            'Unnamed Product'}
         </h3>
 
-        {/* RATING */}
+        {/* =======================================================
+            RATING
+        ======================================================== */}
+
         <div
           className="
-            mb-2.5 flex items-center
-            gap-1
+            mb-3
+            flex
+            min-w-0
+            items-center
+            gap-1.5
             overflow-hidden
             whitespace-nowrap
           "
         >
           <Star
-            className="h-3.5 w-3.5 shrink-0 text-amber-400"
+            className="
+              h-4
+              w-4
+              shrink-0
+              text-amber-400
+            "
             fill="currentColor"
           />
 
-          <span className="text-[10px] font-bold text-charcoal sm:text-xs">
-            {product.rating || 0}
+          <span
+            className="
+              text-xs
+              font-bold
+              text-charcoal
+
+              sm:text-sm
+            "
+          >
+            {product?.rating || 0}
           </span>
 
-          <span className="truncate text-[9px] text-gray-400 sm:text-[10px]">
-            ({product.reviewCount || 0} reviews)
+          <span
+            className="
+              truncate
+              text-[10px]
+              text-gray-400
+
+              sm:text-xs
+            "
+          >
+            (
+            {product?.reviewCount || 0}{' '}
+            reviews)
           </span>
+
+          {product?.showPurchaseCount !==
+            false && (
+              <>
+                <span className="text-gray-300">
+                  |
+                </span>
+
+                <span
+                  className="
+                  shrink-0
+                  rounded
+                  bg-emerald-50
+                  px-1.5
+                  py-0.5
+                  text-[9px]
+                  font-bold
+                  uppercase
+                  tracking-wide
+                  text-emerald-600
+
+                  sm:text-[10px]
+                "
+                >
+                  {product?.purchaseCount ||
+                    0}{' '}
+                  purchases
+                </span>
+              </>
+            )}
         </div>
 
-        {/* PRICE */}
-        <div className="mt-auto border-t border-gray-50 pt-2.5">
-          <div className="flex flex-wrap items-baseline gap-1.5">
-            <span className="text-base font-black text-charcoal sm:text-lg">
-              ₹{Number(product.price || 0).toLocaleString('en-IN')}
+        {/* =======================================================
+            PRICE
+        ======================================================== */}
+
+        <div
+          className="
+            mt-auto
+            border-t
+            border-gray-100
+            pt-3
+          "
+        >
+          <div
+            className="
+              flex
+              flex-wrap
+              items-baseline
+              gap-x-2
+              gap-y-1
+            "
+          >
+            <span
+              className="
+                text-xl
+                font-black
+                leading-none
+                text-charcoal
+
+                sm:text-2xl
+              "
+            >
+              ₹
+              {price.toLocaleString(
+                'en-IN'
+              )}
             </span>
 
-            {product.originalPrice &&
-              product.originalPrice > product.price && (
-                <>
-                  <span className="text-[9px] text-gray-400 line-through sm:text-xs">
-                    ₹
-                    {Number(
-                      product.originalPrice
-                    ).toLocaleString('en-IN')}
-                  </span>
+            {originalPrice > price && (
+              <>
+                <span
+                  className="
+                    text-[10px]
+                    text-gray-400
+                    line-through
 
-                  <span className="text-[9px] font-semibold text-emerald-600 sm:text-xs">
-                    Save ₹
-                    {Number(
-                      product.originalPrice -
-                      product.price
-                    ).toLocaleString('en-IN')}
-                  </span>
-                </>
-              )}
+                    sm:text-xs
+                  "
+                >
+                  ₹
+                  {originalPrice.toLocaleString(
+                    'en-IN'
+                  )}
+                </span>
+
+                <span
+                  className="
+                    text-[10px]
+                    font-semibold
+                    text-emerald-600
+
+                    sm:text-xs
+                  "
+                >
+                  Save ₹
+                  {(
+                    originalPrice - price
+                  ).toLocaleString(
+                    'en-IN'
+                  )}
+                </span>
+              </>
+            )}
           </div>
 
-          <div className="mt-1 flex items-center justify-between gap-1">
-            {product.codAvailable !== false && (
-              <span className="rounded bg-gray-50 px-1.5 py-0.5 text-[8px] text-charcoal sm:text-[10px]">
-                ✓ COD
+          {/* =====================================================
+              COD / GST
+          ====================================================== */}
+
+          <div
+            className="
+              mt-2
+              flex
+              items-center
+              justify-between
+              gap-2
+            "
+          >
+            {product?.codAvailable !==
+              false ? (
+              <span
+                className="
+                  rounded-md
+                  bg-gray-50
+                  px-2
+                  py-1
+                  text-[9px]
+                  font-medium
+                  text-charcoal
+
+                  sm:text-[10px]
+                "
+              >
+                ✓ COD Available
               </span>
+            ) : (
+              <span />
             )}
 
-            <span className="truncate text-[8px] text-gray-400 sm:text-[10px]">
+            <span
+              className="
+                truncate
+                text-[9px]
+                text-gray-400
+
+                sm:text-[10px]
+              "
+            >
               GST Invoice
             </span>
           </div>
         </div>
 
-        {/* BUTTONS */}
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => addToCart(product)}
-            className="
-              flex min-h-[34px]
-              items-center justify-center
-              gap-1
-              rounded-lg
-              border border-gray-200
-              px-2
-              text-[10px] font-semibold
-              text-charcoal
-              transition
-              hover:border-[#F7941D]
-              hover:bg-orange-50
-              sm:min-h-[38px]
-              sm:text-xs
-            "
-          >
-            <ShoppingCart className="h-3.5 w-3.5 text-[#F7941D]" />
-            Add
-          </button>
+        {/* =======================================================
+            BUTTONS
+        ======================================================== */}
+
+        <div
+          className="
+            mt-4
+            grid
+            grid-cols-2
+            gap-2.5
+          "
+        >
+          {/* ADD */}
 
           <button
             type="button"
             onClick={() =>
-              initiateQuickPurchase(product)
+              addToCart(product)
             }
             className="
-              min-h-[34px]
-              rounded-lg
+              flex
+              min-h-[42px]
+              items-center
+              justify-center
+              gap-1.5
+              rounded-xl
+              border
+              border-gray-200
+              bg-white
+              px-2
+              text-xs
+              font-semibold
+              text-charcoal
+              transition
+              hover:border-[#F7941D]
+              hover:bg-orange-50
+
+              sm:min-h-[44px]
+              sm:text-sm
+            "
+          >
+            <ShoppingCart
+              className="
+                h-4
+                w-4
+                text-[#F7941D]
+              "
+            />
+
+            Add
+          </button>
+
+          {/* BUY NOW */}
+
+          <button
+            type="button"
+            onClick={() =>
+              initiateQuickPurchase(
+                product
+              )
+            }
+            className="
+              min-h-[42px]
+              rounded-xl
               bg-[#F7941D]
               px-2
-              text-[10px] font-bold
+              text-xs
+              font-bold
               text-white
               shadow-sm
               transition
               hover:bg-[#E07D10]
-              sm:min-h-[38px]
-              sm:text-xs
+              hover:shadow-md
+
+              sm:min-h-[44px]
+              sm:text-sm
             "
           >
             Buy Now

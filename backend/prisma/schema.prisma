@@ -355,15 +355,15 @@ model TrustBadge {
 
 model StoreSetting {
   id              String   @id @default("default")
-  storeName       String   @default("RikkasHub")
+  storeName       String   @default("RK Peedika")
   storeLogo       String?
   storeEmail      String   @default("rikkas.aboo@gmail.com")
-  supportEmail    String   @default("support@kritimarketplace.com")
-  supportPhone    String   @default("+91 9876543210")
-  whatsappNumber  String   @default("+91 9876543210")
-  gstNumber       String   @default("07AAACK8432K1ZX")
+  supportEmail    String   @default("rikkas.aboo@gmail.com")
+  supportPhone    String   @default("+91 9188072646")
+  whatsappNumber  String   @default("+91 9188072646")
+  gstNumber       String   @default("GDOPR6352D")
   footerContent   String   @default("Discover useful everyday products, trending gadgets, fashion, home essentials and more at affordable prices with secure shopping and Cash on Delivery.")
-  instagramLink   String   @default("https://instagram.com/dropbyrikkas")
+  instagramLink   String   @default("https://instagram.com/rkpeedika")
   facebookLink    String   @default("https://facebook.com/ikaasseey")
   returnPolicy    String   @default("Return or exchange requests must be submitted within 3 days of delivery. Products must be unused and in original condition. Image upload is mandatory. Only exchanges are available.")
   privacyPolicy   String   @default("Information collected: Order information, Address, Phone, Email, Cookies, Payment info. We implement strict security to protect details.")
@@ -373,9 +373,9 @@ model StoreSetting {
   shippingCharges Float    @default(0)
   
   // Business information details
-  businessName    String   @default("RikkasHub")
-  businessAddress String   @default("24, Taj Road, Jaipur, Rajasthan - 302001")
-  supportHours    String   @default("Mon-Sat: 10AM - 6PM")
+  businessName    String   @default("RK Peedika")
+  businessAddress String   @default("kasaragod,kerala,india.71316")
+  supportHours    String   @default("Mon-Sun: 10AM - 10PM")
 
   // Return policy parameters
   returnWindow            Int     @default(3)

@@ -1,64 +1,163 @@
 import axios from 'axios';
 
-// Helper to check if a JWT is expired
+/* ============================================================
+   TOKEN HELPERS
+============================================================ */
+
 function isTokenExpired(token) {
   if (!token) return true;
+
   try {
     const parts = token.split('.');
-    if (parts.length !== 3) return true;
-    const payload = JSON.parse(atob(parts[1]));
-    if (!payload.exp) return false;
-    const now = Math.floor(Date.now() / 1000);
-    // Buffer of 10 seconds before actual expiry
-    return payload.exp < (now + 10);
-  } catch (e) {
+
+    if (parts.length !== 3) {
+      return true;
+    }
+
+    const payload = JSON.parse(
+      atob(parts[1])
+    );
+
+    if (!payload.exp) {
+      return false;
+    }
+
+    const now = Math.floor(
+      Date.now() / 1000
+    );
+
+    return payload.exp < now + 10;
+  } catch {
     return true;
   }
 }
 
+/* ============================================================
+   API CLIENT
+============================================================ */
+
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api',
+  baseURL:
+    import.meta.env.VITE_API_URL || '/api',
+
   headers: {
     'Content-Type': 'application/json',
   },
+
+  timeout: 30000,
 });
+
+/* ============================================================
+   REFRESH CONTROL
+============================================================ */
 
 let refreshTokenPromise = null;
 
-async function getValidToken() {
-  let token = localStorage.getItem('accessToken');
-  if (!token) return null;
+/* ============================================================
+   CLEAR AUTH
+============================================================ */
 
-  const cleanToken = token.startsWith('Bearer ') ? token.substring(7) : token;
+function clearAuthSession() {
+  localStorage.removeItem('accessToken');
+  localStorage.removeItem('refreshToken');
+
+  window.dispatchEvent(
+    new Event('auth-logout')
+  );
+
+  window.dispatchEvent(
+    new CustomEvent('show-toast', {
+      detail: {
+        message:
+          'Your session has expired. Please sign in again.',
+        type: 'warning',
+      },
+    })
+  );
+}
+
+/* ============================================================
+   GET VALID TOKEN
+============================================================ */
+
+async function getValidToken() {
+  const token =
+    localStorage.getItem('accessToken');
+
+  if (!token) {
+    return null;
+  }
+
+  const cleanToken = token.startsWith('Bearer ')
+    ? token.substring(7)
+    : token;
+
+  /* Token still valid */
   if (!isTokenExpired(cleanToken)) {
     return token;
   }
 
-  // Token is expired! Let's silently refresh
-  const refreshToken = localStorage.getItem('refreshToken');
+  /* Token expired */
+  const refreshToken =
+    localStorage.getItem('refreshToken');
+
   if (!refreshToken) {
     clearAuthSession();
     return null;
   }
 
+  /* Prevent multiple refresh requests */
   if (!refreshTokenPromise) {
-    const backendUrl = import.meta.env.VITE_API_URL || '/api';
-    refreshTokenPromise = axios.post(`${backendUrl}/auth/refresh`, { refreshToken })
-      .then(res => {
+    const backendUrl =
+      import.meta.env.VITE_API_URL || '/api';
+
+    refreshTokenPromise = axios
+      .post(
+        `${backendUrl}/auth/refresh`,
+        {
+          refreshToken,
+        }
+      )
+      .then((res) => {
         const data = res.data;
-        if (data.success && data.token) {
-          localStorage.setItem('accessToken', data.token);
+
+        if (
+          data.success &&
+          data.token
+        ) {
+          localStorage.setItem(
+            'accessToken',
+            data.token
+          );
+
           if (data.refreshToken) {
-            localStorage.setItem('refreshToken', data.refreshToken);
+            localStorage.setItem(
+              'refreshToken',
+              data.refreshToken
+            );
           }
-          window.dispatchEvent(new CustomEvent('auth-token-refreshed', { detail: { token: data.token } }));
+
+          window.dispatchEvent(
+            new CustomEvent(
+              'auth-token-refreshed',
+              {
+                detail: {
+                  token: data.token,
+                },
+              }
+            )
+          );
+
           return data.token;
         }
-        throw new Error('Invalid refresh response');
+
+        throw new Error(
+          'Invalid refresh response'
+        );
       })
-      .catch(err => {
+      .catch((error) => {
         clearAuthSession();
-        throw err;
+        throw error;
       })
       .finally(() => {
         refreshTokenPromise = null;
@@ -68,60 +167,111 @@ async function getValidToken() {
   return refreshTokenPromise;
 }
 
-function clearAuthSession() {
-  localStorage.removeItem('accessToken');
-  localStorage.removeItem('refreshToken');
-  
-  // Dispatch custom events so the app knows to clean up state immediately
-  window.dispatchEvent(new Event('auth-logout'));
-  window.dispatchEvent(new CustomEvent('show-toast', {
-    detail: { message: 'Your session has expired. Please sign in again.', type: 'warning' }
-  }));
-}
+/* ============================================================
+   REQUEST INTERCEPTOR
+============================================================ */
 
-// Request interceptor attaches credentials and auto-refreshes before requests
 apiClient.interceptors.request.use(
   async (config) => {
-    if (config.url.includes('/auth/login') || config.url.includes('/auth/refresh') || config.url.includes('/auth/register')) {
+    const url = config.url || '';
+
+    /* Public authentication endpoints */
+    if (
+      url.includes('/auth/login') ||
+      url.includes('/auth/refresh') ||
+      url.includes('/auth/register') ||
+      url.includes('/auth/send-otp') ||
+      url.includes('/auth/verify-otp') ||
+      url.includes('/auth/guest-login')
+    ) {
       return config;
     }
-    
+
     try {
-      const token = await getValidToken();
+      const token =
+        await getValidToken();
+
       if (token) {
-        config.headers['Authorization'] = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
+        config.headers =
+          config.headers || {};
+
+        config.headers.Authorization =
+          token.startsWith('Bearer ')
+            ? token
+            : `Bearer ${token}`;
       }
-    } catch (err) {
-      // Suppress and let request handle 401/403
+    } catch {
+      /* Let API request handle auth error */
     }
+
     return config;
   },
-  (error) => Promise.reject(error)
+
+  (error) =>
+    Promise.reject(error)
 );
 
-// Response interceptor handles unexpected 401/403 errors by retrying once
+/* ============================================================
+   RESPONSE INTERCEPTOR
+============================================================ */
+
 apiClient.interceptors.response.use(
   (response) => response,
+
   async (error) => {
-    const originalRequest = error.config;
+    const originalRequest =
+      error.config;
+
+    if (!originalRequest) {
+      return Promise.reject(error);
+    }
+
+    const status =
+      error.response?.status;
+
+    const isAuthError =
+      status === 401 ||
+      status === 403;
+
+    const isAuthEndpoint =
+      originalRequest.url?.includes(
+        '/auth/login'
+      ) ||
+      originalRequest.url?.includes(
+        '/auth/refresh'
+      );
+
     if (
-      error.response &&
-      (error.response.status === 401 || error.response.status === 403) &&
+      isAuthError &&
       !originalRequest._retry &&
-      !originalRequest.url.includes('/auth/login') &&
-      !originalRequest.url.includes('/auth/refresh')
+      !isAuthEndpoint
     ) {
       originalRequest._retry = true;
+
       try {
-        const token = await getValidToken();
+        const token =
+          await getValidToken();
+
         if (token) {
-          originalRequest.headers['Authorization'] = token.startsWith('Bearer ') ? token : `Bearer ${token}`;
-          return apiClient(originalRequest);
+          originalRequest.headers =
+            originalRequest.headers || {};
+
+          originalRequest.headers.Authorization =
+            token.startsWith('Bearer ')
+              ? token
+              : `Bearer ${token}`;
+
+          return apiClient(
+            originalRequest
+          );
         }
       } catch (refreshError) {
-        return Promise.reject(refreshError);
+        return Promise.reject(
+          refreshError
+        );
       }
     }
+
     return Promise.reject(error);
   }
 );

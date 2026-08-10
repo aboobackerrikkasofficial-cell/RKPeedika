@@ -1,387 +1,457 @@
-import React, { useContext } from 'react';
+import React, { useContext, useMemo } from 'react';
 import { AppContext } from '../context/AppContext';
 import CategoryList from '../components/CategoryList';
 import MultilingualMarquee from '../components/MultilingualMarquee';
 import TrustStrip from '../components/TrustStrip';
 import ProductCard from '../components/ProductCard';
 import {
-  Star,
-  ShieldCheck,
   Zap,
-  Truck,
   ShoppingBag,
 } from 'lucide-react';
+
+/* ============================================================
+   HOME PAGE
+============================================================ */
 
 export default function HomePage() {
   const {
     products,
     searchQuery,
     selectedCategory,
-    setSelectedProductId,
     setCurrentView,
   } = useContext(AppContext);
 
-  // ---------------------------------------------------------
-  // Normalize text for product searching
-  // ---------------------------------------------------------
+  /* ==========================================================
+     NORMALIZE SEARCH TEXT
+  ========================================================== */
+
   const normalizeText = (text) => {
     if (!text) return '';
 
-    return text
+    return String(text)
       .toLowerCase()
       .trim()
       .replace(/\s+/g, ' ')
       .replace(/s\b/g, '');
   };
 
-  // ---------------------------------------------------------
-  // Filter products
-  // ---------------------------------------------------------
-  const filteredProducts = products.filter((product) => {
-    const categoryName =
-      typeof product.category === 'object'
-        ? product.category?.name || ''
-        : product.category || '';
+  /* ==========================================================
+     SAFELY PARSE JSON
+  ========================================================== */
 
-    // Category filter
-    const matchesCategory =
-      selectedCategory === 'All' ||
-      categoryName === selectedCategory;
+  const parseJson = (value, fallback = null) => {
+    if (!value) return fallback;
 
-    if (!matchesCategory) {
-      return false;
+    if (typeof value !== 'string') {
+      return value;
     }
 
-    // Search filter
-    if (searchQuery.trim()) {
-      const normQuery = normalizeText(searchQuery);
+    try {
+      return JSON.parse(value);
+    } catch {
+      return fallback;
+    }
+  };
 
-      const keywords = normQuery
-        .split(' ')
-        .filter(Boolean);
+  /* ==========================================================
+     FILTER PRODUCTS
+  ========================================================== */
 
-      // Specifications
-      let specsText = '';
+  const filteredProducts = useMemo(() => {
+    if (!Array.isArray(products)) {
+      return [];
+    }
 
-      try {
-        const parsed =
-          typeof product.specifications === 'string'
-            ? JSON.parse(product.specifications)
-            : product.specifications;
+    const normalizedQuery =
+      normalizeText(searchQuery);
 
-        if (parsed && typeof parsed === 'object') {
-          specsText = Object.entries(parsed)
-            .map(([key, value]) => `${key} ${value}`)
-            .join(' ');
-        }
-      } catch (error) {
-        // Ignore invalid specification JSON
+    const keywords = normalizedQuery
+      .split(' ')
+      .filter(Boolean);
+
+    return products.filter((product) => {
+      if (!product) {
+        return false;
       }
 
-      // Highlights
+      /* ------------------------------------------------------
+         CATEGORY
+      ------------------------------------------------------ */
+
+      const categoryName =
+        typeof product.category === 'object'
+          ? product.category?.name || ''
+          : product.category || '';
+
+      const matchesCategory =
+        selectedCategory === 'All' ||
+        categoryName === selectedCategory;
+
+      if (!matchesCategory) {
+        return false;
+      }
+
+      /* ------------------------------------------------------
+         NO SEARCH
+      ------------------------------------------------------ */
+
+      if (!normalizedQuery) {
+        return true;
+      }
+
+      /* ------------------------------------------------------
+         SPECIFICATIONS
+      ------------------------------------------------------ */
+
+      const parsedSpecifications =
+        parseJson(
+          product.specifications,
+          {}
+        );
+
+      let specificationsText = '';
+
+      if (
+        parsedSpecifications &&
+        typeof parsedSpecifications === 'object' &&
+        !Array.isArray(parsedSpecifications)
+      ) {
+        specificationsText =
+          Object.entries(
+            parsedSpecifications
+          )
+            .map(
+              ([key, value]) =>
+                `${key} ${value}`
+            )
+            .join(' ');
+      }
+
+      /* ------------------------------------------------------
+         HIGHLIGHTS
+      ------------------------------------------------------ */
+
+      const parsedHighlights =
+        parseJson(
+          product.highlights,
+          []
+        );
+
       let highlightsText = '';
 
-      try {
-        const parsed =
-          typeof product.highlights === 'string'
-            ? JSON.parse(product.highlights)
-            : product.highlights;
-
-        if (Array.isArray(parsed)) {
-          highlightsText = parsed.join(' ');
-        }
-      } catch (error) {
-        // Ignore invalid highlights JSON
+      if (Array.isArray(parsedHighlights)) {
+        highlightsText =
+          parsedHighlights.join(' ');
       }
 
-      const searchTarget = normalizeText(
-        [
-          product.name,
-          categoryName,
-          product.subcategory || '',
-          product.brand || product.seller || '',
-          product.description || '',
-          product.tagline || '',
-          highlightsText,
-          specsText,
-          product.tags || '',
-          product.sku || '',
-          product.collections || '',
-        ].join(' ')
-      );
+      /* ------------------------------------------------------
+         SEARCH TARGET
+      ------------------------------------------------------ */
+
+      const searchTarget =
+        normalizeText(
+          [
+            product.name,
+            categoryName,
+            product.subcategory,
+            product.brand,
+            product.seller,
+            product.description,
+            product.tagline,
+            highlightsText,
+            specificationsText,
+            product.tags,
+            product.sku,
+            product.collections,
+          ]
+            .filter(Boolean)
+            .join(' ')
+        );
+
+      /* ------------------------------------------------------
+         ALL KEYWORDS MUST MATCH
+      ------------------------------------------------------ */
 
       return keywords.every((keyword) =>
         searchTarget.includes(keyword)
       );
-    }
+    });
+  }, [
+    products,
+    searchQuery,
+    selectedCategory,
+  ]);
 
-    return true;
-  });
+  /* ==========================================================
+     RENDER
+  ========================================================== */
 
   return (
-    <div className="w-full bg-white pb-16">
+    <div
+      className="
+        w-full
+        min-w-0
+        overflow-x-hidden
+        bg-white
+        pb-16
+      "
+    >
+      {/* ======================================================
+          TOP MARQUEE
+      ====================================================== */}
 
-      {/* =====================================================
-          MULTILINGUAL MARQUEE
-      ===================================================== */}
       <MultilingualMarquee />
 
-      {/* =====================================================
-          PREMIUM HERO SECTION
-      ===================================================== */}
-      <div className="mx-auto max-w-7xl px-4 pt-5 sm:pt-6 md:px-8 md:pt-6">
+      {/* ======================================================
+          HERO SECTION
+      ====================================================== */}
 
+      <section
+        className="
+          mx-auto
+          w-full
+          max-w-7xl
+          px-3
+          pt-4
+          sm:px-4
+          sm:pt-5
+          md:px-8
+          md:pt-6
+        "
+      >
         <div
           className="
             relative
             w-full
             overflow-hidden
             rounded-premium
-            shadow-premium
             bg-gray-50
+            shadow-premium
 
-            /* MOBILE */
-            aspect-[4/3]
+            aspect-[16/10]
 
-            /* SMALL TABLETS */
-            sm:aspect-[16/9]
+            sm:aspect-[16/8]
 
-            /* DESKTOP */
             md:aspect-[3/1]
           "
         >
+          {/* HERO IMAGE */}
 
-          {/* -------------------------------------------------
-              HERO IMAGE
-          ------------------------------------------------- */}
           <img
             src="/images/hero_banner.jpg"
-            alt="Premium Indian craft boutique storefront"
+            alt="Premium Indian marketplace"
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
             className="
               absolute
               inset-0
-              w-full
+              block
               h-full
+              w-full
               object-cover
-
-              /* MOBILE:
-                 shift image toward the right so the
-                 important storefront area remains visible */
-              object-[68%_center]
-
-              /* TABLET */
-              sm:object-[62%_center]
-
-              /* DESKTOP:
-                 preserve original desktop composition */
-              md:object-center
+              object-center
             "
           />
 
-          {/* -------------------------------------------------
-              HERO OVERLAY
-          ------------------------------------------------- */}
+          {/* HERO OVERLAY */}
+
           <div
             className="
               absolute
               inset-0
-
               bg-gradient-to-r
-              from-black/80
-              via-black/35
+              from-black/90
+              via-black/45
               to-transparent
-
-              md:from-charcoal/95
-              md:via-charcoal/40
-              md:to-transparent
             "
           />
 
-          {/* -------------------------------------------------
+          {/* ==================================================
               HERO CONTENT
-          ------------------------------------------------- */}
+          ================================================== */}
+
           <div
             className="
               relative
-              h-full
               flex
+              h-full
+              max-w-xl
               flex-col
               justify-center
-
-              px-5
-              py-6
-
-              sm:px-7
-              sm:py-8
-
-              md:px-16
-              md:py-0
-
+              px-4
               text-white
 
-              max-w-[92%]
-              sm:max-w-xl
-              md:max-w-xl
+              sm:px-6
+
+              md:px-16
             "
           >
-
             {/* TRENDING BADGE */}
+
             <div
               className="
+                mb-2
                 flex
-                items-center
-                space-x-2
-                bg-[#F7941D]/95
-                rounded-full
-                px-3
-                py-1
                 w-max
-                mb-3
+                items-center
+                gap-1.5
+                rounded-full
+                bg-[#F7941D]/95
+                px-2.5
+                py-1
                 shadow
+
+                sm:mb-3
+                sm:px-3
               "
             >
               <Zap
-                className="h-3 w-3 text-white fill-current"
+                className="
+                  h-3
+                  w-3
+                  fill-current
+                  text-white
+                "
               />
 
               <span
                 className="
-                  text-[10px]
+                  text-[8px]
                   font-bold
                   uppercase
                   tracking-wider
                   text-white
+
+                  sm:text-[10px]
                 "
               >
                 Trending Now
               </span>
             </div>
 
-            {/* HERO HEADING */}
+            {/* HERO TITLE */}
+
             <h1
               className="
-                text-[25px]
-                leading-[1.08]
-
-                sm:text-3xl
-
-                md:text-3xl
-                lg:text-4xl
-
+                max-w-[280px]
+                text-base
                 font-extrabold
+                leading-tight
                 tracking-tight
                 text-white
+
+                sm:max-w-md
+                sm:text-xl
+
+                md:text-3xl
+
+                lg:text-4xl
               "
             >
               Everything You Need.
-              <br />
+
+              <br className="hidden md:inline" />
 
               <span className="text-[#F7941D]">
+                {' '}
                 Delivered to Your Door.
               </span>
             </h1>
 
-            {/* HERO DESCRIPTION
-                Hidden on mobile to keep the hero clean */}
+            {/* HERO DESCRIPTION */}
+
             <p
               className="
+                mt-2
                 hidden
-                md:block
+                max-w-sm
                 text-xs
                 font-medium
+                leading-relaxed
                 text-gray-300
-                mt-2
-                max-w-sm
+
+                md:block
               "
             >
-              Discover useful everyday products, trending
-              gadgets, fashion, home essentials and more at
-              affordable prices with secure shopping and Cash
-              on Delivery.
+              Discover useful everyday
+              products, trending gadgets,
+              fashion, home essentials and
+              more at affordable prices with
+              secure shopping and Cash on
+              Delivery.
             </p>
 
-            {/* -------------------------------------------------
-                QUICK HERO BADGES
-            ------------------------------------------------- */}
+            {/* =================================================
+                HERO BADGES
+            ================================================= */}
+
             <div
               className="
+                mt-3
                 flex
                 flex-wrap
-                gap-2
+                gap-1.5
 
-                mt-4
-                md:mt-5
-
-                text-[9px]
-                sm:text-[10px]
-                font-semibold
+                sm:mt-4
+                sm:gap-2.5
               "
             >
-
-              {/* COD */}
               <span
                 className="
-                  flex
-                  items-center
-                  gap-1
-
-                  bg-white/15
-
-                  px-2.5
-                  py-1.5
-
                   rounded
-
-                  backdrop-blur-sm
-
                   border
                   border-white/10
+                  bg-white/10
+                  px-2
+                  py-1
+                  text-[7px]
+                  font-semibold
+                  text-white
+                  backdrop-blur-sm
+
+                  sm:px-2.5
+                  sm:text-[10px]
                 "
               >
-                ✔ Cash on Delivery
+                ✓ COD Available
               </span>
 
-              {/* FAST DELIVERY */}
               <span
                 className="
-                  flex
-                  items-center
-                  gap-1
-
-                  bg-white/15
-
-                  px-2.5
-                  py-1.5
-
                   rounded
-
-                  backdrop-blur-sm
-
                   border
                   border-white/10
+                  bg-white/10
+                  px-2
+                  py-1
+                  text-[7px]
+                  font-semibold
+                  text-white
+                  backdrop-blur-sm
+
+                  sm:px-2.5
+                  sm:text-[10px]
                 "
               >
                 ⚡ Fast Delivery
               </span>
 
-              {/* RATING */}
               <span
                 className="
-                  flex
-                  items-center
-                  gap-1
-
-                  bg-white/15
-
-                  px-2.5
-                  py-1.5
-
                   rounded
-
-                  backdrop-blur-sm
-
                   border
                   border-white/10
+                  bg-white/10
+                  px-2
+                  py-1
+                  text-[7px]
+                  font-semibold
+                  text-white
+                  backdrop-blur-sm
+
+                  sm:px-2.5
+                  sm:text-[10px]
                 "
               >
                 ★ 4.9 Rating
@@ -389,50 +459,64 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* =====================================================
+      {/* ======================================================
           CATEGORIES
-      ===================================================== */}
+      ====================================================== */}
+
       <CategoryList />
 
-      {/* =====================================================
-          PRODUCTS SECTION
-      ===================================================== */}
-      <div
+      {/* ======================================================
+          PRODUCTS
+      ====================================================== */}
+
+      <section
         className="
           mx-auto
+          mt-5
+          w-full
           max-w-7xl
-          px-4
+          min-w-0
+          px-3
+
+          sm:mt-6
+          sm:px-4
+
           md:px-8
-          mt-6
         "
       >
+        {/* ====================================================
+            SECTION HEADER
+        ==================================================== */}
 
-        {/* SECTION HEADER */}
         <div
           className="
+            mb-4
             flex
+            min-w-0
             flex-col
-            md:flex-row
-            md:items-center
             justify-between
-
-            mb-6
-            pb-2.5
-
             border-b
             border-gray-100
+            pb-2.5
+
+            sm:mb-6
+
+            md:flex-row
+            md:items-center
           "
         >
-
-          <div>
+          <div className="min-w-0">
             <h2
               className="
-                text-xl
+                truncate
+                text-lg
                 font-black
-                text-charcoal
                 tracking-tight
+                text-charcoal
+
+                sm:text-xl
               "
             >
               {selectedCategory === 'All'
@@ -442,25 +526,33 @@ export default function HomePage() {
 
             <p
               className="
-                text-xs
+                mt-0.5
+                text-[9px]
                 font-semibold
                 text-gray-400
-                mt-0.5
+
+                sm:text-xs
               "
             >
-              Showing {filteredProducts.length} verified products
+              Showing{' '}
+              {filteredProducts.length}{' '}
+              verified products
             </p>
           </div>
 
           {/* SEARCH STATUS */}
+
           {searchQuery && (
             <div
               className="
                 mt-2
-                md:mt-0
-                text-xs
+                truncate
+                text-[9px]
                 font-semibold
                 text-gray-500
+
+                md:mt-0
+                md:text-xs
               "
             >
               Filtered by:{' '}
@@ -471,29 +563,34 @@ export default function HomePage() {
           )}
         </div>
 
-        {/* ===================================================
-            PRODUCTS
-        =================================================== */}
-        {filteredProducts.length === 0 ? (
+        {/* ====================================================
+            EMPTY STATE
+        ==================================================== */}
 
-          /* EMPTY STATE */
+        {filteredProducts.length === 0 ? (
           <div
             className="
-              text-center
-              py-20
+              rounded-premium
               border
               border-dashed
               border-gray-200
-              rounded-premium
+              px-4
+              py-16
+              text-center
+
+              sm:py-20
             "
           >
             <ShoppingBag
               className="
-                h-10
-                w-10
-                text-gray-300
                 mx-auto
                 mb-3
+                h-9
+                w-9
+                text-gray-300
+
+                sm:h-10
+                sm:w-10
               "
             />
 
@@ -509,30 +606,56 @@ export default function HomePage() {
 
             <p
               className="
-                text-xs
-                text-gray-400
+                mx-auto
                 mt-1
                 max-w-xs
-                mx-auto
+                text-[10px]
+                text-gray-400
+
+                sm:text-xs
               "
             >
-              We couldn't find matching products. Try looking
-              up essentials, gadgets or fashion.
+              We couldn't find matching
+              products. Try looking up
+              essentials, gadgets or
+              fashion.
             </p>
           </div>
-
         ) : (
-
           <>
-            {/* PRODUCT GRID */}
+            {/* =================================================
+                PRODUCT GRID
+
+                MOBILE:
+                2 columns
+
+                TABLET:
+                2 columns
+
+                DESKTOP:
+                3 columns
+
+                LARGE DESKTOP:
+                4 columns
+            ================================================= */}
+
             <div
               className="
                 grid
-                grid-cols-1
+                w-full
+                min-w-0
+
+                grid-cols-2
+                gap-2.5
+
                 sm:grid-cols-2
+                sm:gap-4
+
                 md:grid-cols-3
+                md:gap-5
+
                 lg:grid-cols-4
-                gap-6
+                lg:gap-6
               "
             >
               {filteredProducts
@@ -545,37 +668,41 @@ export default function HomePage() {
                 ))}
             </div>
 
-            {/* VIEW ALL */}
+            {/* =================================================
+                VIEW ALL
+            ================================================= */}
+
             <div
               className="
+                mt-7
                 flex
                 justify-center
-                mt-10
+
+                sm:mt-10
               "
             >
               <button
+                type="button"
                 onClick={() =>
                   setCurrentView('products')
                 }
                 className="
-                  px-8
-                  py-3
-
-                  bg-[#F7941D]
-                  hover:bg-[#E07D10]
-
-                  text-white
-                  text-xs
-                  font-bold
-
+                  min-h-[42px]
                   rounded-premium
-
+                  bg-[#F7941D]
+                  px-6
+                  py-2.5
+                  text-[10px]
+                  font-bold
+                  text-white
                   shadow-md
+                  transition-premium
+                  hover:bg-[#E07D10]
                   hover:shadow-lg
 
-                  transition-premium
-
-                  min-h-[44px]
+                  sm:px-8
+                  sm:py-3
+                  sm:text-xs
                 "
               >
                 View All Products
@@ -583,70 +710,89 @@ export default function HomePage() {
             </div>
           </>
         )}
-      </div>
+      </section>
 
-      {/* =====================================================
-          TRUST BADGES
-      ===================================================== */}
-      <div className="mt-12">
+      {/* ======================================================
+          TRUST STRIP
+      ====================================================== */}
+
+      <div
+        className="
+          mt-10
+
+          sm:mt-12
+        "
+      >
         <TrustStrip />
       </div>
 
-      {/* =====================================================
-          BOTTOM PROMOTIONAL CARDS
-      ===================================================== */}
-      <div
+      {/* ======================================================
+          PROMO CARDS
+      ====================================================== */}
+
+      <section
         className="
           mx-auto
+          mt-10
+          w-full
           max-w-7xl
-          px-4
-          mt-12
+          px-3
+
+          sm:mt-12
+          sm:px-4
+
           md:px-8
         "
       >
-
         <div
           className="
             grid
             grid-cols-1
+            gap-4
+
             md:grid-cols-3
-            gap-6
+            md:gap-6
           "
         >
+          {/* ==================================================
+              CARD 1
+          ================================================== */}
 
-          {/* -------------------------------------------------
-              CARD 1 - VERIFIED SELLERS
-          ------------------------------------------------- */}
           <div
             className="
+              flex
+              min-w-0
+              items-center
+              justify-between
               rounded-premium
               border
               border-gray-100
               bg-[#FFFBEB]
-
-              p-6
-
+              p-4
               shadow-sm
 
-              flex
-              items-center
-              justify-between
+              sm:p-6
             "
           >
-
-            <div className="max-w-[65%]">
-
+            <div
+              className="
+                min-w-0
+                max-w-[68%]
+              "
+            >
               <span
                 className="
-                  text-[10px]
-                  font-bold
-                  text-amber-600
+                  rounded
                   bg-amber-100
                   px-2
                   py-0.5
-                  rounded
+                  text-[8px]
+                  font-bold
                   uppercase
                   tracking-wider
+                  text-amber-600
+
+                  sm:text-[10px]
                 "
               >
                 Quality Assured
@@ -654,11 +800,13 @@ export default function HomePage() {
 
               <h4
                 className="
-                  text-base
-                  font-extrabold
-                  text-charcoal
-                  tracking-tight
                   mt-2
+                  text-sm
+                  font-extrabold
+                  tracking-tight
+                  text-charcoal
+
+                  sm:text-base
                 "
               >
                 Verified Sellers
@@ -666,78 +814,94 @@ export default function HomePage() {
 
               <p
                 className="
-                  text-xs
-                  text-gray-500
                   mt-1
+                  text-[10px]
+                  leading-relaxed
+                  text-gray-500
+
+                  sm:text-xs
                 "
               >
-                We carefully vet all our sellers to ensure
-                you receive only high-quality products that
+                We carefully vet all our
+                sellers to ensure you receive
+                only high-quality products that
                 meet your daily needs.
               </p>
             </div>
 
             <div
               className="
-                h-20
-                w-20
-                rounded-full
+                h-16
+                w-16
+                shrink-0
                 overflow-hidden
-                bg-white
-                shadow
+                rounded-full
                 border
                 border-orange-100
-                shrink-0
+                bg-white
+                shadow
+
+                sm:h-20
+                sm:w-20
               "
             >
               <img
                 src="/images/verified_sellers.jpg"
                 alt="Verified Indian Seller"
+                loading="lazy"
+                decoding="async"
                 className="
-                  w-full
+                  block
                   h-full
+                  w-full
                   object-cover
                 "
               />
             </div>
           </div>
 
-          {/* -------------------------------------------------
-              CARD 2 - QUICK FULFILLMENT
-          ------------------------------------------------- */}
+          {/* ==================================================
+              CARD 2
+          ================================================== */}
+
           <div
             className="
+              mt-0
+              flex
+              min-w-0
+              items-center
+              justify-between
               rounded-premium
               border
               border-gray-100
               bg-orange-50/50
-
-              p-6
-
+              p-4
               shadow-sm
 
-              flex
-              items-center
-              justify-between
+              sm:p-6
 
-              mt-6
               md:mt-0
             "
           >
-
-            <div className="max-w-[65%]">
-
+            <div
+              className="
+                min-w-0
+                max-w-[68%]
+              "
+            >
               <span
                 className="
-                  text-[10px]
-                  font-bold
-                  text-orange-600
+                  rounded
                   bg-orange-100
                   px-2
                   py-0.5
-                  rounded
+                  text-[8px]
+                  font-bold
                   uppercase
                   tracking-wider
+                  text-orange-600
+
+                  sm:text-[10px]
                 "
               >
                 Fast Dispatch
@@ -745,11 +909,13 @@ export default function HomePage() {
 
               <h4
                 className="
-                  text-base
-                  font-extrabold
-                  text-charcoal
-                  tracking-tight
                   mt-2
+                  text-sm
+                  font-extrabold
+                  tracking-tight
+                  text-charcoal
+
+                  sm:text-base
                 "
               >
                 Quick Fulfillment
@@ -757,75 +923,91 @@ export default function HomePage() {
 
               <p
                 className="
-                  text-xs
-                  text-gray-500
                   mt-1
+                  text-[10px]
+                  leading-relaxed
+                  text-gray-500
+
+                  sm:text-xs
                 "
               >
-                Orders are packed securely and dispatched
-                from our fulfillment hubs quickly for fast
-                delivery to your door.
+                Orders are packed securely
+                and dispatched from our
+                fulfillment hubs quickly for
+                fast delivery to your door.
               </p>
             </div>
 
             <div
               className="
-                h-20
-                w-20
-                rounded-full
+                h-16
+                w-16
+                shrink-0
                 overflow-hidden
-                bg-white
-                shadow
+                rounded-full
                 border
                 border-orange-100
-                shrink-0
+                bg-white
+                shadow
+
+                sm:h-20
+                sm:w-20
               "
             >
               <img
                 src="/images/quick_fulfillment_hub.jpg"
                 alt="Quick Fulfillment Hub"
+                loading="lazy"
+                decoding="async"
                 className="
-                  w-full
+                  block
                   h-full
+                  w-full
                   object-cover
                 "
               />
             </div>
           </div>
 
-          {/* -------------------------------------------------
-              CARD 3 - TRUSTED MARKETPLACE
-          ------------------------------------------------- */}
+          {/* ==================================================
+              CARD 3
+          ================================================== */}
+
           <div
             className="
+              flex
+              min-w-0
+              items-center
+              justify-between
               rounded-premium
               border
               border-gray-100
               bg-emerald-50/40
-
-              p-6
-
+              p-4
               shadow-sm
 
-              flex
-              items-center
-              justify-between
+              sm:p-6
             "
           >
-
-            <div className="max-w-[65%]">
-
+            <div
+              className="
+                min-w-0
+                max-w-[68%]
+              "
+            >
               <span
                 className="
-                  text-[10px]
-                  font-bold
-                  text-emerald-600
+                  rounded
                   bg-emerald-100
                   px-2
                   py-0.5
-                  rounded
+                  text-[8px]
+                  font-bold
                   uppercase
                   tracking-wider
+                  text-emerald-600
+
+                  sm:text-[10px]
                 "
               >
                 Secure Trust
@@ -833,11 +1015,13 @@ export default function HomePage() {
 
               <h4
                 className="
-                  text-base
-                  font-extrabold
-                  text-charcoal
-                  tracking-tight
                   mt-2
+                  text-sm
+                  font-extrabold
+                  tracking-tight
+                  text-charcoal
+
+                  sm:text-base
                 "
               >
                 Trusted Indian Marketplace
@@ -845,43 +1029,53 @@ export default function HomePage() {
 
               <p
                 className="
-                  text-xs
-                  text-gray-500
                   mt-1
+                  text-[10px]
+                  leading-relaxed
+                  text-gray-500
+
+                  sm:text-xs
                 "
               >
-                Direct from trusted Indian sellers, guaranteeing
-                premium quality products and a natural shopping
-                experience.
+                Direct from trusted Indian
+                sellers, guaranteeing premium
+                quality products and a natural
+                shopping experience.
               </p>
             </div>
 
             <div
               className="
-                h-20
-                w-20
-                rounded-full
+                h-16
+                w-16
+                shrink-0
                 overflow-hidden
-                bg-white
-                shadow
+                rounded-full
                 border
                 border-orange-100
+                bg-white
+                shadow
+
+                sm:h-20
+                sm:w-20
               "
             >
               <img
                 src="/images/promo_indian_market.jpg"
                 alt="Natural Indian shopping scene"
+                loading="lazy"
+                decoding="async"
                 className="
-                  w-full
+                  block
                   h-full
+                  w-full
                   object-cover
                 "
               />
             </div>
           </div>
-
         </div>
-      </div>
+      </section>
     </div>
   );
 }

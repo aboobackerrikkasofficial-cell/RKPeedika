@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+Malayalam:wght@300;400;500;600;700&display=swap');
+
 @import "tailwindcss";
 
 @theme {
@@ -7,37 +8,95 @@
   --color-secondaryDark: #E07D10;
   --color-charcoal: #222222;
   --color-borderLight: #F3F4F6;
-  
+
   --radius-premium: 12px;
-  
-  --shadow-premium: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 8px -1px rgba(0, 0, 0, 0.03);
-  --shadow-premium-hover: 0 10px 30px -5px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.05);
+
+  --shadow-premium:
+    0 4px 20px -2px rgba(0, 0, 0, 0.05),
+    0 2px 8px -1px rgba(0, 0, 0, 0.03);
+
+  --shadow-premium-hover:
+    0 10px 30px -5px rgba(0, 0, 0, 0.08),
+    0 4px 12px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* ============================================================
+   BASE
+============================================================ */
+
+html {
+  width: 100%;
+  min-height: 100%;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
-  font-family: 'Outfit', 'Noto Sans Malayalam', sans-serif;
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+
+  font-family:
+    'Outfit',
+    'Noto Sans Malayalam',
+    sans-serif;
+
   color: #222222;
-  background-color: #FFFFFF;
+  background-color: #ffffff;
+
+  overflow-x: hidden;
+
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
   overflow-x: hidden;
 }
 
-/* Hide scrollbar utility */
+/* ============================================================
+   IMAGES
+============================================================ */
+
+img {
+  max-width: 100%;
+}
+
+img,
+picture {
+  display: block;
+}
+
+/* ============================================================
+   SCROLLBAR
+============================================================ */
+
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
 
-/* Glassmorphism details */
+/* ============================================================
+   GLASS HEADER
+============================================================ */
+
 .glass-header {
   background: rgba(255, 255, 255, 0.95);
+
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
 
-/* Custom shadow utilities */
+/* ============================================================
+   PREMIUM UTILITIES
+============================================================ */
+
 .rounded-premium {
   border-radius: var(--radius-premium);
 }
@@ -50,19 +109,103 @@ body {
   box-shadow: var(--shadow-premium-hover);
 }
 
-/* Premium micro-interactions */
 .transition-premium {
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition:
+    all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Marquee Animation */
+/* ============================================================
+   PRODUCT GRID
+============================================================ */
+
+.product-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 10px;
+
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .product-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+
+    gap: 16px;
+  }
+}
+
+@media (min-width: 768px) {
+  .product-grid {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+
+    gap: 18px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .product-grid {
+    grid-template-columns:
+      repeat(4, minmax(0, 1fr));
+
+    gap: 20px;
+  }
+}
+
+/* ============================================================
+   MOBILE PRODUCT CARD
+============================================================ */
+
+@media (max-width: 639px) {
+  .product-card {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .product-card img {
+    max-width: 100%;
+  }
+}
+
+/* ============================================================
+   MARQUEE
+============================================================ */
+
 @keyframes marquee {
-  0% { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-50%);
+  }
 }
 
 .animate-marquee {
-  animation: marquee 45s linear infinite;
+  animation:
+    marquee 45s linear infinite;
+
   width: max-content;
+
   will-change: transform;
+}
+
+/* ============================================================
+   REDUCE MOTION
+============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -478,7 +478,7 @@ export default function HomePage() {
           w-full
           max-w-7xl
           min-w-0
-          px-3
+          px-3.5
 
           sm:mt-6
           sm:px-4
@@ -646,7 +646,7 @@ export default function HomePage() {
                 min-w-0
 
                 grid-cols-2
-                gap-2.5
+                gap-3
 
                 sm:grid-cols-2
                 sm:gap-4

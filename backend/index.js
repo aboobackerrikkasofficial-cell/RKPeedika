@@ -5,7 +5,7 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
 import path from 'path';
-import fs from 'fs';
+import { fileURLToPath } from 'url';
 
 import logger from './src/utils/logger.js';
 import errorHandler from './src/middleware/errorHandler.js';
@@ -25,81 +25,178 @@ import badgeRoutes from './src/routes/badge.routes.js';
 import settingRoutes from './src/routes/setting.routes.js';
 import paymentRoutes from './src/routes/payment.routes.js';
 import storeRoutes from './src/routes/store.routes.js';
-import uploadRoutes from './src/routes/upload.routes.js';
 
 dotenv.config();
 
+/*
+|--------------------------------------------------------------------------
+| Application
+|--------------------------------------------------------------------------
+*/
+
 const app = express();
 
-const PORT = process.env.PORT || 5000;
+const PORT =
+  Number(process.env.PORT) || 5000;
 
-/**
- * Upload directory.
- */
-const uploadDirectory = path.resolve(
-  process.cwd(),
-  'src',
-  'uploads'
-);
+/*
+|--------------------------------------------------------------------------
+| Resolve paths correctly on Render
+|--------------------------------------------------------------------------
+*/
 
-const importedDirectory = path.join(
-  uploadDirectory,
-  'imported'
-);
+const __filename =
+  fileURLToPath(import.meta.url);
 
-fs.mkdirSync(importedDirectory, {
-  recursive: true,
-});
+const __dirname =
+  path.dirname(__filename);
 
-/**
- * Security.
- */
+const uploadsPath =
+  path.join(
+    __dirname,
+    'src',
+    'uploads'
+  );
+
+/*
+|--------------------------------------------------------------------------
+| Allowed Frontend Origins
+|--------------------------------------------------------------------------
+*/
+
+const defaultOrigins = [
+  'https://rk-peedika.vercel.app',
+  'https://rkpeedika.vercel.app',
+];
+
+const configuredOrigins =
+  process.env.FRONTEND_URL
+    ? process.env.FRONTEND_URL
+      .split(',')
+      .map((origin) =>
+        origin.trim()
+      )
+      .filter(Boolean)
+    : [];
+
+const allowedOrigins = [
+  ...new Set([
+    ...defaultOrigins,
+    ...configuredOrigins,
+  ]),
+];
+
+/*
+|--------------------------------------------------------------------------
+| Security
+|--------------------------------------------------------------------------
+*/
+
 app.use(
   helmet({
     contentSecurityPolicy: false,
 
-    // Allow customer website on Vercel to load images
-    // from the Render backend.
+    /*
+     * IMPORTANT:
+     *
+     * Allows Vercel frontend to load images
+     * from the Render backend.
+     */
     crossOriginResourcePolicy: {
       policy: 'cross-origin',
     },
   })
 );
 
-/**
- * Logging.
- */
-app.use(morgan('dev'));
-
-/**
- * CORS.
- */
-const configuredOrigins = process.env.FRONTEND_URL
-  ? process.env.FRONTEND_URL
-    .split(',')
-    .map((origin) => origin.trim())
-    .filter(Boolean)
-  : [];
+/*
+|--------------------------------------------------------------------------
+| CORS
+|--------------------------------------------------------------------------
+*/
 
 app.use(
   cors({
-    origin:
-      configuredOrigins.length > 0
-        ? configuredOrigins
-        : true,
+    origin(origin, callback) {
+      /*
+       * Allow server-to-server requests,
+       * Postman, browser direct requests, etc.
+       */
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      /*
+       * Development / wildcard mode
+       */
+      if (
+        process.env.FRONTEND_URL === '*'
+      ) {
+        return callback(null, true);
+      }
+
+      if (
+        allowedOrigins.includes(origin)
+      ) {
+        return callback(null, true);
+      }
+
+      logger.warn(
+        `CORS blocked origin: ${origin}`
+      );
+
+      return callback(
+        new Error(
+          `CORS policy blocked origin: ${origin}`
+        )
+      );
+    },
+
     credentials: true,
+
+    methods: [
+      'GET',
+      'POST',
+      'PUT',
+      'PATCH',
+      'DELETE',
+      'OPTIONS',
+    ],
+
+    allowedHeaders: [
+      'Origin',
+      'X-Requested-With',
+      'Content-Type',
+      'Accept',
+      'Authorization',
+    ],
   })
 );
 
-/**
- * Body parsers.
- */
+/*
+|--------------------------------------------------------------------------
+| Logging
+|--------------------------------------------------------------------------
+*/
+
+app.use(morgan('dev'));
+
+/*
+|--------------------------------------------------------------------------
+| Request body
+|--------------------------------------------------------------------------
+*/
+
 app.use(
   express.json({
     limit: '50mb',
 
-    verify: (req, _res, buf) => {
-      req.rawBody = buf.toString();
+    verify: (
+      req,
+      res,
+      buffer
+    ) => {
+      req.rawBody =
+        buffer.toString();
     },
   })
 );
@@ -111,143 +208,250 @@ app.use(
   })
 );
 
-/**
- * Static uploaded images.
+/*
+|--------------------------------------------------------------------------
+| Uploaded Images
+|--------------------------------------------------------------------------
  *
- * Example:
+ * IMPORTANT:
  *
- * https://rkpeedika.onrender.com/uploads/imported/image.jpg
+ * Customer frontend:
+ *
+ * https://rk-peedika.vercel.app
+ *
+ * Backend:
+ *
+ * https://rkpeedika.onrender.com
+ *
+ * Images:
+ *
+ * https://rkpeedika.onrender.com/uploads/imported/xxx.jpg
+ *
  */
+
 app.use(
   '/uploads',
-  express.static(uploadDirectory, {
-    setHeaders: (res) => {
-      res.setHeader(
-        'Access-Control-Allow-Origin',
-        '*'
-      );
+  (req, res, next) => {
+    res.setHeader(
+      'Cross-Origin-Resource-Policy',
+      'cross-origin'
+    );
 
-      res.setHeader(
-        'Cross-Origin-Resource-Policy',
-        'cross-origin'
-      );
+    res.setHeader(
+      'Access-Control-Allow-Origin',
+      '*'
+    );
 
-      res.setHeader(
-        'Cache-Control',
-        'public, max-age=86400'
-      );
-    },
-  })
+    res.setHeader(
+      'Cache-Control',
+      'public, max-age=86400'
+    );
+
+    next();
+  },
+  express.static(
+    uploadsPath,
+    {
+      fallthrough: false,
+      etag: true,
+      maxAge: '1d',
+    }
+  )
 );
 
-/**
- * Health check.
- */
-app.get('/', (_req, res) => {
+/*
+|--------------------------------------------------------------------------
+| Upload status
+|--------------------------------------------------------------------------
+*/
+
+app.get(
+  '/uploads-status',
+  (req, res) => {
+    res.json({
+      success: true,
+      uploadsPath,
+      message:
+        'Upload service is available.',
+      imageBaseUrl:
+        `${req.protocol}://${req.get('host')}/uploads`,
+    });
+  }
+);
+
+/*
+|--------------------------------------------------------------------------
+| Health
+|--------------------------------------------------------------------------
+*/
+
+app.get('/', (req, res) => {
   res.json({
     status: 'Healthy',
-    service: 'RK Peedika Indian Marketplace E-commerce API',
-    timestamp: new Date().toISOString(),
+    service:
+      'RK Peedika Indian Marketplace E-commerce API',
+    timestamp:
+      new Date().toISOString(),
   });
 });
 
-app.get('/health', (_req, res) => {
-  res.status(200).json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-  });
-});
+app.get(
+  '/health',
+  (req, res) => {
+    res.status(200).json({
+      status: 'ok',
+      timestamp:
+        new Date().toISOString(),
+    });
+  }
+);
 
-/**
- * Simple upload status endpoint.
- */
-app.get('/uploads-status', (_req, res) => {
-  res.json({
-    success: true,
-    uploadDirectory: '/uploads',
-    importedDirectory: '/uploads/imported',
-    message: 'Upload service is available.',
-  });
-});
+/*
+|--------------------------------------------------------------------------
+| Swagger
+|--------------------------------------------------------------------------
+*/
 
-/**
- * Swagger.
- */
 app.use(
   '/api-docs',
   swaggerUi.serve,
-  swaggerUi.setup(swaggerSpec)
+  swaggerUi.setup(
+    swaggerSpec
+  )
 );
 
-/**
- * API routes.
- */
-app.use('/api/auth', authRoutes);
+/*
+|--------------------------------------------------------------------------
+| API Routes
+|--------------------------------------------------------------------------
+*/
 
-app.use('/api/products', productRoutes);
+app.use(
+  '/api/auth',
+  authRoutes
+);
 
-app.use('/api/categories', categoryRoutes);
+app.use(
+  '/api/products',
+  productRoutes
+);
 
-app.use('/api/orders', orderRoutes);
+app.use(
+  '/api/categories',
+  categoryRoutes
+);
 
-app.use('/api/coupons', couponRoutes);
+app.use(
+  '/api/orders',
+  orderRoutes
+);
 
-app.use('/api/reviews', reviewRoutes);
+app.use(
+  '/api/coupons',
+  couponRoutes
+);
 
-app.use('/api/users', userRoutes);
+app.use(
+  '/api/reviews',
+  reviewRoutes
+);
 
-app.use('/api/admin', adminRoutes);
+app.use(
+  '/api/users',
+  userRoutes
+);
 
-app.use('/api/newsletter', newsletterRoutes);
+app.use(
+  '/api/admin',
+  adminRoutes
+);
 
-app.use('/api/exchanges', exchangeRoutes);
+app.use(
+  '/api/newsletter',
+  newsletterRoutes
+);
 
-app.use('/api/badges', badgeRoutes);
+app.use(
+  '/api/exchanges',
+  exchangeRoutes
+);
 
-app.use('/api/settings', settingRoutes);
+app.use(
+  '/api/badges',
+  badgeRoutes
+);
 
-app.use('/api/payments', paymentRoutes);
+app.use(
+  '/api/settings',
+  settingRoutes
+);
 
-app.use('/api/store', storeRoutes);
+app.use(
+  '/api/payments',
+  paymentRoutes
+);
 
-app.use('/api/admin/store', storeRoutes);
+app.use(
+  '/api/store',
+  storeRoutes
+);
 
-/**
- * Product image upload.
- */
-app.use('/api/uploads', uploadRoutes);
+app.use(
+  '/api/admin/store',
+  storeRoutes
+);
 
-/**
- * 404.
- */
-app.use((req, res) => {
-  res.status(404).json({
-    status: 'fail',
-    error: {
-      message:
-        `Route endpoint ${req.originalUrl} not found on this server.`,
-    },
-  });
-});
+/*
+|--------------------------------------------------------------------------
+| 404
+|--------------------------------------------------------------------------
+*/
 
-/**
- * Global error handler.
- */
+app.use(
+  (req, res) => {
+    res.status(404).json({
+      status: 'fail',
+
+      error: {
+        message:
+          `Route endpoint ${req.originalUrl} not found on this server.`,
+      },
+    });
+  }
+);
+
+/*
+|--------------------------------------------------------------------------
+| Global Error Handler
+|--------------------------------------------------------------------------
+*/
+
 app.use(errorHandler);
 
-/**
- * Start server.
- */
-app.listen(PORT, () => {
-  logger.info(
-    `🚀 Scalable E-commerce API running on port ${PORT}`
-  );
+/*
+|--------------------------------------------------------------------------
+| Start Server
+|--------------------------------------------------------------------------
+*/
 
-  logger.info(
-    `📖 Swagger documentation UI: http://localhost:${PORT}/api-docs`
-  );
+app.listen(
+  PORT,
+  '0.0.0.0',
+  () => {
+    logger.info(
+      `🚀 RK Peedika API running on port ${PORT}`
+    );
 
-  logger.info(
-    `📁 Product uploads: ${importedDirectory}`
-  );
-});
+    logger.info(
+      `📖 Swagger: http://localhost:${PORT}/api-docs`
+    );
+
+    logger.info(
+      `🖼️ Upload directory: ${uploadsPath}`
+    );
+
+    logger.info(
+      `🌐 Allowed origins: ${allowedOrigins.join(', ')}`
+    );
+  }
+);

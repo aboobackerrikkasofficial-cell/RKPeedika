@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-/* ============================================================
-   TOKEN HELPERS
-============================================================ */
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  'https://rkpeedika.onrender.com/api';
 
 function isTokenExpired(token) {
   if (!token) return true;
@@ -32,30 +32,15 @@ function isTokenExpired(token) {
   }
 }
 
-/* ============================================================
-   API CLIENT
-============================================================ */
-
 const apiClient = axios.create({
-  baseURL:
-    import.meta.env.VITE_API_URL || '/api',
-
+  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-
   timeout: 30000,
 });
 
-/* ============================================================
-   REFRESH CONTROL
-============================================================ */
-
 let refreshTokenPromise = null;
-
-/* ============================================================
-   CLEAR AUTH
-============================================================ */
 
 function clearAuthSession() {
   localStorage.removeItem('accessToken');
@@ -76,10 +61,6 @@ function clearAuthSession() {
   );
 }
 
-/* ============================================================
-   GET VALID TOKEN
-============================================================ */
-
 async function getValidToken() {
   const token =
     localStorage.getItem('accessToken');
@@ -88,16 +69,16 @@ async function getValidToken() {
     return null;
   }
 
-  const cleanToken = token.startsWith('Bearer ')
+  const cleanToken = token.startsWith(
+    'Bearer '
+  )
     ? token.substring(7)
     : token;
 
-  /* Token still valid */
   if (!isTokenExpired(cleanToken)) {
     return token;
   }
 
-  /* Token expired */
   const refreshToken =
     localStorage.getItem('refreshToken');
 
@@ -106,54 +87,44 @@ async function getValidToken() {
     return null;
   }
 
-  /* Prevent multiple refresh requests */
   if (!refreshTokenPromise) {
-    const backendUrl =
-      import.meta.env.VITE_API_URL || '/api';
-
     refreshTokenPromise = axios
-      .post(
-        `${backendUrl}/auth/refresh`,
-        {
-          refreshToken,
-        }
-      )
-      .then((res) => {
-        const data = res.data;
+      .post(`${API_URL}/auth/refresh`, {
+        refreshToken,
+      })
+      .then((response) => {
+        const data = response.data;
 
-        if (
-          data.success &&
+        if (!data?.success || !data?.token) {
+          throw new Error(
+            'Invalid refresh response'
+          );
+        }
+
+        localStorage.setItem(
+          'accessToken',
           data.token
-        ) {
+        );
+
+        if (data.refreshToken) {
           localStorage.setItem(
-            'accessToken',
-            data.token
+            'refreshToken',
+            data.refreshToken
           );
-
-          if (data.refreshToken) {
-            localStorage.setItem(
-              'refreshToken',
-              data.refreshToken
-            );
-          }
-
-          window.dispatchEvent(
-            new CustomEvent(
-              'auth-token-refreshed',
-              {
-                detail: {
-                  token: data.token,
-                },
-              }
-            )
-          );
-
-          return data.token;
         }
 
-        throw new Error(
-          'Invalid refresh response'
+        window.dispatchEvent(
+          new CustomEvent(
+            'auth-token-refreshed',
+            {
+              detail: {
+                token: data.token,
+              },
+            }
+          )
         );
+
+        return data.token;
       })
       .catch((error) => {
         clearAuthSession();
@@ -167,23 +138,22 @@ async function getValidToken() {
   return refreshTokenPromise;
 }
 
-/* ============================================================
-   REQUEST INTERCEPTOR
-============================================================ */
+/*
+|--------------------------------------------------------------------------
+| Request interceptor
+|--------------------------------------------------------------------------
+*/
 
 apiClient.interceptors.request.use(
   async (config) => {
     const url = config.url || '';
 
-    /* Public authentication endpoints */
-    if (
+    const isAuthEndpoint =
       url.includes('/auth/login') ||
       url.includes('/auth/refresh') ||
-      url.includes('/auth/register') ||
-      url.includes('/auth/send-otp') ||
-      url.includes('/auth/verify-otp') ||
-      url.includes('/auth/guest-login')
-    ) {
+      url.includes('/auth/register');
+
+    if (isAuthEndpoint) {
       return config;
     }
 
@@ -201,19 +171,20 @@ apiClient.interceptors.request.use(
             : `Bearer ${token}`;
       }
     } catch {
-      /* Let API request handle auth error */
+      // Let server handle authentication
     }
 
     return config;
   },
-
   (error) =>
     Promise.reject(error)
 );
 
-/* ============================================================
-   RESPONSE INTERCEPTOR
-============================================================ */
+/*
+|--------------------------------------------------------------------------
+| Response interceptor
+|--------------------------------------------------------------------------
+*/
 
 apiClient.interceptors.response.use(
   (response) => response,
@@ -226,23 +197,18 @@ apiClient.interceptors.response.use(
       return Promise.reject(error);
     }
 
-    const status =
-      error.response?.status;
-
-    const isAuthError =
-      status === 401 ||
-      status === 403;
+    const url =
+      originalRequest.url || '';
 
     const isAuthEndpoint =
-      originalRequest.url?.includes(
-        '/auth/login'
-      ) ||
-      originalRequest.url?.includes(
-        '/auth/refresh'
-      );
+      url.includes('/auth/login') ||
+      url.includes('/auth/refresh') ||
+      url.includes('/auth/register');
 
     if (
-      isAuthError &&
+      error.response &&
+      (error.response.status === 401 ||
+        error.response.status === 403) &&
       !originalRequest._retry &&
       !isAuthEndpoint
     ) {

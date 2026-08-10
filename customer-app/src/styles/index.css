@@ -3,11 +3,11 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #FFFFFF;
-  --color-secondary: #F7941D;
-  --color-secondaryDark: #E07D10;
+  --color-primary: #ffffff;
+  --color-secondary: #f7941d;
+  --color-secondaryDark: #e07d10;
   --color-charcoal: #222222;
-  --color-borderLight: #F3F4F6;
+  --color-borderLight: #f3f4f6;
 
   --radius-premium: 12px;
 
@@ -20,9 +20,9 @@
     0 4px 12px -2px rgba(0, 0, 0, 0.05);
 }
 
-/* ============================================================
-   BASE
-============================================================ */
+/* =========================================================
+   GLOBAL
+========================================================= */
 
 html {
   width: 100%;
@@ -50,28 +50,28 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-#root {
-  width: 100%;
-  min-height: 100vh;
-  overflow-x: hidden;
+/* Prevent mobile browsers from making inputs/text strangely large */
+input,
+textarea,
+select,
+button {
+  font: inherit;
 }
 
-/* ============================================================
-   IMAGES
-============================================================ */
+/* Better mobile tap behavior */
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
 
+/* Images */
 img {
   max-width: 100%;
 }
 
-img,
-picture {
-  display: block;
-}
-
-/* ============================================================
+/* =========================================================
    SCROLLBAR
-============================================================ */
+========================================================= */
 
 .no-scrollbar::-webkit-scrollbar {
   display: none;
@@ -82,9 +82,9 @@ picture {
   scrollbar-width: none;
 }
 
-/* ============================================================
+/* =========================================================
    GLASS HEADER
-============================================================ */
+========================================================= */
 
 .glass-header {
   background: rgba(255, 255, 255, 0.95);
@@ -93,9 +93,9 @@ picture {
   -webkit-backdrop-filter: blur(8px);
 }
 
-/* ============================================================
-   PREMIUM UTILITIES
-============================================================ */
+/* =========================================================
+   CUSTOM UTILITIES
+========================================================= */
 
 .rounded-premium {
   border-radius: var(--radius-premium);
@@ -114,66 +114,9 @@ picture {
     all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* ============================================================
-   PRODUCT GRID
-============================================================ */
-
-.product-grid {
-  display: grid;
-
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
-
-  gap: 10px;
-
-  width: 100%;
-}
-
-@media (min-width: 640px) {
-  .product-grid {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
-
-    gap: 16px;
-  }
-}
-
-@media (min-width: 768px) {
-  .product-grid {
-    grid-template-columns:
-      repeat(3, minmax(0, 1fr));
-
-    gap: 18px;
-  }
-}
-
-@media (min-width: 1024px) {
-  .product-grid {
-    grid-template-columns:
-      repeat(4, minmax(0, 1fr));
-
-    gap: 20px;
-  }
-}
-
-/* ============================================================
-   MOBILE PRODUCT CARD
-============================================================ */
-
-@media (max-width: 639px) {
-  .product-card {
-    width: 100%;
-    min-width: 0;
-  }
-
-  .product-card img {
-    max-width: 100%;
-  }
-}
-
-/* ============================================================
+/* =========================================================
    MARQUEE
-============================================================ */
+========================================================= */
 
 @keyframes marquee {
   0% {
@@ -194,9 +137,88 @@ picture {
   will-change: transform;
 }
 
-/* ============================================================
-   REDUCE MOTION
-============================================================ */
+/* =========================================================
+   MOBILE PRODUCT GRID
+========================================================= */
+
+/*
+  Any product-grid class in HomePage will now be
+  exactly two columns on mobile.
+*/
+
+.product-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 12px;
+
+  width: 100%;
+}
+
+/* Small screens */
+@media (min-width: 640px) {
+  .product-grid {
+    gap: 16px;
+  }
+}
+
+/* Desktop */
+@media (min-width: 1024px) {
+  .product-grid {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
+
+    gap: 20px;
+  }
+}
+
+/* Large desktop */
+@media (min-width: 1280px) {
+  .product-grid {
+    grid-template-columns:
+      repeat(4, minmax(0, 1fr));
+
+    gap: 24px;
+  }
+}
+
+/* =========================================================
+   MOBILE CONTAINER
+========================================================= */
+
+@media (max-width: 639px) {
+  .mobile-page-container {
+    width: 100%;
+    max-width: 100%;
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+/* =========================================================
+   PREVENT PRODUCT CARDS FROM GETTING TOO SMALL
+========================================================= */
+
+.product-grid>* {
+  min-width: 0;
+  width: 100%;
+}
+
+/* =========================================================
+   MOBILE TOUCH
+========================================================= */
+
+@media (max-width: 639px) {
+  .product-grid button {
+    min-height: 38px;
+  }
+}
+
+/* =========================================================
+   REDUCE MOTION FOR USERS WHO REQUEST IT
+========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
 

@@ -67,6 +67,7 @@ const uploadsPath =
 const defaultOrigins = [
   'https://rk-peedika.vercel.app',
   'https://rkpeedika.vercel.app',
+  'https://rk-peedika-admin.vercel.app'
 ];
 
 const configuredOrigins =

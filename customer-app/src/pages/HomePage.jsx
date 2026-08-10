@@ -1078,4 +1078,4 @@ export default function HomePage() {
       </section>
     </div>
   );
-}
+}git commit - m "Fix RK Peedika branding and mobile product layout"

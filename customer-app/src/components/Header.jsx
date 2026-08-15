@@ -1,19 +1,37 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useRef, useEffect } from 'react';
 import { AppContext } from '../context/AppContext';
-import { 
-  Search, 
-  Mic, 
-  Heart, 
-  ShoppingBag, 
-  User, 
-  MapPin, 
-  ChevronDown, 
+import {
+  Search,
+  Heart,
+  ShoppingCart,
+  User,
   X,
-  Volume2,
-  CheckCircle,
-  HelpCircle,
-  ShieldCheck
+  ShieldCheck,
+  ArrowLeft,
 } from 'lucide-react';
+
+/*
+|--------------------------------------------------------------------------
+| HEADER — Mobile-first 3-row layout
+|
+|  MOBILE:
+|  Row 1: [Logo]                    [♥] [👤] [🛒 count]
+|  Row 2: [🔍 Search products...          ] [×]
+|  Row 3: [ All | Kitchen | Cleaning | Home | ... ] ← horizontal scroll chips
+|
+|  DESKTOP:
+|  Row 1: [Logo]  [🔍 Search...     ]  [♥] [👤] [🛒 Checkout]
+|  Row 2: [ All | Kitchen | Cleaning | Home | ... ]
+|--------------------------------------------------------------------------
+*/
+
+const POPULAR_SEARCHES = [
+  'Kitchen cleaner',
+  'Spray bottle',
+  'Car cleaner',
+  'Home essentials',
+  'Cleaning supplies',
+];
 
 export default function Header() {
   const {
@@ -25,211 +43,425 @@ export default function Header() {
     setSearchQuery,
     selectedCategory,
     setSelectedCategory,
-    couponConfig,
     products,
     storeSettings,
     userProfile,
     categories,
-    showToast
+    showToast,
   } = useContext(AppContext);
 
-  // Modals state
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
+  const mobileInputRef = useRef(null);
+  const desktopInputRef = useRef(null);
 
+  const cartCount = cart.reduce((t, i) => t + i.quantity, 0);
+
+  // Focus mobile search input when overlay opens
+  useEffect(() => {
+    if (mobileSearchOpen && mobileInputRef.current) {
+      setTimeout(() => mobileInputRef.current?.focus(), 100);
+    }
+  }, [mobileSearchOpen]);
+
+  /* -----------------------------------------------------------------------
+     PRODUCT SEARCH SUGGESTIONS
+  ----------------------------------------------------------------------- */
+  const getFilteredSuggestions = (query) => {
+    if (!query || query.trim().length === 0) return [];
+    const q = query.toLowerCase();
+    return products
+      .filter((p) => {
+        const catName =
+          typeof p.category === 'object' ? p.category?.name || '' : p.category || '';
+        return [
+          p.name || '',
+          catName,
+          p.description || '',
+          p.brand || p.seller || '',
+          p.tagline || '',
+          p.tags || '',
+          p.subcategory || '',
+        ].some((f) => f.toLowerCase().includes(q));
+      })
+      .slice(0, 6);
+  };
+
+  const suggestions = getFilteredSuggestions(searchQuery);
+
+  /* -----------------------------------------------------------------------
+     HANDLERS
+  ----------------------------------------------------------------------- */
   const handleSearchChange = (e) => {
     const val = e.target.value;
     setSearchQuery(val);
-    if (val.trim().length > 0 && currentView !== 'products' && currentView !== 'product') {
+    setShowSuggestions(val.trim().length > 0);
+    if (val.trim().length > 0 && currentView !== 'products') {
       setCurrentView('products');
     }
   };
 
+  const handleSearchSubmit = (value) => {
+    setSearchQuery(value);
+    setShowSuggestions(false);
+    setMobileSearchOpen(false);
+    setCurrentView('products');
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    setShowSuggestions(false);
+  };
+
+  const handleCategoryClick = (cat) => {
+    setSelectedCategory(cat);
+    setSearchQuery('');
+    if (currentView !== 'products') setCurrentView('products');
+  };
+
+  /* -----------------------------------------------------------------------
+     DON'T SHOW HEADER ON ADMIN VIEW
+  ----------------------------------------------------------------------- */
+  if (currentView === 'admin') return null;
+
+  /* -----------------------------------------------------------------------
+     RENDER
+  ----------------------------------------------------------------------- */
   return (
     <>
-      <header className="sticky top-0 z-50 w-full border-b border-gray-100 bg-white/95 backdrop-blur-md shadow-sm transition-all duration-300">
-        {/* Top Info Bar */}
-        {storeSettings.announcementBar && (
-          <div className="w-full bg-[#1C1917] px-4 py-1.5 text-center text-xs font-medium text-white tracking-wide">
-            {storeSettings.announcementBar}
-          </div>
-        )}
+      {/* ================================================================
+          ANNOUNCEMENT BAR
+      ================================================================ */}
+      {storeSettings?.announcementBar && (
+        <div className="w-full bg-[#1C1917] px-4 py-1.5 text-center text-[11px] font-medium text-white tracking-wide">
+          {storeSettings.announcementBar}
+        </div>
+      )}
 
-        {/* Main Header Row */}
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 md:px-8">
-          
-          {/* Logo Section */}
-          <div 
-            onClick={() => { setCurrentView('home'); setSelectedCategory('All'); setSearchQuery(''); }}
-            className="flex cursor-pointer items-center space-x-2"
+      {/* ================================================================
+          HEADER
+      ================================================================ */}
+      <header
+        className="sticky top-0 z-50 w-full bg-white border-b border-gray-100"
+        style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}
+      >
+        {/* ==============================================================
+            ROW 1 — Logo + Actions
+        ============================================================== */}
+        <div className="flex items-center justify-between px-3 py-2 md:px-6 md:py-3">
+
+          {/* LOGO */}
+          <button
+            onClick={() => {
+              setCurrentView('home');
+              setSelectedCategory('All');
+              setSearchQuery('');
+            }}
+            className="flex items-center gap-2 focus:outline-none"
+            aria-label="Go to home"
           >
-            <span className="text-2xl font-extrabold tracking-tight text-charcoal">
-              {storeSettings?.storeName || "RK Peedika"}
-            </span>
-            <span className="hidden text-[10px] uppercase font-semibold text-gray-400 tracking-widest md:inline-block pt-1.5 pl-1.5 border-l border-gray-200">
-              Smart Shopping for Everyday Needs
-            </span>
-          </div>
+            {storeSettings?.storeLogo ? (
+              <img
+                src={storeSettings.storeLogo}
+                alt={storeSettings.storeName || 'RK Peedika'}
+                className="h-8 w-auto object-contain"
+              />
+            ) : (
+              <span className="text-lg font-black tracking-tight text-[#222222] leading-none">
+                {storeSettings?.storeName || 'RK Peedika'}
+              </span>
+            )}
+          </button>
 
-          {/* Search bar container */}
-          <div className="mx-4 hidden max-w-lg flex-1 items-center rounded-premium border border-gray-200 bg-gray-50 px-3 py-1.5 transition-all focus-within:border-[#F7941D] focus-within:bg-white focus-within:ring-1 focus-within:ring-[#F7941D]/20 md:flex relative">
-            <button onClick={() => setCurrentView('products')} className="focus:outline-none">
-              <Search className="h-4 w-4 text-gray-400 hover:text-[#F7941D] transition" />
-            </button>
-            <input 
-              type="text" 
-              placeholder="Search for daily essentials, gadgets, and more..."
-              className="w-full bg-transparent px-3 text-sm text-charcoal outline-none placeholder:text-gray-400"
+          {/* DESKTOP SEARCH (hidden on mobile — shown in Row 2) */}
+          <div className="hidden md:flex mx-4 flex-1 max-w-xl items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 focus-within:border-[#f7941d] focus-within:ring-2 focus-within:ring-[#f7941d]/15 transition-all relative">
+            <Search size={16} className="text-gray-400 shrink-0" />
+            <input
+              ref={desktopInputRef}
+              type="text"
+              placeholder="Search for products..."
+              className="flex-1 bg-transparent text-sm text-[#222222] outline-none placeholder:text-gray-400 min-w-0"
               value={searchQuery}
-              onChange={(e) => {
-                handleSearchChange(e);
-                setShowSuggestions(e.target.value.length > 0);
-              }}
+              onChange={handleSearchChange}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  setCurrentView('products');
-                  setShowSuggestions(false);
-                }
+                if (e.key === 'Enter') handleSearchSubmit(searchQuery);
               }}
-              onFocus={() => setShowSuggestions(searchQuery.length > 0)}
-              onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+              onFocus={() => setShowSuggestions(searchQuery.trim().length > 0)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 180)}
             />
             {searchQuery && (
-              <button 
-                onClick={() => { setSearchQuery(''); setShowSuggestions(false); }}
-                className="p-1 hover:bg-gray-200 rounded-full transition text-gray-400 hover:text-gray-600 focus:outline-none mr-1"
+              <button
+                onClick={handleClearSearch}
+                className="p-0.5 rounded-full text-gray-400 hover:text-gray-600 focus:outline-none"
+                aria-label="Clear search"
               >
-                <X className="h-3 w-3" />
+                <X size={14} />
               </button>
             )}
-            {showSuggestions && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-100 shadow-premium rounded-premium overflow-hidden z-50">
-                {products.filter(p => {
-                  const q = searchQuery.toLowerCase();
-                  const catName = typeof p.category === 'object' ? (p.category?.name || '') : (p.category || '');
-                  // Search across: name, category, description, brand/seller, tags, specifications, collections
-                  const searchFields = [
-                    p.name || '',
-                    catName,
-                    p.description || '',
-                    p.brand || p.seller || '',
-                    p.tagline || '',
-                    p.tags || '',
-                    p.collections || '',
-                    p.subcategory || '',
-                    p.sku || ''
-                  ];
-                  // Parse specifications if JSON string
-                  try {
-                    const specs = typeof p.specifications === 'string' ? JSON.parse(p.specifications) : p.specifications;
-                    if (specs && typeof specs === 'object') {
-                      searchFields.push(Object.entries(specs).map(([k,v]) => `${k} ${v}`).join(' '));
-                    }
-                  } catch (e) {}
-                  // Parse highlights if JSON string
-                  try {
-                    const highlights = typeof p.highlights === 'string' ? JSON.parse(p.highlights) : p.highlights;
-                    if (Array.isArray(highlights)) searchFields.push(highlights.join(' '));
-                  } catch (e) {}
-                  return searchFields.some(field => field.toLowerCase().includes(q));
-                }).slice(0, 5).map(p => (
-                  <div key={p.id} onClick={() => { setSearchQuery(p.name); setShowSuggestions(false); setCurrentView('products'); }} className="px-4 py-2 hover:bg-gray-50 cursor-pointer text-sm text-charcoal border-b border-gray-50 last:border-0 flex items-center justify-between">
-                    <span>{p.name}</span>
-                    <span className="text-[10px] text-gray-400 font-bold uppercase">{typeof p.category === 'object' ? p.category?.name : p.category}</span>
-                  </div>
+
+            {/* Desktop suggestions dropdown */}
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-white border border-gray-100 rounded-xl shadow-lg z-50 overflow-hidden">
+                {suggestions.map((p) => (
+                  <button
+                    key={p.id}
+                    onMouseDown={() => handleSearchSubmit(p.name)}
+                    className="w-full px-4 py-2.5 flex items-center justify-between hover:bg-gray-50 text-left"
+                  >
+                    <span className="text-sm text-[#222222] truncate">{p.name}</span>
+                    <span className="text-[10px] text-gray-400 font-semibold uppercase shrink-0 ml-2">
+                      {typeof p.category === 'object' ? p.category?.name : p.category}
+                    </span>
+                  </button>
                 ))}
               </div>
             )}
           </div>
 
-          {/* Location and Badges Action Center */}
-          <div className="flex items-center space-x-3 md:space-x-6">
-            
-            {/* Location Selector Removed */}
-            {/* Actions: Wishlist & Profile & Cart */}
-            <div className="flex items-center space-x-1 md:space-x-3">
-              
-              {/* Wishlist */}
-              <button 
-                onClick={() => {
-                  if (!userProfile) {
-                    showToast('⚠ Please log in to use Wishlist', 'warning');
-                  } else {
-                    setCurrentView("wishlist");
-                  }
-                }}
-                className={`relative rounded-full p-2 hover:bg-gray-50 hover:text-red-500 transition-premium ${currentView === 'wishlist' ? 'text-red-500 bg-red-50' : 'text-gray-600'}`}
-                title="Wishlist"
-              >
-                <Heart className="h-5 w-5" />
-                {wishlist.length > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#F7941D] text-[9px] font-bold text-white ring-2 ring-white">
-                    {wishlist.length}
-                  </span>
-                )}
-              </button>
+          {/* ACTIONS */}
+          <div className="flex items-center gap-1">
 
-              {/* Customer Account Profile Icon */}
-              <button 
-                onClick={() => setCurrentView('profile')}
-                className={`relative rounded-full p-2 text-gray-600 hover:bg-gray-50 hover:text-[#F7941D] transition-premium ${currentView === 'profile' ? 'text-[#F7941D] bg-orange-50' : ''}`}
-                title="My Account"
-              >
-                <User className="h-5 w-5" />
-              </button>
+            {/* Wishlist */}
+            <button
+              onClick={() => {
+                if (!userProfile) {
+                  showToast('⚠ Please log in to use Wishlist', 'warning');
+                } else {
+                  setCurrentView('wishlist');
+                }
+              }}
+              className={`relative rounded-full p-2 transition-colors ${
+                currentView === 'wishlist' ? 'text-red-500' : 'text-gray-500 hover:text-red-500'
+              }`}
+              aria-label="Wishlist"
+              title="Wishlist"
+            >
+              <Heart size={20} strokeWidth={1.8} />
+              {wishlist.length > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-[#f7941d] text-[9px] font-bold text-white">
+                  {wishlist.length > 9 ? '9+' : wishlist.length}
+                </span>
+              )}
+            </button>
 
-              {/* Cart Toggle */}
-              <button 
-                onClick={() => setCurrentView('checkout')}
-                className="relative flex items-center space-x-1.5 rounded-premium bg-[#F7941D] px-3.5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-[#E07D10] transition-premium"
-                title="Cart / Checkout"
-              >
-                <ShoppingBag className="h-4.5 w-4.5" />
-                <span className="hidden md:inline">Checkout</span>
-                {cart.length > 0 && (
-                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#F7941D] shadow-sm ml-0.5">
-                    {cart.reduce((total, item) => total + item.quantity, 0)}
-                  </span>
-                )}
-              </button>
-            </div>
+            {/* Account */}
+            <button
+              onClick={() => setCurrentView('profile')}
+              className={`rounded-full p-2 transition-colors ${
+                currentView === 'profile'
+                  ? 'text-[#f7941d]'
+                  : 'text-gray-500 hover:text-[#f7941d]'
+              }`}
+              aria-label="My Account"
+              title="My Account"
+            >
+              <User size={20} strokeWidth={1.8} />
+            </button>
+
+            {/* Cart */}
+            <button
+              onClick={() => setCurrentView('checkout')}
+              className="relative flex items-center gap-1.5 rounded-xl bg-[#f7941d] px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#e07d10] focus:outline-none"
+              aria-label={`Cart (${cartCount} items)`}
+              title="Cart"
+            >
+              <ShoppingCart size={18} strokeWidth={2} />
+              <span className="hidden md:inline text-sm">Cart</span>
+              {cartCount > 0 && (
+                <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#f7941d] shadow-sm">
+                  {cartCount > 9 ? '9+' : cartCount}
+                </span>
+              )}
+            </button>
           </div>
         </div>
 
-        {/* Categories secondary Menu */}
-        {currentView !== 'profile' && (
-          <nav className="border-t border-gray-100 bg-white">
-            <div className="mx-auto flex max-w-7xl items-center space-x-8 px-4 py-2.5 text-sm md:px-8 overflow-x-auto no-scrollbar">
-              {['All', ...categories.map(c => c.name)].map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => {
-                    setSelectedCategory(cat);
-                    setSearchQuery("");
-                    if (currentView !== 'products') setCurrentView('products');
-                  }}
-                  className={`whitespace-nowrap pb-0.5 font-medium transition-premium border-b-2 ${
-                    selectedCategory === cat 
-                      ? 'text-[#F7941D] border-[#F7941D] font-semibold' 
-                      : 'text-gray-500 border-transparent hover:text-charcoal hover:border-gray-300'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-              
-              {/* Small mobile search field inside nav */}
-              <div className="flex-1 md:hidden"></div>
-              <div className="flex items-center space-x-1 text-xs text-gray-400 font-medium whitespace-nowrap pl-4 border-l border-gray-200">
-                <ShieldCheck className="h-3.5 w-3.5 text-[#F7941D]" />
-                <span>100% Verified Sellers</span>
-              </div>
+        {/* ==============================================================
+            ROW 2 — MOBILE SEARCH BAR (full-width, mobile only)
+        ============================================================== */}
+        <div className="md:hidden px-3 pb-2">
+          <button
+            onClick={() => setMobileSearchOpen(true)}
+            className="w-full flex items-center gap-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-left focus:outline-none"
+            aria-label="Search products"
+          >
+            <Search size={16} className="text-gray-400 shrink-0" />
+            <span className="flex-1 text-sm text-gray-400 truncate">
+              {searchQuery || 'Search products...'}
+            </span>
+            {searchQuery && (
+              <X
+                size={14}
+                className="text-gray-400"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleClearSearch();
+                }}
+              />
+            )}
+          </button>
+        </div>
+
+        {/* ==============================================================
+            ROW 3 — CATEGORY NAV (horizontal scroll chips)
+        ============================================================== */}
+        {currentView !== 'profile' && currentView !== 'checkout' && (
+          <nav
+            className="border-t border-gray-100 bg-white overflow-x-auto no-scrollbar"
+            aria-label="Product categories"
+          >
+            <div className="flex items-center gap-0 px-3 py-1.5 min-w-max">
+              {['All', ...categories.map((c) => c.name)].map((cat) => {
+                const isActive = selectedCategory === cat;
+                return (
+                  <button
+                    key={cat}
+                    onClick={() => handleCategoryClick(cat)}
+                    className={`whitespace-nowrap px-3 py-1.5 text-xs font-semibold rounded-full mr-1.5 transition-all focus:outline-none ${
+                      isActive
+                        ? 'bg-[#f7941d] text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                );
+              })}
+              {/* Trust indicator */}
+              <span className="flex items-center gap-1 text-[10px] font-medium text-gray-400 ml-3 whitespace-nowrap border-l border-gray-200 pl-3">
+                <ShieldCheck size={12} className="text-[#f7941d]" />
+                Verified Sellers
+              </span>
             </div>
           </nav>
         )}
       </header>
 
+      {/* ================================================================
+          MOBILE SEARCH OVERLAY (full screen)
+      ================================================================ */}
+      {mobileSearchOpen && (
+        <div className="search-overlay">
+          {/* Top bar */}
+          <div className="flex items-center gap-2 px-3 py-3 border-b border-gray-100">
+            <button
+              onClick={() => {
+                setMobileSearchOpen(false);
+                setShowSuggestions(false);
+              }}
+              className="p-1.5 rounded-full text-gray-500 focus:outline-none"
+              aria-label="Close search"
+            >
+              <ArrowLeft size={20} />
+            </button>
+            <div className="flex-1 flex items-center gap-2 rounded-xl border border-[#f7941d] bg-gray-50 px-3 py-2">
+              <Search size={16} className="text-[#f7941d] shrink-0" />
+              <input
+                ref={mobileInputRef}
+                type="text"
+                placeholder="Search products..."
+                className="flex-1 bg-transparent text-sm text-[#222222] outline-none placeholder:text-gray-400"
+                value={searchQuery}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSearchQuery(val);
+                  setShowSuggestions(val.trim().length > 0);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSearchSubmit(searchQuery);
+                }}
+              />
+              {searchQuery && (
+                <button
+                  onClick={handleClearSearch}
+                  className="text-gray-400 focus:outline-none"
+                  aria-label="Clear"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+          </div>
 
+          {/* Suggestions / Recent */}
+          <div className="flex-1 overflow-y-auto bg-white">
+            {/* Show live suggestions when typing */}
+            {searchQuery.trim().length > 0 ? (
+              <div>
+                {suggestions.length > 0 ? (
+                  suggestions.map((p) => (
+                    <button
+                      key={p.id}
+                      onClick={() => handleSearchSubmit(p.name)}
+                      className="w-full flex items-center justify-between px-4 py-3 border-b border-gray-50 text-left active:bg-gray-50"
+                    >
+                      <span className="flex items-center gap-2">
+                        <Search size={14} className="text-gray-300 shrink-0" />
+                        <span className="text-sm text-[#222222]">{p.name}</span>
+                      </span>
+                      <span className="text-[10px] text-gray-400 font-semibold uppercase">
+                        {typeof p.category === 'object' ? p.category?.name : p.category}
+                      </span>
+                    </button>
+                  ))
+                ) : (
+                  <div className="p-6 text-center text-sm text-gray-400">
+                    No results for "{searchQuery}"
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Popular searches */
+              <div className="p-4">
+                <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+                  Popular Searches
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {POPULAR_SEARCHES.map((term) => (
+                    <button
+                      key={term}
+                      onClick={() => handleSearchSubmit(term)}
+                      className="px-3 py-1.5 bg-gray-100 rounded-full text-sm text-gray-600 font-medium hover:bg-orange-50 hover:text-[#f7941d] transition-colors"
+                    >
+                      {term}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Categories quick-jump */}
+                {categories.length > 0 && (
+                  <div className="mt-6">
+                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+                      Browse Categories
+                    </p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {categories.map((cat) => (
+                        <button
+                          key={cat.id}
+                          onClick={() => {
+                            handleCategoryClick(cat.name);
+                            setMobileSearchOpen(false);
+                          }}
+                          className="flex items-center gap-2 p-3 bg-gray-50 rounded-xl text-sm font-medium text-gray-700 text-left active:bg-gray-100"
+                        >
+                          {cat.image && (
+                            <img
+                              src={cat.image}
+                              alt=""
+                              className="w-8 h-8 rounded-lg object-cover"
+                            />
+                          )}
+                          <span className="truncate">{cat.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }

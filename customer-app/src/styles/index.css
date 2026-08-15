@@ -8,8 +8,12 @@
   --color-secondaryDark: #e07d10;
   --color-charcoal: #222222;
   --color-borderLight: #f3f4f6;
+  --color-surface: #f8f8f8;
+  --color-muted: #6b7280;
 
   --radius-premium: 12px;
+  --radius-card: 10px;
+  --radius-pill: 999px;
 
   --shadow-premium:
     0 4px 20px -2px rgba(0, 0, 0, 0.05),
@@ -18,10 +22,24 @@
   --shadow-premium-hover:
     0 10px 30px -5px rgba(0, 0, 0, 0.08),
     0 4px 12px -2px rgba(0, 0, 0, 0.05);
+
+  --shadow-card:
+    0 1px 3px rgba(0, 0, 0, 0.06),
+    0 1px 2px rgba(0, 0, 0, 0.04);
+
+  --shadow-card-hover:
+    0 4px 12px rgba(0, 0, 0, 0.1),
+    0 2px 4px rgba(0, 0, 0, 0.06);
+
+  --shadow-bottom-nav:
+    0 -1px 0 rgba(0, 0, 0, 0.06),
+    0 -4px 16px rgba(0, 0, 0, 0.04);
+
+  --bottom-nav-height: 60px;
 }
 
 /* =========================================================
-   GLOBAL
+   GLOBAL RESET
 ========================================================= */
 
 html {
@@ -29,6 +47,7 @@ html {
   min-height: 100%;
   overflow-x: hidden;
   -webkit-text-size-adjust: 100%;
+  scroll-behavior: smooth;
 }
 
 body {
@@ -42,7 +61,7 @@ body {
     sans-serif;
 
   color: #222222;
-  background-color: #ffffff;
+  background-color: #f8f8f8;
 
   overflow-x: hidden;
 
@@ -50,7 +69,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Prevent mobile browsers from making inputs/text strangely large */
+/* Prevent mobile browsers from zooming into inputs */
 input,
 textarea,
 select,
@@ -58,19 +77,19 @@ button {
   font: inherit;
 }
 
-/* Better mobile tap behavior */
+/* Remove tap highlight on mobile */
 button,
 a {
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Images */
 img {
   max-width: 100%;
+  display: block;
 }
 
 /* =========================================================
-   SCROLLBAR
+   SCROLLBAR UTILITIES
 ========================================================= */
 
 .no-scrollbar::-webkit-scrollbar {
@@ -87,8 +106,7 @@ img {
 ========================================================= */
 
 .glass-header {
-  background: rgba(255, 255, 255, 0.95);
-
+  background: rgba(255, 255, 255, 0.97);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
 }
@@ -101,6 +119,10 @@ img {
   border-radius: var(--radius-premium);
 }
 
+.rounded-card {
+  border-radius: var(--radius-card);
+}
+
 .shadow-premium {
   box-shadow: var(--shadow-premium);
 }
@@ -109,9 +131,24 @@ img {
   box-shadow: var(--shadow-premium-hover);
 }
 
+.shadow-card {
+  box-shadow: var(--shadow-card);
+}
+
+.shadow-card-hover {
+  box-shadow: var(--shadow-card-hover);
+}
+
+.shadow-bottom-nav {
+  box-shadow: var(--shadow-bottom-nav);
+}
+
 .transition-premium {
-  transition:
-    all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.transition-fast {
+  transition: all 0.15s ease;
 }
 
 /* =========================================================
@@ -119,47 +156,71 @@ img {
 ========================================================= */
 
 @keyframes marquee {
-  0% {
-    transform: translateX(0);
-  }
-
-  100% {
-    transform: translateX(-50%);
-  }
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }
 
 .animate-marquee {
-  animation:
-    marquee 45s linear infinite;
-
+  animation: marquee 45s linear infinite;
   width: max-content;
-
   will-change: transform;
 }
 
 /* =========================================================
-   MOBILE PRODUCT GRID
+   SKELETON LOADING
+========================================================= */
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 25%,
+    #e8e8e8 50%,
+    #f0f0f0 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s ease-in-out infinite;
+  border-radius: 6px;
+}
+
+.skeleton-card {
+  background: #ffffff;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+}
+
+/* =========================================================
+   MOBILE-FIRST PRODUCT GRID
 ========================================================= */
 
 /*
-  Any product-grid class in HomePage will now be
-  exactly two columns on mobile.
+  2 columns on mobile by default.
+  This is the PRIMARY layout — desktop scales up.
 */
 
 .product-grid {
   display: grid;
-
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
-
-  gap: 12px;
-
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
   width: 100%;
 }
 
-/* Small screens */
-@media (min-width: 640px) {
+/* Small tablets */
+@media (min-width: 540px) {
   .product-grid {
+    gap: 12px;
+  }
+}
+
+/* Tablets */
+@media (min-width: 768px) {
+  .product-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 16px;
   }
 }
@@ -167,20 +228,33 @@ img {
 /* Desktop */
 @media (min-width: 1024px) {
   .product-grid {
-    grid-template-columns:
-      repeat(3, minmax(0, 1fr));
-
-    gap: 20px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
   }
 }
 
 /* Large desktop */
 @media (min-width: 1280px) {
   .product-grid {
-    grid-template-columns:
-      repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 20px;
+  }
+}
 
-    gap: 24px;
+/* Prevent cards from overflowing grid */
+.product-grid > * {
+  min-width: 0;
+  width: 100%;
+}
+
+/* =========================================================
+   MOBILE TOUCH TARGETS
+========================================================= */
+
+/* All buttons on mobile get at least 44px tap area */
+@media (max-width: 639px) {
+  .product-grid button {
+    min-height: 40px;
   }
 }
 
@@ -192,36 +266,371 @@ img {
   .mobile-page-container {
     width: 100%;
     max-width: 100%;
-    padding-left: 16px;
-    padding-right: 16px;
+    padding-left: 12px;
+    padding-right: 12px;
   }
 }
 
 /* =========================================================
-   PREVENT PRODUCT CARDS FROM GETTING TOO SMALL
+   BOTTOM NAVIGATION
 ========================================================= */
 
-.product-grid>* {
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: var(--bottom-nav-height);
+  background: #ffffff;
+  box-shadow: var(--shadow-bottom-nav);
+  display: flex;
+  align-items: stretch;
+  z-index: 100;
+
+  /* Safe area for iOS home indicator */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: pointer;
+  color: #9ca3af;
+  transition: color 0.15s ease;
+  padding: 6px 4px;
   min-width: 0;
-  width: 100%;
+  position: relative;
+  border: none;
+  background: none;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* =========================================================
-   MOBILE TOUCH
-========================================================= */
+.bottom-nav-item.active {
+  color: #f7941d;
+}
 
-@media (max-width: 639px) {
-  .product-grid button {
-    min-height: 38px;
+.bottom-nav-item-label {
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+/* Hide bottom nav on desktop */
+@media (min-width: 768px) {
+  .bottom-nav {
+    display: none;
   }
 }
 
 /* =========================================================
-   REDUCE MOTION FOR USERS WHO REQUEST IT
+   STICKY PRODUCT PAGE PURCHASE BAR
+========================================================= */
+
+.sticky-purchase-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border-top: 1px solid #f3f4f6;
+  padding: 10px 16px;
+  padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+  z-index: 90;
+  display: flex;
+  gap: 10px;
+}
+
+/* Shift sticky bar up when bottom nav is showing (mobile) */
+@media (max-width: 767px) {
+  .sticky-purchase-bar {
+    bottom: var(--bottom-nav-height);
+    padding-bottom: 10px;
+  }
+}
+
+/* Hide sticky bar on desktop — use inline buttons */
+@media (min-width: 768px) {
+  .sticky-purchase-bar {
+    display: none;
+  }
+}
+
+/* =========================================================
+   FILTER BOTTOM SHEET
+========================================================= */
+
+.filter-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 200;
+}
+
+.filter-sheet {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border-radius: 20px 20px 0 0;
+  max-height: 85vh;
+  overflow-y: auto;
+  z-index: 201;
+  padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+}
+
+/* =========================================================
+   CATEGORY CHIPS (horizontal scroller)
+========================================================= */
+
+.category-scroller {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 12px 12px;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.category-scroller::-webkit-scrollbar {
+  display: none;
+}
+
+.category-chip {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  padding: 8px 10px;
+  border-radius: 10px;
+  transition: all 0.15s ease;
+  min-width: 64px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.category-chip:active {
+  transform: scale(0.95);
+}
+
+.category-chip-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid #f0f0f0;
+  background: #f8f8f8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: border-color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.category-chip.active .category-chip-icon {
+  border-color: #f7941d;
+  box-shadow: 0 0 0 2px rgba(247, 148, 29, 0.2);
+}
+
+.category-chip-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.2;
+  color: #4b5563;
+  white-space: nowrap;
+  max-width: 64px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.category-chip.active .category-chip-label {
+  color: #f7941d;
+}
+
+/* =========================================================
+   MOBILE BODY OFFSET FOR BOTTOM NAV
+========================================================= */
+
+/* Content pages need bottom padding on mobile to avoid overlap with bottom nav */
+.page-content-mobile {
+  padding-bottom: calc(var(--bottom-nav-height) + 16px);
+}
+
+@media (min-width: 768px) {
+  .page-content-mobile {
+    padding-bottom: 0;
+  }
+}
+
+/* =========================================================
+   PRODUCT CARD (compact, mobile-first)
+========================================================= */
+
+.product-card {
+  background: #ffffff;
+  border-radius: var(--radius-card);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.product-card:active {
+  transform: scale(0.98);
+}
+
+@media (min-width: 768px) {
+  .product-card:hover {
+    box-shadow: var(--shadow-card-hover);
+    transform: translateY(-2px);
+  }
+}
+
+/* Product image container — consistent aspect ratio */
+.product-card-image {
+  aspect-ratio: 3 / 4;
+  width: 100%;
+  overflow: hidden;
+  background: #f5f5f5;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.product-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 8px;
+  transition: transform 0.3s ease;
+}
+
+@media (min-width: 768px) {
+  .product-card:hover .product-card-image img {
+    transform: scale(1.04);
+  }
+}
+
+/* Product info area */
+.product-card-info {
+  padding: 8px 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+/* =========================================================
+   PRICE DISPLAY
+========================================================= */
+
+.price-current {
+  font-size: 16px;
+  font-weight: 700;
+  color: #222222;
+  line-height: 1.2;
+}
+
+.price-mrp {
+  font-size: 11px;
+  color: #9ca3af;
+  text-decoration: line-through;
+}
+
+.price-discount {
+  font-size: 11px;
+  font-weight: 600;
+  color: #16a34a;
+}
+
+/* =========================================================
+   SEARCH OVERLAY (mobile)
+========================================================= */
+
+.search-overlay {
+  position: fixed;
+  inset: 0;
+  background: #ffffff;
+  z-index: 150;
+  display: flex;
+  flex-direction: column;
+}
+
+/* =========================================================
+   SECTION HEADING
+========================================================= */
+
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 12px 8px;
+}
+
+.section-heading h2 {
+  font-size: 15px;
+  font-weight: 700;
+  color: #222222;
+  letter-spacing: -0.01em;
+}
+
+.section-heading a,
+.section-heading button {
+  font-size: 12px;
+  font-weight: 600;
+  color: #f7941d;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+/* =========================================================
+   TRUST STRIP COMPACT
+========================================================= */
+
+.trust-strip {
+  display: flex;
+  overflow-x: auto;
+  gap: 8px;
+  padding: 10px 12px;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.trust-strip::-webkit-scrollbar {
+  display: none;
+}
+
+.trust-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+  background: #fff;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #4b5563;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   REDUCE MOTION
 ========================================================= */
 
 @media (prefers-reduced-motion: reduce) {
-
   *,
   *::before,
   *::after {

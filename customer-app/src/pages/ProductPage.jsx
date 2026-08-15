@@ -368,15 +368,15 @@ export default function ProductPage() {
   }
 
   return (
-    <div className="w-full bg-white pb-24">
-      
-      {/* Return to catalog link */}
-      <div className="mx-auto max-w-7xl px-4 py-4 md:px-8">
-        <button 
+    <div className="w-full bg-white" style={{ paddingBottom: 'calc(80px + env(safe-area-inset-bottom, 0px))' }}>
+      {/* Back navigation — compact on mobile */}
+      <div className="mx-auto max-w-7xl px-3 py-2.5 md:px-8 md:py-4">
+        <button
           onClick={() => setCurrentView('home')}
-          className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-gray-500 hover:text-charcoal transition-premium"
+          className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#222222] transition-colors"
         >
-          <ArrowLeft className="h-4 w-4" /> <span>Back to Catalog</span>
+          <ArrowLeft size={16} />
+          <span>Back</span>
         </button>
       </div>
 
@@ -643,13 +643,10 @@ export default function ProductPage() {
             </div>
           </div>
 
-          {/* CTA Actions */}
-          <div className="flex flex-col sm:flex-row gap-3 pt-2">
-            <button 
-              onClick={(e) => {
-                e.stopPropagation();
-                toggleWishlist(product.id);
-              }}
+          {/* CTA Actions — desktop only (mobile uses sticky bar below) */}
+          <div className="hidden md:flex flex-col sm:flex-row gap-3 pt-2">
+            <button
+              onClick={(e) => { e.stopPropagation(); toggleWishlist(product.id); }}
               className={`flex items-center justify-center gap-2 rounded-premium border-2 px-4 py-3.5 text-sm font-bold transition-premium ${
                 wishlist.includes(product.id) ? 'border-red-500 text-red-500 bg-red-50' : 'border-gray-200 text-gray-500 hover:border-red-500 hover:text-red-500 hover:bg-red-50/50'
               }`}
@@ -657,16 +654,13 @@ export default function ProductPage() {
             >
               <Heart className="h-5 w-5" fill={wishlist.includes(product.id) ? "currentColor" : "none"} />
             </button>
-            <button 
-              onClick={() => {
-                addToCart(product, selectedVariants, quantity);
-                window.showAlert(`${quantity}x items added to your cart!`, "Cart Updated");
-              }}
+            <button
+              onClick={() => { addToCart(product, selectedVariants, quantity); window.showAlert(`${quantity}x items added to your cart!`, "Cart Updated"); }}
               className="flex-1 flex items-center justify-center gap-2 rounded-premium border-2 border-charcoal/90 px-4 py-3.5 text-sm font-bold text-charcoal hover:bg-gray-50 transition-premium"
             >
               <ShoppingCart className="h-4.5 w-4.5" /> Add to Shopping Bag
             </button>
-            <button 
+            <button
               onClick={() => initiateQuickPurchase(product, selectedVariants, paymentOption)}
               className="flex-1 rounded-premium bg-[#F7941D] px-6 py-3.5 text-sm font-black text-white hover:bg-[#E07D10] transition-premium shadow-md shadow-orange-500/10 hover:scale-[1.01]"
             >
@@ -1100,6 +1094,32 @@ export default function ProductPage() {
           </div>
         </div>
       )}
+
+      {/* ============================================================
+          MOBILE STICKY PURCHASE BAR
+          Shown on mobile only — hidden on md+
+          Sits above the bottom nav (uses --bottom-nav-height offset)
+      ============================================================ */}
+      <div className="sticky-purchase-bar md:hidden">
+        <button
+          onClick={() => {
+            addToCart(product, selectedVariants, quantity);
+            window.showAlert?.(`${quantity}x added to cart!`, 'Cart Updated');
+          }}
+          className="flex-1 flex items-center justify-center gap-2 rounded-xl border-2 border-[#f7941d] bg-white py-3 text-sm font-bold text-[#f7941d] active:bg-orange-50"
+          style={{ minHeight: 48 }}
+        >
+          <ShoppingCart size={18} />
+          Add to Cart
+        </button>
+        <button
+          onClick={() => initiateQuickPurchase(product, selectedVariants, paymentOption)}
+          className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-[#f7941d] py-3 text-sm font-black text-white shadow-sm active:bg-[#e07d10]"
+          style={{ minHeight: 48 }}
+        >
+          ⚡ Buy Now
+        </button>
+      </div>
 
     </div>
   );

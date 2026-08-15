@@ -1,12 +1,70 @@
 import React, { useContext } from 'react';
 import { AppContext } from '../context/AppContext';
 
-export default function CategoryList() {
-  const { categories, setSelectedCategory, selectedCategory, setCurrentView, setSearchQuery } = useContext(AppContext);
+/*
+|--------------------------------------------------------------------------
+| CATEGORY SCROLLER — compact horizontal scroll chips with icon circles
+|
+| On mobile: horizontally scrollable row of icon + label chips
+| On desktop: same (wider screen means more visible at once)
+|--------------------------------------------------------------------------
+*/
 
-  // Ordered category list with proper images from DB
-  // The seed data provides: Kitchen & Dining, Cleaning Essentials, Garden & Outdoor, Automotive Accessories, Health & Personal Care
-  // with images at /images/category_kitchen.jpg, /images/category_cleaning.jpg, etc.
+const API_URL =
+  import.meta.env.VITE_API_URL || 'https://rkpeedika.onrender.com/api';
+const BACKEND_URL = API_URL.replace(/\/api\/?$/, '');
+
+function getCategoryImageUrl(image) {
+  if (!image) return null;
+  const value = String(image).trim();
+  if (!value) return null;
+  if (value.startsWith('http://') || value.startsWith('https://') || value.startsWith('data:')) {
+    return value;
+  }
+  const cleanPath = value.startsWith('/') ? value : `/${value}`;
+  return `${BACKEND_URL}${cleanPath}`;
+}
+
+// Emoji fallbacks for categories when no image is available
+const CATEGORY_EMOJI = {
+  'kitchen': '🍳',
+  'cleaning': '🧹',
+  'home': '🏠',
+  'bathroom': '🛁',
+  'car': '🚗',
+  'shoe': '👟',
+  'garden': '🌿',
+  'health': '💊',
+  'beauty': '💄',
+  'electronics': '📱',
+  'fashion': '👗',
+  'sports': '⚽',
+  'toys': '🧸',
+  'books': '📚',
+  'food': '🥗',
+  'offers': '🏷️',
+  'automotive': '🚗',
+  'outdoor': '🌳',
+  'personal': '🧴',
+};
+
+function getCategoryEmoji(name) {
+  if (!name) return '📦';
+  const lower = name.toLowerCase();
+  for (const [key, emoji] of Object.entries(CATEGORY_EMOJI)) {
+    if (lower.includes(key)) return emoji;
+  }
+  return '📦';
+}
+
+export default function CategoryList() {
+  const {
+    categories,
+    setSelectedCategory,
+    selectedCategory,
+    setCurrentView,
+    setSearchQuery,
+  } = useContext(AppContext);
 
   const handleCategoryClick = (catName) => {
     setSelectedCategory(catName);
@@ -14,53 +72,82 @@ export default function CategoryList() {
     setCurrentView('products');
   };
 
-  if (categories.length === 0) return null;
+  if (!categories || categories.length === 0) return null;
 
   return (
-    <div className="w-full py-6 bg-white">
-      <div className="mx-auto max-w-7xl px-4 md:px-8">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-lg font-bold text-charcoal tracking-tight">Popular Categories</h3>
-          <button 
-            onClick={() => { setSelectedCategory("All"); setCurrentView('products'); }}
-            className="text-xs font-semibold text-[#F7941D] hover:underline"
-          >
-            View All
-          </button>
-        </div>
-
-        {/* Scrollable grid container */}
-        <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
-          {categories.map((cat, index) => {
-            const isActive = selectedCategory === cat.name;
-            return (
-              <div 
-                key={cat.id || index}
-                onClick={() => handleCategoryClick(cat.name)}
-                className={`flex-none w-[220px] md:w-[280px] cursor-pointer rounded-premium overflow-hidden bg-white border border-gray-100 shadow-premium transition-premium group ${
-                  isActive ? 'ring-2 ring-[#F7941D] border-transparent' : 'hover:shadow-premiumHover hover:border-gray-200'
-                }`}
-              >
-                <div className="h-[140px] md:h-[160px] overflow-hidden relative bg-gray-50">
-                  <img 
-                    src={cat.image || `/images/category_kitchen.jpg`} 
-                    alt={cat.name} 
-                    className="w-full h-full object-cover transition-all duration-500 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-charcoal/40 via-charcoal/10 to-transparent"></div>
-                  <div className="absolute bottom-3 left-3 text-white">
-                    <p className="text-xs font-bold uppercase tracking-wider text-orange-200">Collection</p>
-                    <h4 className="text-sm md:text-base font-bold leading-tight">{cat.name}</h4>
-                  </div>
-                </div>
-                <div className="p-3 text-xs text-gray-500 font-medium">
-                  {cat.description || 'Premium quality products'}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+    <section aria-label="Product categories" className="bg-white border-b border-gray-100">
+      {/* Section header */}
+      <div className="flex items-center justify-between px-3 pt-3 pb-1 md:px-6">
+        <h2 className="text-[13px] font-bold text-[#222222] tracking-tight">Shop by Category</h2>
+        <button
+          onClick={() => {
+            setSelectedCategory('All');
+            setCurrentView('products');
+          }}
+          className="text-[11px] font-semibold text-[#f7941d]"
+        >
+          View All
+        </button>
       </div>
-    </div>
+
+      {/* Horizontal scroll chip row */}
+      <div className="category-scroller">
+        {/* "All" chip */}
+        <button
+          onClick={() => {
+            setSelectedCategory('All');
+            setCurrentView('products');
+            setSearchQuery('');
+          }}
+          className={`category-chip${selectedCategory === 'All' ? ' active' : ''}`}
+          aria-label="All categories"
+        >
+          <span className="category-chip-icon">
+            <span style={{ fontSize: 22 }}>🛍️</span>
+          </span>
+          <span className="category-chip-label">All</span>
+        </button>
+
+        {categories.map((cat, index) => {
+          const isActive = selectedCategory === cat.name;
+          const imageUrl = getCategoryImageUrl(cat.image);
+          const emoji = getCategoryEmoji(cat.name);
+
+          return (
+            <button
+              key={cat.id || index}
+              onClick={() => handleCategoryClick(cat.name)}
+              className={`category-chip${isActive ? ' active' : ''}`}
+              aria-label={cat.name}
+              aria-pressed={isActive}
+            >
+              <span className="category-chip-icon">
+                {imageUrl ? (
+                  <img
+                    src={imageUrl}
+                    alt={cat.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.nextElementSibling.style.display = 'flex';
+                    }}
+                  />
+                ) : null}
+                <span
+                  className="w-full h-full flex items-center justify-center"
+                  style={{
+                    display: imageUrl ? 'none' : 'flex',
+                    fontSize: 22,
+                  }}
+                >
+                  {emoji}
+                </span>
+              </span>
+              <span className="category-chip-label">{cat.name}</span>
+            </button>
+          );
+        })}
+      </div>
+    </section>
   );
 }

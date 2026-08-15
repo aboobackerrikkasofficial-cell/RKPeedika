@@ -1,6 +1,7 @@
 import React, { useContext, useState } from 'react';
 import { AppContext, AppProvider } from './context/AppContext';
 import Header from './components/Header';
+import BottomNav from './components/BottomNav';
 import HomePage from './pages/HomePage';
 import ProductPage from './pages/ProductPage';
 import CheckoutPage from './pages/CheckoutPage';
@@ -514,7 +515,7 @@ function AppContent() {
       </main>
 
       {/* Premium White Footer */}
-      <footer className="bg-white border-t border-gray-100 text-charcoal relative z-10 font-sans">
+      <footer className="bg-white border-t border-gray-100 text-charcoal relative z-10 font-sans pb-20 md:pb-0">
         <div className="mx-auto max-w-7xl px-4 py-10 md:px-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[40%_30%_30%] gap-x-10 gap-y-8 items-start">
           
           {/* LEFT (40%): LOGO, Description, Newsletter */}
@@ -645,6 +646,9 @@ function AppContent() {
         )}
       </AnimatePresence>
 
+      {/* Bottom Navigation — mobile only */}
+      <BottomNav />
+
       {/* Toast Notification */}
       <AnimatePresence>
         {activeToast && (
@@ -652,11 +656,14 @@ function AppContent() {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 50 }}
-            className={`fixed bottom-4 left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:bottom-8 md:right-8 z-50 px-4 py-3 bg-white border-l-4 rounded-md shadow-md text-sm font-bold flex items-center gap-2 ${
+            className={`fixed left-1/2 -translate-x-1/2 z-[110] px-4 py-3 bg-white border-l-4 rounded-md shadow-md text-sm font-bold flex items-center gap-2 md:left-auto md:translate-x-0 md:right-8 ${
               activeToast.type === 'error' ? 'border-red-500 text-red-700' :
               activeToast.type === 'warning' ? 'border-[#F7941D] text-charcoal' :
               'border-[#F7941D] text-charcoal'
             }`}
+            style={{
+              bottom: 'calc(var(--bottom-nav-height, 60px) + 12px)',
+            }}
           >
             {activeToast.message}
           </motion.div>

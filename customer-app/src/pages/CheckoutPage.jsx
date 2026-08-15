@@ -121,26 +121,28 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 md:px-8 relative">
+    <div className="mx-auto max-w-7xl px-3 py-4 md:px-8 md:py-8 relative page-content-mobile">
       
-      {/* Toast Notification */}
+      {/* Local Toast */}
       {toast && (
-        <div className={`fixed bottom-4 left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:bottom-8 md:right-8 z-50 p-4 rounded-premium border shadow-lg flex items-center gap-3 animate-fade-in-up transition-all w-[90%] md:w-auto ${
-          toast.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 
-          toast.type === 'error' ? 'border-red-200 bg-red-50 text-red-700' : 
+        <div className={`fixed left-1/2 -translate-x-1/2 md:left-auto md:translate-x-0 md:right-8 z-[110] p-3 rounded-xl border shadow-lg flex items-center gap-3 w-[90%] md:w-auto text-sm font-semibold ${
+          toast.type === 'success' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' :
+          toast.type === 'error' ? 'border-red-200 bg-red-50 text-red-700' :
           'border-orange-200 bg-orange-50 text-orange-700'
-        }`}>
-          <span className="text-sm font-bold flex-1">{toast.message}</span>
-          <button onClick={() => setToast(null)} className="p-1 hover:bg-black/5 rounded"><X className="h-4 w-4" /></button>
+        }`}
+          style={{ bottom: 'calc(var(--bottom-nav-height, 60px) + 12px)' }}
+        >
+          <span className="flex-1">{toast.message}</span>
+          <button onClick={() => setToast(null)}><X size={14} /></button>
         </div>
       )}
 
       {/* Return link */}
-      <button 
+      <button
         onClick={() => setCurrentView('home')}
-        className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-gray-500 hover:text-charcoal mb-6"
+        className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 hover:text-[#222222] mb-4 transition-colors"
       >
-        <ArrowLeft className="h-4 w-4" /> <span>Continue Shopping</span>
+        <ArrowLeft size={16} /> <span>Continue Shopping</span>
       </button>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

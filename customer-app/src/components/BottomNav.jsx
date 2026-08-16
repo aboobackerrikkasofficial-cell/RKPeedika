@@ -7,10 +7,6 @@ export default function BottomNav() {
     currentView,
     setCurrentView,
     cart,
-    userProfile,
-    showToast,
-    setSelectedCategory,
-    setSearchQuery,
   } = useContext(AppContext);
 
   const cartCount = cart.reduce((t, i) => t + i.quantity, 0);
@@ -20,50 +16,37 @@ export default function BottomNav() {
       id: 'home',
       label: 'Home',
       icon: Home,
-      action: () => {
-        setSelectedCategory('All');
-        setSearchQuery('');
-        setCurrentView('home');
-      },
+      action: () => setCurrentView('home'),
       activeViews: ['home'],
     },
     {
       id: 'categories',
       label: 'Categories',
       icon: Grid2x2,
-      action: () => {
-        setSelectedCategory('All');
-        setCurrentView('products');
-      },
-      activeViews: ['products'],
+      action: () => setCurrentView('categories'),
+      activeViews: ['categories'],
+    },
+    {
+      id: 'profile',
+      label: 'Profile',
+      icon: User,
+      action: () => setCurrentView('profile'),
+      activeViews: ['profile'],
     },
     {
       id: 'orders',
       label: 'Orders',
       icon: Package,
-      action: () => {
-        if (!userProfile) {
-          showToast('⚠ Please log in to view orders', 'warning');
-        } else {
-          setCurrentView('profile');
-        }
-      },
-      activeViews: ['order-tracking'],
+      action: () => setCurrentView('orders', 'order-tracking'),
+      activeViews: ['orders', 'order-tracking'],
     },
     {
       id: 'cart',
       label: 'Cart',
       icon: ShoppingCart,
       badge: cartCount,
-      action: () => setCurrentView('checkout'),
-      activeViews: ['checkout', 'payment-select'],
-    },
-    {
-      id: 'account',
-      label: 'Account',
-      icon: User,
-      action: () => setCurrentView('profile'),
-      activeViews: ['profile', 'wishlist'],
+      action: () => setCurrentView('cart'),
+      activeViews: ['cart'],
     },
   ];
 

@@ -189,14 +189,7 @@ export default function ProductCard({ product }) {
           />
         </button>
 
-        {/* Out of stock overlay */}
-        {product?.inStock === false && (
-          <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
-            <span className="text-xs font-bold text-red-500 bg-white px-2 py-1 rounded-md shadow-sm">
-              Out of Stock
-            </span>
-          </div>
-        )}
+        {/* No out of stock overlay per simplified model */}
       </div>
 
       {/* ============================================================
@@ -251,31 +244,15 @@ export default function ProductCard({ product }) {
           )}
         </div>
 
-        {/* Delivery info */}
-        <p className="text-[10px] text-green-600 font-medium mt-1 leading-none">
-          {deliveryDays <= 2 ? '⚡ Fast delivery' : `Delivery by ${formattedDeliveryDate}`}
-        </p>
+        {/* Prepaid Offer label if available */}
+        {product?.enableOnlineDiscount && product?.onlinePrice && (
+          <div className="mt-1.5 flex">
+            <span className="bg-emerald-50 text-emerald-700 text-[9px] font-black px-1.5 py-0.5 rounded border border-emerald-100 uppercase tracking-wide">
+              ₹{product.onlinePrice} with Online Payment
+            </span>
+          </div>
+        )}
       </div>
-
-      {/* ============================================================
-          ADD TO CART BUTTON
-      ============================================================ */}
-      {product?.inStock !== false && (
-        <div className="px-2 pb-2">
-          <button
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              addToCart(product);
-            }}
-            className="w-full flex items-center justify-center gap-1.5 rounded-lg border border-[#f7941d] bg-orange-50 py-2 text-[11px] font-semibold text-[#f7941d] transition-colors active:bg-orange-100 hover:bg-orange-100 focus:outline-none"
-            style={{ minHeight: 36 }}
-          >
-            <ShoppingCart size={13} />
-            Add to Cart
-          </button>
-        </div>
-      )}
     </article>
   );
 }

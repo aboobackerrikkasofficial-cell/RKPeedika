@@ -16,6 +16,7 @@ export const AppProvider = ({ children }) => {
   // E-commerce items
   const [products, setProducts] = useState(DEFAULT_PRODUCTS);
   const [cart, setCart] = useState([]);
+  const [quickPurchaseItem, setQuickPurchaseItem] = useState(null);
   const [wishlist, setWishlist] = useState([]);
   const [userProfile, setUserProfile] = useState(null);
   const [categories, setCategories] = useState([]);
@@ -337,8 +338,11 @@ export const AppProvider = ({ children }) => {
 
   // Intercept view navigation to protect routes
   const customSetCurrentView = (viewName) => {
+    if (viewName !== 'checkout') {
+      setQuickPurchaseItem(null);
+    }
     const token = localStorage.getItem('accessToken');
-    if (['checkout', 'wishlist', 'profile'].includes(viewName) && !token) {
+    if (['wishlist', 'profile'].includes(viewName) && !token) {
       setRedirectAfterLogin(viewName);
       setCurrentView('profile'); // renders login screen when unauthenticated
       showToast('🔑 Please sign in to access your ' + viewName, 'warning');
@@ -814,7 +818,7 @@ export const AppProvider = ({ children }) => {
       price: product.price,
       originalPrice: product.originalPrice,
       discount: product.discount,
-      image: product.images[0] || (Array.isArray(product.images) ? product.images[0] : JSON.parse(product.images || '[]')[0]),
+      image: product.images && (product.images[0] || (Array.isArray(product.images) ? product.images[0] : JSON.parse(product.images || '[]')[0])),
       seller: product.seller,
       size: selectedSize,
       color: selectedColor,
@@ -826,7 +830,7 @@ export const AppProvider = ({ children }) => {
     };
     
     setSelectedPaymentMethod(paymentOption === 'cod' ? 'cod' : 'upi');
-    setCart([quickItem]);
+    setQuickPurchaseItem(quickItem);
     customSetCurrentView('checkout');
   };
 
@@ -842,9 +846,10 @@ export const AppProvider = ({ children }) => {
 
     setOrderProcessing(true);
     const address = addresses.find(a => a.id === selectedAddressId) || addresses[0];
+    const activeItems = quickPurchaseItem ? [quickPurchaseItem] : cart;
     
     // Calculate final pricing totals
-    const subtotal = cart.reduce((acc, item) => {
+    const subtotal = activeItems.reduce((acc, item) => {
       const itemPrice = selectedPaymentMethod === 'cod' 
         ? (item.codPrice !== null && item.codPrice !== undefined ? item.codPrice : item.price)
         : (item.onlinePrice !== null && item.onlinePrice !== undefined ? item.onlinePrice : item.price);
@@ -857,7 +862,7 @@ export const AppProvider = ({ children }) => {
     const discountPercentage = (isOnline && isCouponValid) ? couponConfig.discountPct : 0;
     const finalTotal = subtotal + shipping - discountAmount;
     
-    const itemsPayload = cart.map(item => ({
+    const itemsPayload = activeItems.map(item => ({
       productId: item.id,
       quantity: item.quantity
     }));
@@ -902,7 +907,7 @@ export const AppProvider = ({ children }) => {
 
               if (verifyRes.data && verifyRes.data.success) {
                 const dbOrder = verifyRes.data.order;
-                let fetchedItems = [...cart];
+                let fetchedItems = [...activeItems];
                 try {
                   const fullOrderRes = await apiClient.get(`/orders/${dbOrder.id}`);
                   if (fullOrderRes.data && fullOrderRes.data.orderItems) {
@@ -933,7 +938,11 @@ export const AppProvider = ({ children }) => {
 
                 setActiveOrder(newOrder);
                 setOrderHistory(prev => [newOrder, ...prev]);
-                setCart([]);
+                if (quickPurchaseItem) {
+                  setQuickPurchaseItem(null);
+                } else {
+                  setCart([]);
+                }
                 showToast("Payment successful. Your order has been confirmed.", "success");
                 setCurrentView('success');
               } else {
@@ -991,7 +1000,7 @@ export const AppProvider = ({ children }) => {
       if (res.data && res.data.success && res.data.order) {
         const dbOrder = res.data.order;
         
-        let fetchedItems = [...cart];
+        let fetchedItems = [...activeItems];
         try {
           const fullOrderRes = await apiClient.get(`/orders/${dbOrder.id}`);
           if (fullOrderRes.data && fullOrderRes.data.orderItems) {
@@ -1023,7 +1032,11 @@ export const AppProvider = ({ children }) => {
 
         setActiveOrder(newOrder);
         setOrderHistory(prev => [newOrder, ...prev]);
-        setCart([]); // Clear local cart state
+        if (quickPurchaseItem) {
+          setQuickPurchaseItem(null);
+        } else {
+          setCart([]); // Clear local cart state
+        }
         showToast('✓ Order Placed Successfully!', 'success');
         setCurrentView('success');
       }
@@ -1085,6 +1098,8 @@ export const AppProvider = ({ children }) => {
 
       // Cart/Wishlist
       cart,
+      quickPurchaseItem,
+      setQuickPurchaseItem,
       wishlist,
       toggleWishlist,
       addToCart,

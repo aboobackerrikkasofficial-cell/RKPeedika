@@ -3,9 +3,27 @@ import { NotFoundError, BadRequestError } from '../utils/appError.js';
 
 export const getDashboardKPIs = async (req, res, next) => {
   try {
-    const totalUsers = await prisma.user.count({ where: { role: 'customer' } });
     const totalProducts = await prisma.product.count();
-    const totalOrders = await prisma.order.count();
+
+    const startOfToday = new Date();
+    startOfToday.setHours(0, 0, 0, 0);
+    const todayOrders = await prisma.order.count({
+      where: {
+        createdAt: { gte: startOfToday }
+      }
+    });
+
+    const pendingOrders = await prisma.order.count({
+      where: {
+        status: { notIn: ['delivered', 'completed', 'cancelled'] }
+      }
+    });
+
+    const completedOrders = await prisma.order.count({
+      where: {
+        status: { in: ['delivered', 'completed'] }
+      }
+    });
     
     const ordersPaid = await prisma.order.findMany({
       where: { paymentStatus: 'paid' },
@@ -14,21 +32,15 @@ export const getDashboardKPIs = async (req, res, next) => {
     
     const totalRevenue = ordersPaid.reduce((sum, ord) => sum + ord.amount, 0);
 
-    // Fetch low stock items
-    const lowStockProducts = await prisma.product.findMany({
-      where: { stock: { lte: 10 } },
-      select: { id: true, name: true, stock: true }
-    });
-
     res.json({
       success: true,
       metrics: {
         totalRevenue: `₹${totalRevenue.toLocaleString('en-IN')}`,
-        totalOrders,
-        totalCustomers: totalUsers,
-        lowStockAlerts: lowStockProducts.length
-      },
-      lowStockList: lowStockProducts
+        totalProducts,
+        todayOrders,
+        pendingOrders,
+        completedOrders
+      }
     });
   } catch (error) {
     next(error);

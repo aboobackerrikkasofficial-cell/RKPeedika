@@ -291,22 +291,7 @@ router.get('/notifications', authenticate, authorize('admin'), async (req, res) 
       });
     });
     
-    // 2. Fetch low stock products
-    const lowStock = await prisma.product.findMany({
-      where: { stock: { lte: 10 } },
-      take: 5
-    });
-    
-    lowStock.forEach(product => {
-      logs.push({
-        id: `stock-${product.id}`,
-        type: 'inventory',
-        title: `Stock Warning (ID: ${product.id.slice(0, 8)})`,
-        detail: `${product.name} is running low. Current stock: ${product.stock} units.`,
-        time: 'Just now',
-        unread: true
-      });
-    });
+    // 2. Fetch low stock products (Removed per simplified inventory model)
     
     // 3. If empty, return a welcome log
     if (logs.length === 0) {

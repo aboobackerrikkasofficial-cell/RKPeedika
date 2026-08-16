@@ -26,11 +26,11 @@ import Table from '../components/Table';
 export default function Dashboard() {
   const [metrics, setMetrics] = useState({
     totalRevenue: "₹0",
-    totalOrders: 0,
-    totalCustomers: 0,
-    lowStockAlerts: 0
+    totalProducts: 0,
+    todayOrders: 0,
+    pendingOrders: 0,
+    completedOrders: 0
   });
-  const [lowStockList, setLowStockList] = useState([]);
   const [salesTrend, setSalesTrend] = useState([]);
   const [categoryDistribution, setCategoryDistribution] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -41,7 +41,6 @@ export default function Dashboard() {
         const kpiRes = await apiClient.get('/admin/dashboard');
         if (kpiRes.data && kpiRes.data.success) {
           setMetrics(kpiRes.data.metrics);
-          setLowStockList(kpiRes.data.lowStockList || []);
         }
 
         const analyticsRes = await apiClient.get('/admin/analytics');
@@ -59,10 +58,11 @@ export default function Dashboard() {
   }, []);
 
   const kpis = [
-    { title: "Weekly Revenue", value: metrics.totalRevenue, change: "+14.3%", trend: "up", desc: "vs. previous week", icon: <DollarSign className="h-5 w-5 text-emerald-500" /> },
-    { title: "Total Orders", value: metrics.totalOrders.toString(), change: "+8.2%", trend: "up", desc: "vs. previous month", icon: <ShoppingBag className="h-5 w-5 text-orange-500" /> },
-    { title: "Total Customers", value: metrics.totalCustomers.toString(), change: "+11.5%", trend: "up", desc: "vs. previous month", icon: <Users className="h-5 w-5 text-blue-500" /> },
-    { title: "Low Stock Products", value: metrics.lowStockAlerts.toString(), change: "Sync", trend: "up", desc: "needs restocking", icon: <AlertTriangle className="h-5 w-5 text-[#F7941D]" /> }
+    { title: "Total Revenue", value: metrics.totalRevenue, icon: <DollarSign className="h-5 w-5 text-emerald-500" /> },
+    { title: "Total Products", value: (metrics.totalProducts || 0).toString(), icon: <ShoppingBag className="h-5 w-5 text-blue-500" /> },
+    { title: "Today's Orders", value: (metrics.todayOrders || 0).toString(), icon: <ShoppingBag className="h-5 w-5 text-orange-500" /> },
+    { title: "Pending Orders", value: (metrics.pendingOrders || 0).toString(), icon: <ShoppingBag className="h-5 w-5 text-amber-500" /> },
+    { title: "Completed Orders", value: (metrics.completedOrders || 0).toString(), icon: <ShoppingBag className="h-5 w-5 text-green-500" /> }
   ];
 
   const salesData = salesTrend.length > 0 ? salesTrend : [
@@ -81,18 +81,6 @@ export default function Dashboard() {
     { name: 'Textiles', Orders: 0 }
   ];
 
-  const columns = [
-    { key: "name", label: "Product" },
-    { key: "stock", label: "Current Stock", render: (row) => <span className="font-bold text-charcoal">{row.stock} units</span> },
-    { key: "status", label: "Status", render: (row) => (
-      <span className={`px-2 py-0.5 rounded font-bold text-[10px] uppercase ${
-        row.stock <= 5 ? "bg-red-50 text-red-500" : "bg-amber-50 text-amber-500"
-      }`}>
-        {row.stock <= 5 ? "Critical Stock" : "Low Stock"}
-      </span>
-    )}
-  ];
-
   if (isLoading) {
     return (
       <div className="p-8 text-center font-bold text-xs text-gray-400 animate-pulse">
@@ -103,30 +91,22 @@ export default function Dashboard() {
 
   return (
     <div className="p-6 md:p-8 space-y-8">
-      
-      {/* Page Header */}
+           {/* Page Header */}
       <div>
         <h2 className="text-2xl font-black text-gray-900 tracking-tight">Overview Dashboard</h2>
-        <p className="text-xs font-semibold text-gray-400 mt-1">Monitor operational sales performance and inventory levels.</p>
+        <p className="text-xs font-semibold text-gray-400 mt-1">Monitor sales performance, active products catalog, and orders flow.</p>
       </div>
 
       {/* KPI Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {kpis.map((kpi, idx) => (
           <div key={idx} className="bg-white border border-gray-100 p-5 rounded-xl shadow-sm hover:shadow-premium transition-all">
             <div className="flex justify-between items-start">
               <div>
                 <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wider">{kpi.title}</p>
-                <p className="text-2xl font-black text-gray-900 mt-1.5">{kpi.value}</p>
+                <p className="text-xl font-black text-gray-900 mt-1.5">{kpi.value}</p>
               </div>
               <div className="bg-gray-50 p-2.5 rounded-lg shrink-0">{kpi.icon}</div>
-            </div>
-            
-            <div className="flex items-center space-x-1.5 mt-4 text-[10px] font-semibold text-gray-400">
-              <span className={`font-bold flex items-center ${kpi.trend === 'up' ? 'text-emerald-500' : 'text-red-500'}`}>
-                {kpi.trend === 'up' ? '▲' : '▼'} {kpi.change}
-              </span>
-              <span>{kpi.desc}</span>
             </div>
           </div>
         ))}
@@ -183,46 +163,22 @@ export default function Dashboard() {
 
       </div>
 
-      {/* LOWER SECTION: Stock alerts and operations */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        
-        {/* Stock alerts list table */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 flex items-center gap-1.5">
-              <AlertTriangle className="h-4.5 w-4.5 text-amber-500 animate-pulse" /> Urgent Inventory Warnings
-            </h3>
-            <Link to="/inventory" className="text-[10px] font-bold text-[#F7941D] hover:underline flex items-center gap-0.5">
-              Refill Stock <ArrowRight className="h-3 w-3" />
-            </Link>
-          </div>
-
-          <Table 
-            columns={columns}
-            data={lowStockList}
-            itemsPerPage={5}
-            emptyMessage="All products have healthy inventory levels."
-          />
+      {/* LOWER SECTION: Connection Panel */}
+      <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm flex flex-col md:flex-row items-center justify-between gap-4">
+        <div>
+          <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">Database Connection Panel</h3>
+          <p className="text-xs text-gray-500 leading-relaxed font-semibold mt-2">
+            This admin dashboard is connected directly to the primary SQLite store database.
+          </p>
+          <p className="text-xs text-gray-400 font-medium leading-relaxed mt-1">
+            All views are dynamically loaded with live customer orders and sales statistics. Inventory/stock checks have been completely removed.
+          </p>
         </div>
 
-        {/* Quick Operations Guide */}
-        <div className="rounded-xl border border-gray-100 bg-white p-6 shadow-sm flex flex-col justify-between">
-          <div>
-            <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400">Database Connection Panel</h3>
-            <p className="text-xs text-gray-500 leading-relaxed font-semibold mt-3">
-              This admin dashboard is connected directly to the primary SQLite store database.
-            </p>
-            <p className="text-xs text-gray-400 font-medium leading-relaxed mt-2">
-              All views are dynamically loaded with live customer orders and sales statistics. Inventory alerts are generated automatically when stock falls below target levels.
-            </p>
-          </div>
-
-          <div className="mt-6 pt-4 border-t border-gray-100 flex items-center justify-between text-xs font-bold text-[#F7941D]">
-            <span>SQLite Database Status: 🟢 Online</span>
-            <Link to="/settings" className="hover:underline">Manage policy rules</Link>
-          </div>
+        <div className="shrink-0 flex flex-col items-end gap-1.5 text-right text-xs font-bold text-[#F7941D]">
+          <span>SQLite Database Status: 🟢 Online</span>
+          <Link to="/settings" className="hover:underline text-[11px] font-semibold text-gray-400">Manage policy rules</Link>
         </div>
-
       </div>
 
     </div>

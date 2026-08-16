@@ -399,7 +399,7 @@ export default function ProductPage() {
               <img 
                 src={product.images[activeImgIndex]} 
                 alt={product.name} 
-                className="w-full h-full object-cover transition-all duration-300"
+                className="w-full h-full object-contain transition-all duration-300 bg-white"
                 style={{ transform: `scale(${scale})` }}
               />
               
@@ -445,7 +445,7 @@ export default function ProductPage() {
                     activeImgIndex === idx ? 'border-[#F7941D]' : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
-                  <img src={img} alt="Product view" className="w-full h-full object-cover" />
+                  <img src={img} alt="Product view" className="w-full h-full object-contain bg-white" />
                 </button>
               ))}
             </div>
@@ -619,7 +619,6 @@ export default function ProductPage() {
                   <Plus className="h-3.5 w-3.5" />
                 </button>
               </div>
-              <span className="text-xs font-medium text-gray-400">Only few units left in stock</span>
             </div>
           </div>
 
@@ -960,28 +959,24 @@ export default function ProductPage() {
       )}
 
       {/* MOBILE STICKY BUY BAR */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 p-3 flex items-center justify-between shadow-[0_-4px_10px_rgba(0,0,0,0.05)] lg:hidden">
-        <div>
-          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wide">Total Price</p>
-          <p className="text-base font-black text-charcoal">₹{(activePrice * quantity).toLocaleString('en-IN')}</p>
-        </div>
-        <div className="flex gap-2">
-          <button 
-            onClick={() => {
-              addToCart(product, selectedVariants, quantity);
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 p-3 flex items-center justify-between gap-3 shadow-[0_-4px_10px_rgba(0,0,0,0.05)] lg:hidden pb-6">
+        <button 
+          onClick={() => {
+            addToCart(product, selectedVariants, quantity);
+            if (window.showAlert) {
               window.showAlert("Items added to bag!", "Cart Updated");
-            }}
-            className="border border-gray-200 p-2.5 rounded-premium text-charcoal hover:bg-gray-50"
-          >
-            <ShoppingCart className="h-4.5 w-4.5" />
-          </button>
-          <button 
-            onClick={() => initiateQuickPurchase(product, selectedVariants, paymentOption)}
-            className="rounded-premium bg-[#F7941D] px-6 py-2.5 text-xs font-bold text-white hover:bg-[#E07D10] transition-premium shadow"
-          >
-            Buy Now
-          </button>
-        </div>
+            }
+          }}
+          className="flex-1 border border-gray-200 py-3 rounded-premium text-xs font-bold text-charcoal bg-white active:bg-gray-50 flex items-center justify-center gap-1.5 min-h-[44px]"
+        >
+          <ShoppingCart size={14} /> Add to Cart
+        </button>
+        <button 
+          onClick={() => initiateQuickPurchase(product, selectedVariants, paymentOption)}
+          className="flex-1 bg-[#F7941D] py-3 rounded-premium text-xs font-bold text-white hover:bg-[#E07D10] transition-colors shadow flex items-center justify-center min-h-[44px]"
+        >
+          Buy Now
+        </button>
       </div>
 
       {/* WRITE A REVIEW MODAL POPUP (AUTOMATED ORDER ID AND USER FIELDS) */}

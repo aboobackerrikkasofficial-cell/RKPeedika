@@ -897,18 +897,18 @@ export default function Products() {
     },
 
     {
-      key: 'stock',
-      label: 'Stock',
+      key: 'status',
+      label: 'Status',
 
       render: (row) => (
         <span
-          className={
-            row.stock <= 5
-              ? 'font-bold text-red-500'
-              : 'font-bold text-gray-700'
-          }
+          className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+            row.status === 'active'
+              ? 'bg-emerald-50 text-emerald-600'
+              : 'bg-gray-100 text-gray-500'
+          }`}
         >
-          {row.stock}
+          {row.status === 'active' ? 'Active' : 'Inactive'}
         </span>
       ),
     },
@@ -984,7 +984,7 @@ export default function Products() {
           </h2>
 
           <p className="text-xs text-gray-400 font-semibold mt-1">
-            Manage products, images, pricing and stock.
+            Manage products, images, pricing and details.
           </p>
         </div>
 
@@ -1348,19 +1348,7 @@ export default function Products() {
 
                 </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
-
-                  <Field
-                    label="Stock"
-                    type="number"
-                    value={form.stock}
-                    onChange={(value) =>
-                      updateField(
-                        'stock',
-                        value
-                      )
-                    }
-                  />
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
 
                   <Field
                     label="Online Discount"

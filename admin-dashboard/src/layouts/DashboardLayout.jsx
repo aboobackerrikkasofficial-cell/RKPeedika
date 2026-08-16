@@ -54,7 +54,6 @@ export default function DashboardLayout({ children }) {
     { name: 'Customers', path: '/customers', icon: <Users className="h-4.5 w-4.5" /> },
     { name: 'Categories', path: '/categories', icon: <FolderTree className="h-4.5 w-4.5" /> },
     { name: 'Coupons', path: '/coupons', icon: <Tag className="h-4.5 w-4.5" /> },
-    { name: 'Inventory', path: '/inventory', icon: <Warehouse className="h-4.5 w-4.5" /> },
     { name: 'Reviews', path: '/reviews', icon: <MessageSquare className="h-4.5 w-4.5" /> },
     { name: 'Analytics', path: '/analytics', icon: <BarChart3 className="h-4.5 w-4.5" /> },
     { name: 'Settings', path: '/settings', icon: <Settings className="h-4.5 w-4.5" /> },

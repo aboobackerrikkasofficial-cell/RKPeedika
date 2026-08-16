@@ -34,6 +34,7 @@ export const formatProduct = (product) => {
   formatted.specifications = parseJson(formatted.specifications, {});
   formatted.variants = parseJson(formatted.variants, {});
   formatted.relatedProducts = parseJson(formatted.relatedProducts, []);
+  formatted.active = formatted.status === 'active';
 
   return formatted;
 };
@@ -299,6 +300,7 @@ export const createProduct = async (req, res, next) => {
       showPurchaseCount,
       purchaseCountMode,
       purchaseCount,
+      active,
     } = req.body;
 
     const normalizedName = makeShortProductName(name);
@@ -347,12 +349,7 @@ export const createProduct = async (req, res, next) => {
 
         categoryId: String(categoryId),
 
-        stock:
-          stock !== null &&
-            stock !== undefined &&
-            stock !== ''
-            ? Number(stock)
-            : 0,
+        stock: 9999,
 
         seller:
           seller ||
@@ -392,9 +389,7 @@ export const createProduct = async (req, res, next) => {
           codAvailable !== false &&
           codAvailable !== 'false',
 
-        inStock:
-          inStock !== false &&
-          inStock !== 'false',
+        inStock: true,
 
         estimatedDeliveryDays:
           estimatedDeliveryDays
@@ -439,7 +434,7 @@ export const createProduct = async (req, res, next) => {
           purchaseCount: Number(purchaseCount),
         }),
 
-        status: 'active',
+        status: active === false || active === 'false' ? 'draft' : 'active',
       },
     });
 
@@ -475,16 +470,20 @@ export const updateProduct = async (req, res, next) => {
       ...req.body,
     };
 
+    if (data.active !== undefined) {
+      data.status = data.active === false || data.active === 'false' ? 'draft' : 'active';
+      delete data.active;
+    }
+
+    data.stock = 9999;
+    data.inStock = true;
+
     if (data.name) {
       data.name = makeShortProductName(data.name);
     }
 
     if (data.price !== undefined) {
       data.price = Number(data.price);
-    }
-
-    if (data.stock !== undefined) {
-      data.stock = Number(data.stock);
     }
 
     if (data.originalPrice !== undefined) {
@@ -536,11 +535,7 @@ export const updateProduct = async (req, res, next) => {
         data.codAvailable !== 'false';
     }
 
-    if (data.inStock !== undefined) {
-      data.inStock =
-        data.inStock !== false &&
-        data.inStock !== 'false';
-    }
+    data.inStock = true;
 
     if (Array.isArray(data.images)) {
       data.images = JSON.stringify(data.images);

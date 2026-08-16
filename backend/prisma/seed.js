@@ -65,10 +65,18 @@ async function main() {
     let customerUser = existingCustomer;
 
     if (!existingCustomer) {
+      let demoHashedPassword = '';
+      if (typeof hashedPassword !== 'undefined') {
+        demoHashedPassword = hashedPassword;
+      } else {
+        const salt = await bcrypt.genSalt(10);
+        demoHashedPassword = await bcrypt.hash('customer123', salt);
+      }
+
       customerUser = await prisma.user.create({
         data: {
           email: customerEmail,
-          password: hashedPassword,
+          password: demoHashedPassword,
           name: 'Rahul Sharma',
           role: 'customer',
           phone: '8807264646'

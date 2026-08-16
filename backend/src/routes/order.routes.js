@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createOrder, getOrderById, updateOrderStatus, requestReturn, getReturns, getAllOrders, getUserOrderHistory, getOrderByOrderIdFormatted, updateOrderTracking, addTrackingEvent } from '../controllers/order.controller.js';
+import { createOrder, getOrderById, updateOrderStatus, requestReturn, getReturns, getAllOrders, getUserOrderHistory, getOrderByOrderIdFormatted, updateOrderTracking, addTrackingEvent, publicTrackOrder } from '../controllers/order.controller.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 
 const router = Router();
@@ -7,6 +7,7 @@ const router = Router();
 router.get('/', authenticate, authorize('admin'), getAllOrders);
 router.get('/user/history', authenticate, getUserOrderHistory);
 router.get('/track/:orderId', authenticate, getOrderByOrderIdFormatted);
+router.post('/public/track', publicTrackOrder);
 router.put('/:id/tracking', authenticate, authorize('admin'), updateOrderTracking);
 router.post('/:id/tracking/events', authenticate, authorize('admin'), addTrackingEvent);
 

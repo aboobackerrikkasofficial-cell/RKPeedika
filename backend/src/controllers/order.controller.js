@@ -159,9 +159,6 @@ export const createOrder = async (req, res, next) => {
       if (!product) {
         return next(new NotFoundError(`Product ${item.productId} does not exist.`));
       }
-      if (product.stock < item.quantity) {
-        return next(new BadRequestError(`Product ${product.name} is out of stock. Available: ${product.stock}`));
-      }
 
       const itemPrice = paymentMethod === 'COD' 
         ? (product.codPrice || product.price) 
@@ -253,21 +250,7 @@ export const createOrder = async (req, res, next) => {
         }
       });
 
-      for (const item of orderItemsData) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stock: { decrement: item.quantity } }
-        });
-
-        await tx.inventoryLog.create({
-          data: {
-            productId: item.productId,
-            quantityChange: -item.quantity,
-            type: "sale",
-            reason: `Order deduction: ${userFacingOrderId}`
-          }
-        });
-      }
+      // No stock decrement or inventory logging per simplified model.
 
       await tx.notification.create({
         data: {
@@ -497,6 +480,50 @@ export const getUserOrderHistory = async (req, res, next) => {
       orderBy: { createdAt: 'desc' }
     });
     res.json(orders);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const publicTrackOrder = async (req, res, next) => {
+  const { orderId, phone } = req.body;
+  if (!orderId || !phone) {
+    return next(new BadRequestError("Order ID and Phone Number are required."));
+  }
+
+  try {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId);
+    const cleanPhone = phone.toString().replace(/\D/g, '');
+
+    const order = await prisma.order.findFirst({
+      where: isUuid ? { id: orderId } : { orderId },
+      include: {
+        orderItems: { include: { product: true } },
+        trackingEvents: { orderBy: { eventDate: 'desc' } },
+        payments: true,
+        address: true,
+        user: true
+      }
+    });
+
+    if (!order) {
+      return next(new NotFoundError(`Order ${orderId} not found.`));
+    }
+
+    const orderPhone = order.shippingPhone ? order.shippingPhone.toString().replace(/\D/g, '') : '';
+    const addressPhone = order.address?.phone ? order.address.phone.toString().replace(/\D/g, '') : '';
+    const userPhone = order.user?.phone ? order.user.phone.toString().replace(/\D/g, '') : '';
+
+    const matchesPhone = 
+      (orderPhone && orderPhone.endsWith(cleanPhone)) || 
+      (addressPhone && addressPhone.endsWith(cleanPhone)) ||
+      (userPhone && userPhone.endsWith(cleanPhone));
+
+    if (!matchesPhone) {
+      return next(new ForbiddenError("Unauthorized: Mobile number does not match this order."));
+    }
+
+    res.json(augmentOrderTrackingEvents(order));
   } catch (error) {
     next(error);
   }

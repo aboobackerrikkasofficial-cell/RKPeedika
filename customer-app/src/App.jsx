@@ -8,15 +8,17 @@ import CheckoutPage from './pages/CheckoutPage';
 import SuccessPage from './pages/SuccessPage';
 import AdminPanel from './components/AdminPanel';
 import CustomerDashboard from './pages/CustomerDashboard';
-import WishlistPage from './pages/WishlistPage';
-import PaymentSelectPage from './pages/PaymentSelectPage';
 import PaymentFailedPage from './pages/PaymentFailedPage';
 import OrderTrackingPage from './pages/OrderTrackingPage';
 import ProductsPage from './pages/ProductsPage';
+import CategoriesPage from './pages/CategoriesPage';
+import CartPage from './pages/CartPage';
+import OrdersPage from './pages/OrdersPage';
 import { Mail, ShieldCheck, Landmark, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SessionTimeoutHandler from './components/SessionTimeoutHandler';
 import PopupDialog from './components/PopupDialog';
+
 
 // Custom Brand SVG Icons
 const InstagramIcon = () => (
@@ -482,11 +484,12 @@ function AppContent() {
       case 'success': return <SuccessPage />;
       case 'admin': return <AdminPanel />;
       case 'profile': return <CustomerDashboard />;
-      case 'wishlist': return <WishlistPage />;
-      case 'payment-select': return <PaymentSelectPage />;
       case 'payment-failed': return <PaymentFailedPage />;
       case 'order-tracking': return <OrderTrackingPage />;
       case 'products': return <ProductsPage />;
+      case 'categories': return <CategoriesPage />;
+      case 'cart': return <CartPage />;
+      case 'orders': return <OrdersPage />;
       default: return <HomePage />;
     }
   };
@@ -514,108 +517,24 @@ function AppContent() {
         </AnimatePresence>
       </main>
 
-      {/* Premium White Footer */}
-      <footer className="bg-white border-t border-gray-100 text-charcoal relative z-10 font-sans pb-20 md:pb-0">
-        <div className="mx-auto max-w-7xl px-4 py-10 md:px-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[40%_30%_30%] gap-x-10 gap-y-8 items-start">
-          
-          {/* LEFT (40%): LOGO, Description, Newsletter */}
-          <div className="flex flex-col">
-            <div className="flex items-center h-6 mb-3">
-              {storeSettings?.storeLogo ? (
-                <img src={storeSettings.storeLogo} alt="RK Peedika Logo" className="max-h-full w-auto object-contain" />
-              ) : (
-                <span className="text-[17px] font-black text-charcoal tracking-tight">RK Peedika</span>
-              )}
-            </div>
-            <p className="text-xs font-normal text-gray-500 leading-relaxed max-w-[280px]">
-              {storeSettings?.footerContent || "Your trusted Indian marketplace for everyday essentials. Quality assured products delivered directly to your doorstep with cash on delivery available."}
-            </p>
-            
-            <div className="mt-5">
-              <form onSubmit={handleSubscribe} className="flex h-12 max-w-[380px] rounded-premium overflow-hidden border border-gray-200 focus-within:border-[#F7941D] transition-premium shadow-sm">
-                <input 
-                  type="email" 
-                  required
-                  value={newsletterEmail}
-                  onChange={(e) => setNewsletterEmail(e.target.value)}
-                  placeholder="Enter your email address" 
-                  className="flex-grow bg-white px-4 text-xs text-charcoal outline-none placeholder:text-gray-400"
-                />
-                <button 
-                  type="submit" 
-                  disabled={isSubscribing}
-                  className="w-[130px] bg-charcoal text-white hover:bg-black font-semibold text-xs transition-premium disabled:opacity-70 flex-shrink-0"
-                >
-                  {isSubscribing ? '...' : 'Subscribe'}
-                </button>
-              </form>
-            </div>
+      {/* Simplified White Footer */}
+      <footer className="bg-white border-t border-gray-100 py-6 px-4 text-center text-xs text-gray-500 font-sans pb-24 md:pb-6 relative z-10">
+        <div className="max-w-7xl mx-auto space-y-3">
+          <h4 className="font-extrabold text-charcoal text-sm">{storeSettings?.storeName || "RK Peedika"}</h4>
+          <div className="flex justify-center flex-wrap gap-x-4 gap-y-1 text-gray-400 font-bold">
+            <button onClick={() => setActiveModal('about')} className="hover:text-[#F7941D] transition-premium">About Us</button>
+            <span>·</span>
+            <button onClick={() => setActiveModal('contact')} className="hover:text-[#F7941D] transition-premium">Contact Us</button>
+            <span>·</span>
+            <button onClick={() => setActiveModal('privacy')} className="hover:text-[#F7941D] transition-premium">Privacy Policy</button>
+            <span>·</span>
+            <button onClick={() => setActiveModal('terms')} className="hover:text-[#F7941D] transition-premium">Terms & Conditions</button>
+            <span>·</span>
+            <button onClick={() => setCurrentView('admin')} className="hover:text-[#F7941D] transition-premium">Admin Panel</button>
           </div>
-
-          {/* CENTER (30%): Quick Links */}
-          <div className="flex flex-col">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-charcoal h-6 flex items-center mb-3">Quick Links</h4>
-            <ul className="flex flex-col space-y-2 text-xs font-normal text-gray-500">
-              <li><button onClick={() => setActiveModal('about')} className="hover:text-[#F7941D] transition-premium">About Us</button></li>
-              <li><button onClick={() => setActiveModal('contact')} className="hover:text-[#F7941D] transition-premium">Contact Us</button></li>
-              <li><button onClick={() => setActiveModal('faq')} className="hover:text-[#F7941D] transition-premium">FAQ</button></li>
-              <li><button onClick={() => setActiveModal('privacy')} className="hover:text-[#F7941D] transition-premium">Privacy Policy</button></li>
-              <li><button onClick={() => setActiveModal('terms')} className="hover:text-[#F7941D] transition-premium">Terms & Conditions</button></li>
-            </ul>
-          </div>
-
-          {/* RIGHT (30%): Support */}
-          <div className="flex flex-col">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-charcoal h-6 flex items-center mb-3">Support</h4>
-            <ul className="flex flex-col space-y-2 text-xs font-normal text-gray-500">
-              <li className="grid grid-cols-[80px_1fr] gap-x-2 items-start">
-                <span className="text-gray-400">WhatsApp:</span>
-                <a href="https://wa.me/919188072646" target="_blank" rel="noreferrer" className="text-gray-500 hover:text-[#F7941D] transition-premium">
-                  +91 9188072646
-                </a>
-              </li>
-              <li className="grid grid-cols-[80px_1fr] gap-x-2 items-start">
-                <span className="text-gray-400">Phone:</span>
-                <a href="tel:+919188072646" className="text-gray-500 hover:text-[#F7941D] transition-premium">
-                  +91 9188072646
-                </a>
-              </li>
-              <li className="grid grid-cols-[80px_1fr] gap-x-2 items-start">
-                <span className="text-gray-400">Email:</span>
-                <a href="mailto:rikkas.aboo@gmail.com" className="text-gray-500 hover:text-[#F7941D] transition-premium break-all">
-                  rikkas.aboo@gmail.com
-                </a>
-              </li>
-              <li className="grid grid-cols-[80px_1fr] gap-x-2 items-start">
-                <span className="text-gray-400">Hours:</span>
-                <span className="text-gray-500">{storeSettings?.supportHours || "Mon-Sat, 9AM-8PM"}</span>
-              </li>
-            </ul>
-
-            <div className="mt-5 flex items-center space-x-4 text-gray-400">
-              <a href={storeSettings?.instagramLink} target="_blank" rel="noreferrer" className="hover:text-[#F7941D] transition-premium"><InstagramIcon /></a>
-              <a href={storeSettings?.facebookLink} target="_blank" rel="noreferrer" className="hover:text-[#F7941D] transition-premium"><FacebookIcon /></a>
-              <a href="mailto:rikkas.aboo@gmail.com" className="hover:text-[#F7941D] transition-premium"><Mail className="h-5 w-5" /></a>
-            </div>
-          </div>
-
-        </div>
-
-        {/* Bottom copyright */}
-        <div className="mx-auto max-w-7xl px-4 md:px-8">
-          <div className="border-t border-gray-100 pt-6 pb-6 grid grid-cols-1 md:grid-cols-3 gap-4 items-center text-[10px] font-medium text-gray-400 text-center md:text-left">
-            <div>
-              © {new Date().getFullYear()} {storeSettings?.storeName || "RK Peedika"}. All Rights Reserved.
-            </div>
-            <div className="md:text-center">
-              GSTIN: {storeSettings?.gstNumber || "Not Available"}
-            </div>
-            <div className="flex justify-center md:justify-end space-x-4">
-              <button onClick={() => setCurrentView('admin')} className="hover:text-[#F7941D] transition-premium text-[10px] font-medium text-gray-400">Admin Panel</button>
-              <span className="text-gray-300">|</span>
-              <span className="text-[10px] font-medium text-gray-400">Fulfillment Hub</span>
-            </div>
-          </div>
+          <p className="text-[10px] text-gray-400 mt-2 font-medium">
+            © {new Date().getFullYear()} {storeSettings?.storeName || "RK Peedika"}. All Rights Reserved. {storeSettings?.gstNumber && `| GSTIN: ${storeSettings.gstNumber}`}
+          </p>
         </div>
       </footer>
 

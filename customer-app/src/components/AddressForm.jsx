@@ -30,6 +30,7 @@ export default function AddressForm({ userProfile, onSubmit, onCancel, submitLab
     phone: '',
     houseNo: '',
     roadArea: '',
+    landmark: '',
     city: '',
     state: '',
     pincode: '',
@@ -47,6 +48,7 @@ export default function AddressForm({ userProfile, onSubmit, onCancel, submitLab
         phone: initialData.phone || '',
         houseNo: initialData.houseFlatNumber || '',
         roadArea: initialData.streetRoadName || '',
+        landmark: initialData.landmark || '',
         city: initialData.city || '',
         state: initialData.state || '',
         pincode: initialData.pincode || '',
@@ -136,6 +138,7 @@ export default function AddressForm({ userProfile, onSubmit, onCancel, submitLab
         phone:           form.phone.trim(),
         houseFlatNumber: form.houseNo.trim(),
         streetRoadName:  form.roadArea.trim(),
+        landmark:        form.landmark.trim(),
         areaLocality:    form.city.trim(),
         city:            form.city.trim(),
         district:        form.city.trim(),
@@ -200,6 +203,17 @@ export default function AddressForm({ userProfile, onSubmit, onCancel, submitLab
           onChange={e => set('roadArea', e.target.value)}
           placeholder="e.g. Kundoor Road, Navodaya Nagar"
           className={inputCls('roadArea')}
+        />
+      </Field>
+
+      {/* Landmark */}
+      <Field label="Landmark (Optional)" icon={MapPin}>
+        <input
+          type="text"
+          value={form.landmark}
+          onChange={e => set('landmark', e.target.value)}
+          placeholder="e.g. Near Government School"
+          className={inputCls('landmark')}
         />
       </Field>
 

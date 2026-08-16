@@ -499,10 +499,10 @@ img {
 
 /* Product image container — consistent aspect ratio */
 .product-card-image {
-  aspect-ratio: 3 / 4;
+  aspect-ratio: 1 / 1;
   width: 100%;
   overflow: hidden;
-  background: #f5f5f5;
+  background: #ffffff;
   position: relative;
   flex-shrink: 0;
 }

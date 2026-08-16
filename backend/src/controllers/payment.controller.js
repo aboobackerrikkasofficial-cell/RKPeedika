@@ -264,10 +264,6 @@ export const createRazorpayOrder = async (req, res, next) => {
         if (!product) {
           return next(new NotFoundError(`Product ${item.productId} does not exist.`));
         }
-        if (product.stock < item.quantity) {
-          return next(new BadRequestError(`Product ${product.name} is out of stock. Available: ${product.stock}`));
-        }
-
         // Fetch online price for online payment
         const itemPrice = product.onlinePrice || product.price;
         subtotal += itemPrice * item.quantity;
@@ -352,22 +348,7 @@ export const createRazorpayOrder = async (req, res, next) => {
           }
         });
 
-        // Deduct stock
-        for (const item of orderItemsData) {
-          await tx.product.update({
-            where: { id: item.productId },
-            data: { stock: { decrement: item.quantity } }
-          });
-
-          await tx.inventoryLog.create({
-            data: {
-              productId: item.productId,
-              quantityChange: -item.quantity,
-              type: "sale",
-              reason: `Order deduction: ${userFacingOrderId}`
-            }
-          });
-        }
+        // No stock decrement or inventory logging per simplified model.
 
         // Clear cart
         await tx.cartItem.deleteMany({

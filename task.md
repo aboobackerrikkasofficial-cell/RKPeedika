@@ -1,0 +1,18 @@
+# Redesign Execution Tasks
+
+- [x] Fix VITE_API_URL in development (`customer-app/.env`)
+- [x] Create `CategoriesPage.jsx` (simple vertical category scroller)
+- [x] Create `CartPage.jsx` (simplified shopping cart with checkout link)
+- [x] Create `OrdersPage.jsx` (my orders list and public tracking form)
+- [x] Update `BottomNav.jsx` with exactly 5 destinations (Home, Categories, Profile, Orders, Cart)
+- [x] Update `App.jsx` views, routing, and simplified footer
+- [x] Redesign `Header.jsx` to be compact and mobile-focused
+- [x] Refactor `HomePage.jsx` to be product-first, removing hero banner and trust cards
+- [x] Refactor `ProductCard.jsx` image ratio and info layout
+- [x] Update `ProductPage.jsx` structure and sticky buy bar
+- [x] Refactor `CheckoutPage.jsx` with Shopify-style flow and guest auto-login
+- [x] Simplify `SuccessPage.jsx` confirmation details
+- [x] Refactor `OrderTrackingPage.jsx` status timeline
+- [x] Simplify `CustomerDashboard.jsx` profile list
+- [x] Update Admin Dashboard pages to manage products and orders without stock alerts
+- [x] Run build checks and test endpoints

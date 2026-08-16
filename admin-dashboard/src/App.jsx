@@ -7,7 +7,6 @@ import Products from './pages/Products';
 import Customers from './pages/Customers';
 import Categories from './pages/Categories';
 import Coupons from './pages/Coupons';
-import Inventory from './pages/Inventory';
 import Reviews from './pages/Reviews';
 import Analytics from './pages/Analytics';
 import Settings from './pages/Settings';
@@ -35,7 +34,6 @@ export default function App() {
         <Route path="/customers" element={<ProtectedRoute><DashboardLayout><Customers /></DashboardLayout></ProtectedRoute>} />
         <Route path="/categories" element={<ProtectedRoute><DashboardLayout><Categories /></DashboardLayout></ProtectedRoute>} />
         <Route path="/coupons" element={<ProtectedRoute><DashboardLayout><Coupons /></DashboardLayout></ProtectedRoute>} />
-        <Route path="/inventory" element={<ProtectedRoute><DashboardLayout><Inventory /></DashboardLayout></ProtectedRoute>} />
         <Route path="/reviews" element={<ProtectedRoute><DashboardLayout><Reviews /></DashboardLayout></ProtectedRoute>} />
         <Route path="/analytics" element={<ProtectedRoute><DashboardLayout><Analytics /></DashboardLayout></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><DashboardLayout><Settings /></DashboardLayout></ProtectedRoute>} />

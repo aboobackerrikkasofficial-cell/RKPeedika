@@ -317,6 +317,45 @@ export default function ProductPage() {
     }
   };
 
+  // Guard: Product not found
+  if (!product) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-6 py-16">
+        <div className="text-6xl mb-4">🔍</div>
+        <h2 className="text-xl font-black text-gray-800 mb-2">Product Not Found</h2>
+        <p className="text-sm text-gray-400 mb-6 max-w-xs">
+          We couldn't find this product. It may have been removed or the link may be incorrect.
+        </p>
+        <button
+          onClick={() => setCurrentView('home')}
+          className="rounded-xl bg-[#F7941D] px-6 py-3 text-sm font-bold text-white hover:bg-[#E07D10] transition-colors"
+        >
+          Continue Shopping
+        </button>
+      </div>
+    );
+  }
+
+  // Guard: Product deactivated
+  const isDeactivated = product.status === 'draft' || product.status === 'archived' || product.active === false;
+  if (isDeactivated) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center text-center px-6 py-16">
+        <div className="text-6xl mb-4">🚫</div>
+        <h2 className="text-xl font-black text-gray-800 mb-2">Product Unavailable</h2>
+        <p className="text-sm text-gray-400 mb-6 max-w-xs">
+          This product is currently unavailable. Please check back later or browse our other products.
+        </p>
+        <button
+          onClick={() => setCurrentView('home')}
+          className="rounded-xl bg-[#F7941D] px-6 py-3 text-sm font-bold text-white hover:bg-[#E07D10] transition-colors"
+        >
+          Continue Shopping
+        </button>
+      </div>
+    );
+  }
+
   // Parse specifications and highlights
   let specifications = {};
   let highlights = [];

@@ -4,18 +4,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, 
   ShoppingBag, 
-  Users, 
-  FolderTree, 
-  Tag, 
-  Warehouse, 
-  MessageSquare, 
-  BarChart3, 
+  Package,
   Settings, 
-  UserCircle, 
   Bell, 
   Menu, 
   X, 
-  Search, 
   LogOut,
   ChevronRight
 } from 'lucide-react';
@@ -23,10 +16,9 @@ import apiClient from '../api/client';
 import SessionTimeoutHandler from '../components/SessionTimeoutHandler';
 
 export default function DashboardLayout({ children }) {
-  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(typeof window !== 'undefined' ? window.innerWidth >= 1024 : false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [adminUser, setAdminUser] = useState(null);
 
   useEffect(() => {
@@ -48,16 +40,10 @@ export default function DashboardLayout({ children }) {
   const currentPath = location.pathname;
 
   const menuItems = [
-    { name: 'Dashboard', path: '/', icon: <LayoutDashboard className="h-4.5 w-4.5" /> },
-    { name: 'Orders', path: '/orders', icon: <ShoppingBag className="h-4.5 w-4.5" /> },
-    { name: 'Products', path: '/products', icon: <ShoppingBag className="h-4.5 w-4.5" /> },
-    { name: 'Customers', path: '/customers', icon: <Users className="h-4.5 w-4.5" /> },
-    { name: 'Categories', path: '/categories', icon: <FolderTree className="h-4.5 w-4.5" /> },
-    { name: 'Coupons', path: '/coupons', icon: <Tag className="h-4.5 w-4.5" /> },
-    { name: 'Reviews', path: '/reviews', icon: <MessageSquare className="h-4.5 w-4.5" /> },
-    { name: 'Analytics', path: '/analytics', icon: <BarChart3 className="h-4.5 w-4.5" /> },
-    { name: 'Settings', path: '/settings', icon: <Settings className="h-4.5 w-4.5" /> },
-    { name: 'Profile', path: '/profile', icon: <UserCircle className="h-4.5 w-4.5" /> },
+    { name: 'Dashboard', path: '/', icon: <LayoutDashboard className="h-4 w-4" /> },
+    { name: 'Products', path: '/products', icon: <Package className="h-4 w-4" /> },
+    { name: 'Orders', path: '/orders', icon: <ShoppingBag className="h-4 w-4" /> },
+    { name: 'Settings', path: '/settings', icon: <Settings className="h-4 w-4" /> },
   ];
 
   const [notifications, setNotifications] = useState([]);
@@ -172,13 +158,7 @@ export default function DashboardLayout({ children }) {
 
       {/* MOBILE NAV DRAWER */}
       <div className="lg:hidden">
-        {/* Hamburger Floating button */}
-        <button 
-          onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-          className="fixed bottom-4 right-4 z-50 rounded-full bg-charcoal text-white p-3.5 shadow-lg hover:scale-105 transition-all"
-        >
-          {isSidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
+
 
         <AnimatePresence>
           {isSidebarOpen && (
@@ -249,7 +229,7 @@ export default function DashboardLayout({ children }) {
           <div className="flex items-center space-x-4">
             <button 
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="hidden lg:block rounded-xl p-1.5 hover:bg-gray-50 text-gray-400 hover:text-gray-600 transition-all"
+              className="block rounded-xl p-1.5 hover:bg-gray-50 text-gray-400 hover:text-gray-600 transition-all"
             >
               <Menu className="h-5 w-5" />
             </button>
@@ -270,20 +250,8 @@ export default function DashboardLayout({ children }) {
             </nav>
           </div>
 
-          {/* Action Center (Search, Notifications, Profile) */}
+          {/* Action Center (Notifications, Profile) */}
           <div className="flex items-center space-x-4">
-            
-            {/* Global search */}
-            <div className="relative hidden sm:flex items-center rounded-xl border border-gray-100 bg-gray-50/70 px-3 py-1.5 focus-within:border-[#F7941D]/50 focus-within:bg-white transition-all w-48 md:w-64">
-              <Search className="h-4 w-4 text-gray-400 mr-2" />
-              <input 
-                type="text" 
-                placeholder="Search resources..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-transparent text-xs text-charcoal outline-none placeholder:text-gray-400"
-              />
-            </div>
 
             {/* Notifications Button */}
             <button 

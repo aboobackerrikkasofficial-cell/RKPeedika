@@ -4,6 +4,13 @@ import { DEFAULT_ADDRESSES } from '../constants/addresses';
 import { PINCODE_DATABASE } from '../constants/pincodes';
 import apiClient from '../api/client';
 
+// Safe JSON parse that never throws
+const safeJsonParse = (value, fallback) => {
+  if (value === null || value === undefined || value === '') return fallback;
+  if (typeof value !== 'string') return value ?? fallback;
+  try { return JSON.parse(value); } catch { return fallback; }
+};
+
 export const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
@@ -125,7 +132,7 @@ export const AppProvider = ({ children }) => {
           price: item.product.price,
           originalPrice: item.product.originalPrice,
           discount: item.product.discount,
-          image: JSON.parse(item.product.images)[0],
+          image: safeJsonParse(item.product.images, [])[0] || null,
           seller: item.product.seller,
           size: item.size,
           color: item.color,

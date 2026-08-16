@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getDashboardKPIs, getAnalytics, restockProduct } from '../controllers/admin.controller.js';
+import { getDashboardKPIs, getAnalytics, restockProduct, getAdminProducts, toggleProductStatus } from '../controllers/admin.controller.js';
 import { importFromMeesho } from '../controllers/meesho.controller.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { PrismaClient } from '@prisma/client';
@@ -9,6 +9,10 @@ const prisma = new PrismaClient();
 const router = Router();
 
 router.post('/import/meesho', authenticate, authorize('admin'), importFromMeesho);
+
+// --- Admin Products (all statuses) ---
+router.get('/products', authenticate, authorize('admin'), getAdminProducts);
+router.patch('/products/:id/status', authenticate, authorize('admin'), toggleProductStatus);
 
 /**
  * @swagger

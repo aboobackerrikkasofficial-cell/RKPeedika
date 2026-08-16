@@ -35,12 +35,15 @@ export default function Orders() {
     }
     setIsLoading(false);
   };
-
   const showStatus = (type, text) => {
-    setStatusMsg({ type, text });
-    setTimeout(() => setStatusMsg({ type: '', text: '' }), 5000);
+    if (window.showAlert) {
+      const title = type === 'success' ? 'Success' : type === 'error' ? 'Error' : 'Notification';
+      window.showAlert(text, title);
+    } else {
+      setStatusMsg({ type, text });
+      setTimeout(() => setStatusMsg({ type: '', text: '' }), 5000);
+    }
   };
-
   const handleSaveTracking = async () => {
     try {
       const res = await apiClient.put(`/orders/${selectedOrder.id}/tracking`, trackingForm);

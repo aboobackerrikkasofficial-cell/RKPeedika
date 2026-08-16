@@ -1,46 +1,111 @@
 import prisma from '../config/db.js';
+import redisClient from '../config/redis.js';
 import { NotFoundError, BadRequestError } from '../utils/appError.js';
+import { formatProduct } from './product.controller.js';
 
 export const getDashboardKPIs = async (req, res, next) => {
   try {
     const totalProducts = await prisma.product.count();
+    const activeProducts = await prisma.product.count({ where: { status: 'active' } });
 
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
     const todayOrders = await prisma.order.count({
-      where: {
-        createdAt: { gte: startOfToday }
-      }
+      where: { createdAt: { gte: startOfToday } }
     });
 
     const pendingOrders = await prisma.order.count({
-      where: {
-        status: { notIn: ['delivered', 'completed', 'cancelled'] }
-      }
+      where: { status: { notIn: ['delivered', 'completed', 'cancelled'] } }
     });
 
-    const completedOrders = await prisma.order.count({
-      where: {
-        status: { in: ['delivered', 'completed'] }
-      }
+    const deliveredOrders = await prisma.order.count({
+      where: { status: { in: ['delivered', 'completed'] } }
     });
-    
+
     const ordersPaid = await prisma.order.findMany({
       where: { paymentStatus: 'paid' },
       select: { amount: true }
     });
-    
+
     const totalRevenue = ordersPaid.reduce((sum, ord) => sum + ord.amount, 0);
 
     res.json({
       success: true,
       metrics: {
         totalRevenue: `₹${totalRevenue.toLocaleString('en-IN')}`,
+        totalRevenueRaw: totalRevenue,
         totalProducts,
+        activeProducts,
         todayOrders,
         pendingOrders,
-        completedOrders
+        deliveredOrders,
+        completedOrders: deliveredOrders
       }
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * GET ALL PRODUCTS (Admin — includes inactive/draft)
+ */
+export const getAdminProducts = async (req, res, next) => {
+  try {
+    const products = await prisma.product.findMany({
+      include: { category: true },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json({
+      success: true,
+      products: products.map(formatProduct)
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * TOGGLE PRODUCT STATUS (Admin quick activate/deactivate)
+ */
+export const toggleProductStatus = async (req, res, next) => {
+  const { id } = req.params;
+  const { active } = req.body;
+
+  if (active === undefined) {
+    return next(new BadRequestError('active field (true/false) is required.'));
+  }
+
+  try {
+    const product = await prisma.product.findUnique({ where: { id } });
+
+    if (!product) {
+      return next(new NotFoundError('Product not found.'));
+    }
+
+    const newStatus = active === true || active === 'true' ? 'active' : 'draft';
+
+    const updated = await prisma.product.update({
+      where: { id },
+      data: { status: newStatus },
+      include: { category: true }
+    });
+
+    // Invalidate product cache
+    try {
+      const keys = await redisClient.keys('products:*');
+      for (const key of keys) {
+        await redisClient.del(key);
+      }
+    } catch {
+      // Redis optional
+    }
+
+    res.json({
+      success: true,
+      message: `Product ${newStatus === 'active' ? 'activated' : 'deactivated'} successfully.`,
+      product: formatProduct(updated)
     });
   } catch (error) {
     next(error);

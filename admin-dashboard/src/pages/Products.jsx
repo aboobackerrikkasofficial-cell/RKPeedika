@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import {
   AlertCircle,
   CheckCircle,
@@ -8,126 +8,25 @@ import {
   Plus,
   Search,
   Trash2,
-  Upload,
   X,
+  ToggleLeft,
+  ToggleRight,
 } from 'lucide-react';
 
-import Table from '../components/Table';
 import apiClient from '../api/client';
 
-const MAX_NAME_WORDS = 6;
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /**
- * Keep product names short and clean.
- */
-function makeShortProductName(value) {
-  if (!value) return '';
-
-  let name = String(value)
-    .replace(/https?:\/\/\S+/gi, '')
-    .replace(/[|•·]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  name = name.replace(
-    /^(arraystyle|meesho|generic|premium|best|original|latest|trendy|stylish|fashionable)\s+/i,
-    ''
-  );
-
-  const lower = name.toLowerCase();
-
-  if (
-    lower.includes('sink') &&
-    lower.includes('sponge') &&
-    (
-      lower.includes('caddy') ||
-      lower.includes('organizer') ||
-      lower.includes('organiser') ||
-      lower.includes('rack') ||
-      lower.includes('holder')
-    )
-  ) {
-    return 'Stainless Steel Sink Sponge Holder';
-  }
-
-  if (
-    lower.includes('vegetable') &&
-    (
-      lower.includes('rack') ||
-      lower.includes('storage') ||
-      lower.includes('organizer')
-    )
-  ) {
-    return 'Vegetable Storage Rack';
-  }
-
-  if (
-    lower.includes('kitchen') &&
-    (
-      lower.includes('rack') ||
-      lower.includes('storage') ||
-      lower.includes('organizer')
-    )
-  ) {
-    return 'Kitchen Storage Rack';
-  }
-
-  const ignored = new Set([
-    'premium',
-    'best',
-    'latest',
-    'new',
-    'original',
-    'stylish',
-    'trendy',
-    'beautiful',
-    'practical',
-    'quality',
-    'multipurpose',
-    'multi',
-    'functional',
-    'portable',
-    'home',
-    'use',
-    'for',
-    'the',
-    'with',
-    'and',
-    'pack',
-    'set',
-    'pcs',
-    'piece',
-    'pieces',
-    'combo',
-    'offer',
-    'sale',
-  ]);
-
-  const words = name
-    .replace(/[,:;()[\]{}]+/g, ' ')
-    .split(/\s+/)
-    .filter(Boolean)
-    .filter(
-      (word) => !ignored.has(word.toLowerCase())
-    );
-
-  return words.slice(0, MAX_NAME_WORDS).join(' ');
-}
-
-/**
- * Convert backend image path to usable browser URL.
+ * Convert backend image path/URL to a browser-usable URL.
  */
 function getImageUrl(image) {
   if (!image) return '';
-
   if (typeof image === 'object') {
     image = image.url || image.path || '';
   }
-
   const value = String(image).trim();
-
   if (!value) return '';
-
   if (
     value.startsWith('http://') ||
     value.startsWith('https://') ||
@@ -135,26 +34,18 @@ function getImageUrl(image) {
   ) {
     return value;
   }
-
   const backendUrl = (
-    import.meta.env.VITE_API_URL ||
-    'https://rkpeedika.onrender.com/api'
+    import.meta.env.VITE_API_URL || 'https://rkpeedika.onrender.com/api'
   ).replace(/\/api\/?$/, '');
-
-  return `${backendUrl}${value.startsWith('/') ? value : `/${value}`
-    }`;
+  return `${backendUrl}${value.startsWith('/') ? value : `/${value}`}`;
 }
 
 /**
- * Parse JSON safely.
+ * Safely parse JSON with a fallback.
  */
-function parseJson(value, fallback) {
-  if (!value) return fallback;
-
-  if (typeof value !== 'string') {
-    return value;
-  }
-
+function safeJson(value, fallback) {
+  if (value === null || value === undefined || value === '') return fallback;
+  if (typeof value !== 'string') return value ?? fallback;
   try {
     return JSON.parse(value);
   } catch {
@@ -162,166 +53,150 @@ function parseJson(value, fallback) {
   }
 }
 
+// ─── Empty Form ────────────────────────────────────────────────────────────────
+
+const EMPTY_FORM = {
+  name: '',
+  tagline: '',
+  categoryId: '',
+  description: '',
+  highlights: '',
+  specifications: '{}',
+  price: '',          // MRP / base price
+  codPrice: '',       // Regular / COD price
+  onlinePrice: '',    // Prepaid / online price
+  rating: '',
+  reviewCount: '',
+  averageRating: '',
+  active: true,
+};
+
+// ─── Component ─────────────────────────────────────────────────────────────────
+
 export default function Products() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
-
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'active' | 'inactive'
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
-
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-
   const [uploading, setUploading] = useState(false);
+  const [togglingId, setTogglingId] = useState(null);
 
-  const [status, setStatus] = useState({
-    type: '',
-    message: '',
-  });
-
+  const [status, setStatus] = useState({ type: '', message: '' });
   const [images, setImages] = useState([]);
+  const [form, setForm] = useState(EMPTY_FORM);
 
-  const [form, setForm] = useState({
-    name: '',
-    tagline: '',
-    price: '',
-    originalPrice: '',
-    categoryId: '',
-    stock: '100',
-    seller: 'RK Peedika',
-    codPrice: '',
-    onlinePrice: '',
-    onlineDiscount: '',
-    enableOnlineDiscount: true,
-    codAvailable: true,
-    inStock: true,
-    estimatedDeliveryDays: '3',
-    description: '',
-    highlights: '',
-    specifications: '{}',
-    variants: '{}',
-    relatedProducts: '',
-    showPurchaseCount: true,
-    purchaseCountMode: 'auto',
-    purchaseCount: '',
-  });
+  // ── Data Loading ─────────────────────────────────────────────────────────────
 
-  useEffect(() => {
-    loadProducts();
-    loadCategories();
+  const showStatus = useCallback((type, message) => {
+    if (window.showAlert) {
+      const title = type === 'success' ? 'Success' : type === 'error' ? 'Error' : 'Notification';
+      window.showAlert(message, title);
+    } else {
+      setStatus({ type, message });
+      window.setTimeout(() => setStatus({ type: '', message: '' }), 5000);
+    }
   }, []);
 
-  function showStatus(type, message) {
-    setStatus({
-      type,
-      message,
-    });
-
-    window.setTimeout(() => {
-      setStatus({
-        type: '',
-        message: '',
-      });
-    }, 5000);
-  }
-
-  async function loadProducts() {
+  const loadProducts = useCallback(async () => {
     try {
       setLoading(true);
-
-      const response = await apiClient.get('/products');
-
+      // Use admin endpoint to see ALL products (active + inactive)
+      const response = await apiClient.get('/admin/products');
       const data = response.data;
-
       let list = [];
-
-      if (Array.isArray(data)) {
-        list = data;
-      } else if (Array.isArray(data?.products)) {
-        list = data.products;
-      } else if (Array.isArray(data?.data)) {
-        list = data.data;
-      }
-
+      if (Array.isArray(data?.products)) list = data.products;
+      else if (Array.isArray(data)) list = data;
       setProducts(list);
     } catch (error) {
-      console.error(error);
-
+      console.error('loadProducts error:', error);
       showStatus(
         'error',
         error.response?.data?.error?.message ||
-        error.response?.data?.message ||
-        'Failed to load products.'
+          error.response?.data?.message ||
+          'Failed to load products.'
       );
     } finally {
       setLoading(false);
     }
-  }
+  }, [showStatus]);
 
-  async function loadCategories() {
+  const loadCategories = useCallback(async () => {
     try {
       const response = await apiClient.get('/categories');
-
       const data = response.data;
-
       let list = [];
-
-      if (Array.isArray(data)) {
-        list = data;
-      } else if (Array.isArray(data?.categories)) {
-        list = data.categories;
-      } else if (Array.isArray(data?.data)) {
-        list = data.data;
-      }
-
-      setCategories(
-        list.filter(
-          (category) =>
-            category?.id &&
-            category?.name
-        )
-      );
+      if (Array.isArray(data)) list = data;
+      else if (Array.isArray(data?.categories)) list = data.categories;
+      else if (Array.isArray(data?.data)) list = data.data;
+      setCategories(list.filter((c) => c?.id && c?.name));
     } catch (error) {
-      console.error(error);
+      console.error('loadCategories error:', error);
+    }
+  }, []);
 
+  useEffect(() => {
+    loadProducts();
+    loadCategories();
+  }, [loadProducts, loadCategories]);
+
+  // ── Filtering ─────────────────────────────────────────────────────────────────
+
+  const filteredProducts = useMemo(() => {
+    const query = search.toLowerCase().trim();
+    return products.filter((p) => {
+      const matchSearch =
+        !query ||
+        String(p.name || '').toLowerCase().includes(query) ||
+        String(p.category?.name || p.category || '').toLowerCase().includes(query);
+
+      const isActive = p.status === 'active' || p.active === true;
+      const matchStatus =
+        statusFilter === 'all' ||
+        (statusFilter === 'active' && isActive) ||
+        (statusFilter === 'inactive' && !isActive);
+
+      return matchSearch && matchStatus;
+    });
+  }, [products, search, statusFilter]);
+
+  // ── Toggle Activate/Deactivate ────────────────────────────────────────────────
+
+  async function toggleStatus(product) {
+    const isCurrentlyActive = product.status === 'active' || product.active === true;
+    const willBeActive = !isCurrentlyActive;
+    setTogglingId(product.id);
+    try {
+      await apiClient.patch(`/admin/products/${product.id}/status`, { active: willBeActive });
+      showStatus(
+        'success',
+        `Product ${willBeActive ? 'activated' : 'deactivated'} successfully.`
+      );
+      await loadProducts();
+    } catch (error) {
+      console.error('toggleStatus error:', error);
       showStatus(
         'error',
-        'Failed to load product categories.'
+        error.response?.data?.error?.message ||
+          error.response?.data?.message ||
+          'Failed to update product status.'
       );
+    } finally {
+      setTogglingId(null);
     }
   }
 
+  // ── Modal Open/Close ──────────────────────────────────────────────────────────
+
   function resetForm() {
     setForm({
-      name: '',
-      tagline: '',
-      price: '',
-      originalPrice: '',
-      categoryId:
-        categories[0]?.id
-          ? String(categories[0].id)
-          : '',
-      stock: '100',
-      seller: 'RK Peedika',
-      codPrice: '',
-      onlinePrice: '',
-      onlineDiscount: '',
-      enableOnlineDiscount: true,
-      codAvailable: true,
-      inStock: true,
-      estimatedDeliveryDays: '3',
-      description: '',
-      highlights: '',
-      specifications: '{}',
-      variants: '{}',
-      relatedProducts: '',
-      showPurchaseCount: true,
-      purchaseCountMode: 'auto',
-      purchaseCount: '',
+      ...EMPTY_FORM,
+      categoryId: categories[0]?.id ? String(categories[0].id) : '',
     });
-
     setImages([]);
   }
 
@@ -333,1247 +208,842 @@ export default function Products() {
 
   function openEditModal(product) {
     setEditingProduct(product);
-
-    const productImages = parseJson(
-      product.images,
-      []
-    );
-
-    const highlights = parseJson(
-      product.highlights,
-      []
-    );
-
-    const specifications = parseJson(
-      product.specifications,
-      {}
-    );
-
-    const variants = parseJson(
-      product.variants,
-      {}
-    );
-
-    const relatedProducts = parseJson(
-      product.relatedProducts,
-      []
-    );
+    const productImages = safeJson(product.images, []);
+    const highlights = safeJson(product.highlights, []);
+    const specifications = safeJson(product.specifications, {});
+    const isActive = product.status === 'active' || product.active === true;
 
     setForm({
-      name: makeShortProductName(
-        product.name || ''
-      ),
-
+      name: product.name || '',
       tagline: product.tagline || '',
-
+      categoryId: product.categoryId ? String(product.categoryId) : (categories[0]?.id ? String(categories[0].id) : ''),
+      description: product.description || '',
+      highlights: Array.isArray(highlights) ? highlights.join('\n') : '',
+      specifications: JSON.stringify(specifications || {}, null, 2),
       price: product.price ?? '',
-
-      originalPrice:
-        product.originalPrice ?? '',
-
-      categoryId: product.categoryId
-        ? String(product.categoryId)
-        : categories[0]?.id
-          ? String(categories[0].id)
-          : '',
-
-      stock: product.stock ?? 0,
-
-      seller:
-        product.seller || 'RK Peedika',
-
-      codPrice:
-        product.codPrice ?? '',
-
-      onlinePrice:
-        product.onlinePrice ?? '',
-
-      onlineDiscount:
-        product.onlineDiscount ?? '',
-
-      enableOnlineDiscount:
-        product.enableOnlineDiscount !== false,
-
-      codAvailable:
-        product.codAvailable !== false,
-
-      inStock:
-        product.inStock !== false,
-
-      estimatedDeliveryDays:
-        product.estimatedDeliveryDays ?? 3,
-
-      description:
-        product.description || '',
-
-      highlights:
-        Array.isArray(highlights)
-          ? highlights.join('\n')
-          : '',
-
-      specifications:
-        JSON.stringify(
-          specifications || {},
-          null,
-          2
-        ),
-
-      variants:
-        JSON.stringify(
-          variants || {},
-          null,
-          2
-        ),
-
-      relatedProducts:
-        Array.isArray(relatedProducts)
-          ? relatedProducts.join(', ')
-          : '',
-
-      showPurchaseCount:
-        product.showPurchaseCount !== false,
-
-      purchaseCountMode:
-        product.purchaseCountMode || 'auto',
-
-      purchaseCount:
-        product.purchaseCount ?? '',
+      codPrice: product.codPrice ?? '',
+      onlinePrice: product.onlinePrice ?? '',
+      rating: product.rating ?? '',
+      reviewCount: product.reviewCount ?? '',
+      averageRating: product.averageRating ?? '',
+      active: isActive,
     });
 
     setImages(
       Array.isArray(productImages)
-        ? productImages.map((image) => ({
-          url: getImageUrl(image),
-          storedUrl:
-            typeof image === 'object'
-              ? image.url
-              : image,
-          preview: getImageUrl(image),
-        }))
+        ? productImages.map((img) => ({
+            url: getImageUrl(img),
+            storedUrl: typeof img === 'object' ? img.url : img,
+            preview: getImageUrl(img),
+          }))
         : []
     );
-
     setModalOpen(true);
   }
 
   function updateField(name, value) {
-    setForm((current) => ({
-      ...current,
-      [name]: value,
-    }));
+    setForm((prev) => ({ ...prev, [name]: value }));
   }
 
-  /**
-   * Upload images to backend.
-   */
-  async function handleImageUpload(event) {
-    const files = Array.from(
-      event.target.files || []
-    );
+  // ── Image Upload ──────────────────────────────────────────────────────────────
 
+  async function handleImageUpload(event) {
+    const files = Array.from(event.target.files || []);
     if (!files.length) return;
 
     if (images.length + files.length > 8) {
-      showStatus(
-        'error',
-        'You can upload maximum 8 images per product.'
-      );
+      showStatus('error', 'Maximum 8 images per product.');
       return;
     }
 
     for (const file of files) {
       if (!file.type.startsWith('image/')) {
-        showStatus(
-          'error',
-          `${file.name} is not a valid image.`
-        );
+        showStatus('error', `${file.name} is not a valid image.`);
         return;
       }
-
       if (file.size > 8 * 1024 * 1024) {
-        showStatus(
-          'error',
-          `${file.name} is larger than 8MB.`
-        );
+        showStatus('error', `${file.name} exceeds 8 MB.`);
         return;
       }
     }
 
     try {
       setUploading(true);
-
       const formData = new FormData();
+      files.forEach((file) => formData.append('images', file));
 
-      files.forEach((file) => {
-        formData.append('images', file);
+      const response = await apiClient.post('/uploads/product-images', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
       });
 
-      const response =
-        await apiClient.post(
-          '/uploads/product-images',
-          formData,
-          {
-            headers: {
-              'Content-Type':
-                'multipart/form-data',
-            },
-          }
-        );
+      const uploaded = response.data?.images || [];
+      const newImages = uploaded.map((img) => ({
+        url: img.url,
+        storedUrl: img.url,
+        preview: img.url,
+      }));
 
-      const uploaded =
-        response.data?.images || [];
-
-      const newImages = uploaded.map(
-        (image) => ({
-          url: image.url,
-          storedUrl: image.url,
-          preview: image.url,
-        })
-      );
-
-      setImages((current) => [
-        ...current,
-        ...newImages,
-      ]);
-
+      setImages((prev) => [...prev, ...newImages]);
       showStatus(
         'success',
-        `${newImages.length} image${newImages.length > 1 ? 's' : ''
-        } uploaded successfully.`
+        `${newImages.length} image${newImages.length > 1 ? 's' : ''} uploaded.`
       );
     } catch (error) {
-      console.error(
-        'Image upload failed:',
-        error
-      );
-
+      console.error('Image upload failed:', error);
       showStatus(
         'error',
         error.response?.data?.error?.message ||
-        error.response?.data?.message ||
-        'Image upload failed.'
+          error.response?.data?.message ||
+          'Image upload failed. Please try again.'
       );
     } finally {
       setUploading(false);
-
       event.target.value = '';
     }
   }
 
   function removeImage(index) {
-    setImages((current) =>
-      current.filter(
-        (_, imageIndex) =>
-          imageIndex !== index
-      )
-    );
+    setImages((prev) => prev.filter((_, i) => i !== index));
   }
+
+  // ── Save Product ──────────────────────────────────────────────────────────────
 
   async function saveProduct(event) {
     event.preventDefault();
 
+    if (!form.name.trim()) {
+      showStatus('error', 'Product name is required.');
+      return;
+    }
     if (!form.categoryId) {
-      showStatus(
-        'error',
-        'Please select a category.'
-      );
+      showStatus('error', 'Please select a category.');
       return;
     }
-
-    const cleanName =
-      makeShortProductName(form.name);
-
-    if (!cleanName) {
-      showStatus(
-        'error',
-        'Please enter a product name.'
-      );
-      return;
-    }
-
     if (!form.price || Number(form.price) <= 0) {
-      showStatus(
-        'error',
-        'Please enter a valid price.'
-      );
+      showStatus('error', 'Please enter a valid MRP (price).');
       return;
     }
-
     if (images.length === 0) {
-      showStatus(
-        'error',
-        'Please upload at least one product image.'
-      );
+      showStatus('error', 'Please upload at least one product image.');
       return;
     }
 
     let specifications = {};
-    let variants = {};
-
     try {
-      specifications = JSON.parse(
-        form.specifications || '{}'
-      );
-
-      variants = JSON.parse(
-        form.variants || '{}'
-      );
+      specifications = JSON.parse(form.specifications || '{}');
     } catch {
-      showStatus(
-        'error',
-        'Specifications or variants contain invalid JSON.'
-      );
+      showStatus('error', 'Specifications contain invalid JSON.');
       return;
     }
 
-    const imageUrls = images
-      .map(
-        (image) =>
-          image.storedUrl ||
-          image.url
-      )
-      .filter(Boolean);
+    const imageUrls = images.map((img) => img.storedUrl || img.url).filter(Boolean);
 
     const highlights = form.highlights
       .split('\n')
       .map((item) => item.trim())
       .filter(Boolean);
 
-    const relatedProducts =
-      form.relatedProducts
-        .split(',')
-        .map((item) => item.trim())
-        .filter(Boolean);
-
     const payload = {
-      name: cleanName,
-
-      tagline:
-        form.tagline ||
-        `${cleanName} for everyday use.`,
-
+      name: form.name.trim(),
+      tagline: form.tagline || `${form.name.trim()} for everyday use.`,
       description: form.description,
-
       price: Number(form.price),
-
-      originalPrice:
-        form.originalPrice === ''
-          ? null
-          : Number(form.originalPrice),
-
-      categoryId:
-        String(form.categoryId),
-
-      stock:
-        form.stock === ''
-          ? 0
-          : Number(form.stock),
-
-      seller:
-        form.seller || 'RK Peedika',
-
+      codPrice: form.codPrice === '' ? null : Number(form.codPrice),
+      onlinePrice: form.onlinePrice === '' ? null : Number(form.onlinePrice),
+      categoryId: String(form.categoryId),
       images: imageUrls,
-
-      codPrice:
-        form.codPrice === ''
-          ? null
-          : Number(form.codPrice),
-
-      onlinePrice:
-        form.onlinePrice === ''
-          ? null
-          : Number(form.onlinePrice),
-
-      onlineDiscount:
-        form.onlineDiscount === ''
-          ? null
-          : Number(form.onlineDiscount),
-
-      enableOnlineDiscount:
-        Boolean(
-          form.enableOnlineDiscount
-        ),
-
-      codAvailable:
-        Boolean(form.codAvailable),
-
-      inStock:
-        Boolean(form.inStock),
-
-      estimatedDeliveryDays:
-        Number(
-          form.estimatedDeliveryDays || 3
-        ),
-
       highlights,
-
       specifications,
-
-      variants,
-
-      relatedProducts,
-
-      showPurchaseCount:
-        Boolean(form.showPurchaseCount),
-
-      purchaseCountMode:
-        form.purchaseCountMode,
-
-      purchaseCount:
-        form.purchaseCount === ''
-          ? null
-          : Number(form.purchaseCount),
+      rating: form.rating === '' ? undefined : Number(form.rating),
+      reviewCount: form.reviewCount === '' ? undefined : Number(form.reviewCount),
+      averageRating: form.averageRating === '' ? undefined : Number(form.averageRating),
+      active: Boolean(form.active),
+      // Keep stock alive so backend doesn't fail validation
+      stock: 9999,
+      seller: 'RK Peedika',
+      inStock: true,
     };
 
     try {
       setSaving(true);
-
       if (editingProduct) {
-        await apiClient.put(
-          `/products/${editingProduct.id}`,
-          payload
-        );
-
-        showStatus(
-          'success',
-          'Product updated successfully.'
-        );
+        await apiClient.put(`/products/${editingProduct.id}`, payload);
+        showStatus('success', 'Product updated successfully.');
       } else {
-        await apiClient.post(
-          '/products',
-          payload
-        );
-
-        showStatus(
-          'success',
-          'Product published successfully.'
-        );
+        await apiClient.post('/products', payload);
+        showStatus('success', 'Product created successfully.');
       }
-
       setModalOpen(false);
       setEditingProduct(null);
-
       await loadProducts();
     } catch (error) {
-      console.error(
-        'Product save failed:',
-        error
-      );
-
+      console.error('saveProduct error:', error);
       showStatus(
         'error',
         error.response?.data?.error?.message ||
-        error.response?.data?.message ||
-        'Failed to save product.'
+          error.response?.data?.message ||
+          'Failed to save product. Please try again.'
       );
     } finally {
       setSaving(false);
     }
   }
 
-  async function deleteProduct(id) {
-    const confirmed =
-      window.confirm(
-        'Are you sure you want to delete this product?'
-      );
+  // ── Delete Product ────────────────────────────────────────────────────────────
 
+  async function deleteProduct(product) {
+    // Show warning if product has had orders
+    const confirmed = window.showConfirm
+      ? await window.showConfirm(
+          `Delete "${product.name}"?\n\nIf this product has existing orders, deactivating it instead is safer.`,
+          "Delete Product"
+        )
+      : window.confirm(
+          `Delete "${product.name}"?\n\n` +
+            'If this product has existing orders, deactivating it instead is safer.\n\n' +
+            'Press OK to delete permanently, or Cancel to go back.'
+        );
     if (!confirmed) return;
 
     try {
-      await apiClient.delete(
-        `/products/${id}`
-      );
-
-      showStatus(
-        'success',
-        'Product deleted successfully.'
-      );
-
+      await apiClient.delete(`/products/${product.id}`);
+      showStatus('success', 'Product deleted successfully.');
       await loadProducts();
     } catch (error) {
-      console.error(
-        'Delete failed:',
-        error
-      );
-
+      console.error('deleteProduct error:', error);
       showStatus(
         'error',
         error.response?.data?.error?.message ||
-        error.response?.data?.message ||
-        'Failed to delete product.'
+          error.response?.data?.message ||
+          'Failed to delete product.'
       );
     }
   }
 
-  const filteredProducts =
-    useMemo(() => {
-      const query =
-        search.toLowerCase().trim();
-
-      if (!query) return products;
-
-      return products.filter(
-        (product) => {
-          const name =
-            String(
-              product.name || ''
-            ).toLowerCase();
-
-          const category =
-            String(
-              product.category?.name ||
-              product.category ||
-              ''
-            ).toLowerCase();
-
-          return (
-            name.includes(query) ||
-            category.includes(query)
-          );
-        }
-      );
-    }, [products, search]);
-
-  const columns = [
-    {
-      key: 'id',
-      label: 'SKU ID',
-      sortable: true,
-    },
-
-    {
-      key: 'name',
-      label: 'Product Name',
-      sortable: true,
-
-      render: (row) => (
-        <div className="max-w-[220px]">
-          <div className="font-bold text-gray-900">
-            {makeShortProductName(
-              row.name
-            )}
-          </div>
-        </div>
-      ),
-    },
-
-    {
-      key: 'category',
-      label: 'Category',
-
-      render: (row) => (
-        <span>
-          {row.category?.name ||
-            row.category ||
-            'General'}
-        </span>
-      ),
-    },
-
-    {
-      key: 'price',
-      label: 'Pricing',
-
-      render: (row) => (
-        <div className="flex flex-col text-[10px]">
-          <span className="font-bold">
-            Base: ₹{row.price}
-          </span>
-
-          {row.codPrice && (
-            <span className="text-gray-400">
-              COD: ₹{row.codPrice}
-            </span>
-          )}
-
-          {row.onlinePrice && (
-            <span className="text-emerald-600">
-              Online: ₹
-              {row.onlinePrice}
-            </span>
-          )}
-        </div>
-      ),
-    },
-
-    {
-      key: 'status',
-      label: 'Status',
-
-      render: (row) => (
-        <span
-          className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
-            row.status === 'active'
-              ? 'bg-emerald-50 text-emerald-600'
-              : 'bg-gray-100 text-gray-500'
-          }`}
-        >
-          {row.status === 'active' ? 'Active' : 'Inactive'}
-        </span>
-      ),
-    },
-
-    {
-      key: 'images',
-      label: 'Image',
-
-      render: (row) => {
-        const rowImages =
-          parseJson(
-            row.images,
-            []
-          );
-
-        const image =
-          Array.isArray(rowImages)
-            ? rowImages[0]
-            : null;
-
-        return image ? (
-          <img
-            src={getImageUrl(image)}
-            alt={row.name}
-            className="h-12 w-12 rounded-lg object-cover border"
-          />
-        ) : (
-          <div className="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center">
-            <ImagePlus className="h-4 w-4 text-gray-400" />
-          </div>
-        );
-      },
-    },
-
-    {
-      key: 'actions',
-      label: 'Options',
-
-      render: (row) => (
-        <div className="flex gap-1">
-          <button
-            type="button"
-            onClick={() =>
-              openEditModal(row)
-            }
-            className="rounded-lg p-2 text-gray-400 hover:bg-gray-50 hover:text-[#F7941D]"
-          >
-            <Edit className="h-4 w-4" />
-          </button>
-
-          <button
-            type="button"
-            onClick={() =>
-              deleteProduct(row.id)
-            }
-            className="rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-500"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </div>
-      ),
-    },
-  ];
+  // ── Render ────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="p-6 md:p-8 space-y-6">
+    <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
 
-      {/* HEADER */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-black text-gray-900">
-            Products Catalog
-          </h2>
-
+          <h2 className="text-2xl font-black text-gray-900">Products</h2>
           <p className="text-xs text-gray-400 font-semibold mt-1">
-            Manage products, images, pricing and details.
+            {products.length} total · {products.filter((p) => p.status === 'active' || p.active).length} active
           </p>
         </div>
-
         <button
           type="button"
           onClick={openAddModal}
-          disabled={
-            categories.length === 0
-          }
-          className="flex items-center justify-center gap-2 rounded-xl bg-[#F7941D] px-5 py-3 text-xs font-bold text-white shadow hover:bg-[#E07D10] disabled:opacity-50"
+          disabled={categories.length === 0}
+          className="flex items-center justify-center gap-2 rounded-xl bg-[#F7941D] px-5 py-3 text-xs font-bold text-white shadow hover:bg-[#E07D10] disabled:opacity-50 transition-colors"
         >
           <Plus className="h-4 w-4" />
-          Add New Product
+          Add Product
         </button>
       </div>
 
-      {/* STATUS */}
+      {/* Status Message */}
       {status.message && (
         <div
-          className={`rounded-xl border p-4 flex items-center gap-2 text-xs font-bold ${status.type === 'success'
+          className={`rounded-xl border p-4 flex items-center gap-2 text-xs font-bold ${
+            status.type === 'success'
               ? 'bg-green-50 border-green-200 text-green-700'
               : 'bg-red-50 border-red-200 text-red-700'
-            }`}
+          }`}
         >
           {status.type === 'success' ? (
-            <CheckCircle className="h-4 w-4" />
+            <CheckCircle className="h-4 w-4 shrink-0" />
           ) : (
-            <AlertCircle className="h-4 w-4" />
+            <AlertCircle className="h-4 w-4 shrink-0" />
           )}
-
           {status.message}
         </div>
       )}
 
-      {/* SEARCH */}
-      <div className="flex items-center max-w-md rounded-xl border border-gray-100 bg-white px-3 py-3 shadow-sm">
-        <Search className="h-4 w-4 text-gray-400 mr-2" />
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="flex items-center flex-1 max-w-sm rounded-xl border border-gray-200 bg-white px-3 py-2.5 shadow-sm">
+          <Search className="h-4 w-4 text-gray-400 mr-2 shrink-0" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search products…"
+            className="w-full bg-transparent outline-none text-xs"
+          />
+        </div>
 
-        <input
-          type="text"
-          value={search}
-          onChange={(event) =>
-            setSearch(event.target.value)
-          }
-          placeholder="Search products..."
-          className="w-full bg-transparent outline-none text-xs"
-        />
+        <div className="flex gap-2">
+          {['all', 'active', 'inactive'].map((f) => (
+            <button
+              key={f}
+              onClick={() => setStatusFilter(f)}
+              className={`px-4 py-2 rounded-xl text-xs font-bold capitalize transition-colors ${
+                statusFilter === f
+                  ? 'bg-[#F7941D] text-white'
+                  : 'bg-white border border-gray-200 text-gray-500 hover:border-gray-300'
+              }`}
+            >
+              {f}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* TABLE */}
+      {/* Product List */}
       {loading ? (
         <div className="flex justify-center py-20">
           <Loader2 className="h-7 w-7 animate-spin text-[#F7941D]" />
         </div>
+      ) : filteredProducts.length === 0 ? (
+        <div className="bg-white border border-gray-100 rounded-xl p-16 text-center">
+          <Package className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+          <p className="text-sm font-bold text-gray-400">No products found.</p>
+          <p className="text-xs text-gray-400 mt-1">Try a different search or filter.</p>
+        </div>
       ) : (
-        <Table
-          columns={columns}
-          data={filteredProducts}
-          itemsPerPage={10}
-          emptyMessage="No products found."
-        />
+        <>
+          {/* Desktop Table */}
+          <div className="hidden md:block bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
+            <table className="w-full text-xs">
+              <thead className="bg-gray-50 border-b border-gray-100">
+                <tr>
+                  <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-gray-400">Image</th>
+                  <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-gray-400">Product</th>
+                  <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-gray-400">Category</th>
+                  <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-gray-400">Pricing</th>
+                  <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-gray-400">Rating</th>
+                  <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-gray-400">Status</th>
+                  <th className="px-4 py-3 text-left text-[10px] font-bold uppercase tracking-wider text-gray-400">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {filteredProducts.map((product) => {
+                  const productImages = safeJson(product.images, []);
+                  const firstImage = Array.isArray(productImages) ? productImages[0] : null;
+                  const isActive = product.status === 'active' || product.active === true;
+                  const isToggling = togglingId === product.id;
+
+                  return (
+                    <tr key={product.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3">
+                        {firstImage ? (
+                          <img
+                            src={getImageUrl(firstImage)}
+                            alt={product.name}
+                            className="h-12 w-12 rounded-lg object-cover border border-gray-100"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = '';
+                              e.target.style.display = 'none';
+                              e.target.nextSibling?.classList.remove('hidden');
+                            }}
+                          />
+                        ) : null}
+                        <div className={`h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center ${firstImage ? 'hidden' : ''}`}>
+                          <ImagePlus className="h-4 w-4 text-gray-400" />
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="font-bold text-gray-900 max-w-[180px] truncate">{product.name}</div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-500">
+                        {product.category?.name || '—'}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-col gap-0.5">
+                          <span className="font-bold text-gray-800">MRP ₹{product.price ?? '—'}</span>
+                          {product.codPrice && (
+                            <span className="text-gray-500">COD ₹{product.codPrice}</span>
+                          )}
+                          {product.onlinePrice && (
+                            <span className="text-emerald-600 font-semibold">Prepaid ₹{product.onlinePrice}</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-gray-600">
+                        {product.rating || product.averageRating
+                          ? `★ ${product.rating || product.averageRating}`
+                          : '—'}
+                        {product.reviewCount ? ` (${product.reviewCount})` : ''}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${
+                            isActive
+                              ? 'bg-emerald-50 text-emerald-700'
+                              : 'bg-gray-100 text-gray-500'
+                          }`}
+                        >
+                          {isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-1">
+                          {/* Edit */}
+                          <button
+                            type="button"
+                            onClick={() => openEditModal(product)}
+                            title="Edit product"
+                            className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-[#F7941D] transition-colors"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+
+                          {/* Activate / Deactivate */}
+                          <button
+                            type="button"
+                            onClick={() => toggleStatus(product)}
+                            disabled={isToggling}
+                            title={isActive ? 'Deactivate product' : 'Activate product'}
+                            className={`rounded-lg p-2 transition-colors ${
+                              isToggling
+                                ? 'opacity-50 cursor-not-allowed'
+                                : isActive
+                                  ? 'text-emerald-500 hover:bg-red-50 hover:text-red-500'
+                                  : 'text-gray-400 hover:bg-emerald-50 hover:text-emerald-600'
+                            }`}
+                          >
+                            {isToggling ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : isActive ? (
+                              <ToggleRight className="h-4 w-4" />
+                            ) : (
+                              <ToggleLeft className="h-4 w-4" />
+                            )}
+                          </button>
+
+                          {/* Delete */}
+                          <button
+                            type="button"
+                            onClick={() => deleteProduct(product)}
+                            title="Delete product"
+                            className="rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Mobile Cards */}
+          <div className="md:hidden space-y-3">
+            {filteredProducts.map((product) => {
+              const productImages = safeJson(product.images, []);
+              const firstImage = Array.isArray(productImages) ? productImages[0] : null;
+              const isActive = product.status === 'active' || product.active === true;
+              const isToggling = togglingId === product.id;
+
+              return (
+                <div key={product.id} className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
+                  <div className="flex gap-3">
+                    <div className="shrink-0">
+                      {firstImage ? (
+                        <img
+                          src={getImageUrl(firstImage)}
+                          alt={product.name}
+                          className="h-16 w-16 rounded-lg object-cover border border-gray-100"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div className="h-16 w-16 rounded-lg bg-gray-100 flex items-center justify-center">
+                          <ImagePlus className="h-5 w-5 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="font-bold text-gray-900 text-sm truncate">{product.name}</p>
+                        <span
+                          className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                            isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-gray-100 text-gray-500'
+                          }`}
+                        >
+                          {isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-0.5">{product.category?.name || '—'}</p>
+                      <div className="text-xs mt-1 space-y-0.5">
+                        <span className="font-bold text-gray-800">MRP ₹{product.price}</span>
+                        {product.codPrice && <span className="ml-2 text-gray-500">COD ₹{product.codPrice}</span>}
+                        {product.onlinePrice && <span className="ml-2 text-emerald-600">Prepaid ₹{product.onlinePrice}</span>}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-2 mt-3 pt-3 border-t border-gray-50">
+                    <button
+                      onClick={() => openEditModal(product)}
+                      className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-gray-200 py-2 text-xs font-bold text-gray-600 hover:bg-gray-50"
+                    >
+                      <Edit className="h-3.5 w-3.5" /> Edit
+                    </button>
+                    <button
+                      onClick={() => toggleStatus(product)}
+                      disabled={isToggling}
+                      className={`flex-1 flex items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-bold transition-colors ${
+                        isActive
+                          ? 'border border-red-200 text-red-500 hover:bg-red-50'
+                          : 'border border-emerald-200 text-emerald-600 hover:bg-emerald-50'
+                      }`}
+                    >
+                      {isToggling ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                      ) : isActive ? (
+                        <><ToggleRight className="h-3.5 w-3.5" /> Deactivate</>
+                      ) : (
+                        <><ToggleLeft className="h-3.5 w-3.5" /> Activate</>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </>
       )}
 
-      {/* PRODUCT MODAL */}
+      {/* ── PRODUCT MODAL ─────────────────────────────────────────────────────── */}
       {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+        <div
+          className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 backdrop-blur-sm p-4 overflow-y-auto"
+          onClick={(e) => { if (e.target === e.currentTarget) setModalOpen(false); }}
+        >
+          <div className="w-full max-w-2xl my-8 rounded-2xl bg-white shadow-2xl">
 
-          <div className="w-full max-w-3xl max-h-[95vh] overflow-hidden rounded-2xl bg-white shadow-2xl">
-
-            {/* MODAL HEADER */}
+            {/* Modal Header */}
             <div className="flex items-center justify-between border-b px-6 py-4">
               <div>
                 <h3 className="text-lg font-black text-gray-900">
-                  {editingProduct
-                    ? 'Edit Product'
-                    : 'Add Product'}
+                  {editingProduct ? 'Edit Product' : 'Add Product'}
                 </h3>
-
-                <p className="text-[11px] text-gray-400 mt-1">
-                  Product names are automatically kept short.
+                <p className="text-[11px] text-gray-400 mt-0.5">
+                  All changes save to the database and reflect on the customer site immediately.
                 </p>
               </div>
-
               <button
                 type="button"
-                onClick={() =>
-                  setModalOpen(false)
-                }
+                onClick={() => setModalOpen(false)}
                 className="rounded-full p-2 text-gray-400 hover:bg-gray-100"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            {/* FORM */}
-            <form
-              onSubmit={saveProduct}
-              className="max-h-[calc(95vh-80px)] overflow-y-auto p-6 space-y-6"
-            >
+            {/* Form */}
+            <form onSubmit={saveProduct} className="p-6 space-y-6">
 
-              {/* BASIC */}
+              {/* ── BASIC INFO ──────────────────────────────────────────────── */}
               <section>
-                <h4 className="text-sm font-black mb-3">
-                  Basic Information
-                </h4>
+                <h4 className="text-sm font-black text-gray-800 mb-4">Basic Information</h4>
+                <div className="grid sm:grid-cols-2 gap-4">
 
-                <div className="grid md:grid-cols-2 gap-4">
-
-                  <div>
-                    <label className="text-[10px] font-bold uppercase text-gray-400">
+                  <div className="sm:col-span-2">
+                    <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
                       Product Name *
                     </label>
-
                     <input
                       value={form.name}
-                      onChange={(e) =>
-                        updateField(
-                          'name',
-                          e.target.value
-                        )
-                      }
-                      onBlur={() =>
-                        updateField(
-                          'name',
-                          makeShortProductName(
-                            form.name
-                          )
-                        )
-                      }
+                      onChange={(e) => updateField('name', e.target.value)}
                       placeholder="Stainless Steel Sink Sponge Holder"
-                      className="mt-1 w-full rounded-xl border px-3 py-3 text-xs outline-none focus:border-[#F7941D]"
+                      required
+                      className="w-full rounded-xl border border-gray-200 px-3 py-3 text-xs outline-none focus:border-[#F7941D] transition-colors"
                     />
-
-                    <div className="text-[10px] text-gray-400 mt-1">
-                      Maximum 6 words
-                    </div>
                   </div>
 
                   <div>
-                    <label className="text-[10px] font-bold uppercase text-gray-400">
+                    <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
                       Category *
                     </label>
-
                     <select
                       value={form.categoryId}
-                      onChange={(e) =>
-                        updateField(
-                          'categoryId',
-                          e.target.value
-                        )
-                      }
-                      className="mt-1 w-full rounded-xl border px-3 py-3 text-xs outline-none focus:border-[#F7941D]"
+                      onChange={(e) => updateField('categoryId', e.target.value)}
+                      required
+                      className="w-full rounded-xl border border-gray-200 px-3 py-3 text-xs outline-none focus:border-[#F7941D] transition-colors"
                     >
-                      <option value="">
-                        Select category
-                      </option>
-
-                      {categories.map(
-                        (category) => (
-                          <option
-                            key={category.id}
-                            value={String(
-                              category.id
-                            )}
-                          >
-                            {category.name}
-                          </option>
-                        )
-                      )}
+                      <option value="">Select category</option>
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={String(cat.id)}>
+                          {cat.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
-                </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
+                      Short Tagline
+                    </label>
+                    <input
+                      value={form.tagline}
+                      onChange={(e) => updateField('tagline', e.target.value)}
+                      placeholder="Durable kitchen sink organizer"
+                      className="w-full rounded-xl border border-gray-200 px-3 py-3 text-xs outline-none focus:border-[#F7941D] transition-colors"
+                    />
+                  </div>
 
-                <div className="mt-4">
-                  <label className="text-[10px] font-bold uppercase text-gray-400">
-                    Short Description
-                  </label>
+                  <div className="sm:col-span-2">
+                    <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
+                      Description
+                    </label>
+                    <textarea
+                      value={form.description}
+                      onChange={(e) => updateField('description', e.target.value)}
+                      rows={4}
+                      placeholder="Detailed product description…"
+                      className="w-full rounded-xl border border-gray-200 px-3 py-3 text-xs outline-none focus:border-[#F7941D] transition-colors resize-none"
+                    />
+                  </div>
 
-                  <input
-                    value={form.tagline}
-                    onChange={(e) =>
-                      updateField(
-                        'tagline',
-                        e.target.value
-                      )
-                    }
-                    placeholder="Durable kitchen sink organizer"
-                    className="mt-1 w-full rounded-xl border px-3 py-3 text-xs outline-none focus:border-[#F7941D]"
-                  />
                 </div>
               </section>
 
-              {/* IMAGE UPLOAD */}
+              {/* ── IMAGES ─────────────────────────────────────────────────── */}
               <section className="border-t pt-5">
-
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <h4 className="text-sm font-black">
-                      Product Images
-                    </h4>
-
-                    <p className="text-[10px] text-gray-400">
-                      Upload up to 8 images. Maximum 8MB each.
-                    </p>
+                    <h4 className="text-sm font-black text-gray-800">Product Images</h4>
+                    <p className="text-[10px] text-gray-400 mt-0.5">Up to 8 images · Max 8 MB each</p>
                   </div>
-
                   <label
-                    className={`cursor-pointer flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold text-white ${uploading
-                        ? 'bg-gray-400'
-                        : 'bg-[#F7941D] hover:bg-[#E07D10]'
-                      }`}
+                    className={`cursor-pointer flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold text-white transition-colors ${
+                      uploading ? 'bg-gray-400 cursor-wait' : 'bg-[#F7941D] hover:bg-[#E07D10]'
+                    }`}
                   >
                     {uploading ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Uploading...
-                      </>
+                      <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Uploading…</>
                     ) : (
-                      <>
-                        <Upload className="h-4 w-4" />
-                        Upload Images
-                      </>
+                      <><ImagePlus className="h-3.5 w-3.5" /> Upload Images</>
                     )}
-
                     <input
                       type="file"
-                      accept="image/jpeg,image/png,image/webp,image/avif,image/gif"
+                      accept="image/*"
                       multiple
+                      onChange={handleImageUpload}
                       disabled={uploading}
-                      onChange={
-                        handleImageUpload
-                      }
                       className="hidden"
                     />
                   </label>
                 </div>
 
                 {images.length === 0 ? (
-                  <label className="flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 py-10 cursor-pointer hover:border-[#F7941D] hover:bg-orange-50">
-
-                    <ImagePlus className="h-10 w-10 text-gray-300" />
-
-                    <p className="mt-2 text-xs font-bold text-gray-500">
-                      Click to upload product images
-                    </p>
-
-                    <p className="text-[10px] text-gray-400">
-                      JPG, PNG, WEBP or AVIF
-                    </p>
-
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={
-                        handleImageUpload
-                      }
-                      className="hidden"
-                    />
-                  </label>
+                  <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center">
+                    <ImagePlus className="h-8 w-8 text-gray-300 mx-auto mb-2" />
+                    <p className="text-xs text-gray-400 font-semibold">No images yet. Upload above.</p>
+                  </div>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-
-                    {images.map(
-                      (image, index) => (
-                        <div
-                          key={`${image.url}-${index}`}
-                          className="relative group aspect-square rounded-xl overflow-hidden border bg-gray-50"
+                  <div className="grid grid-cols-4 gap-2">
+                    {images.map((img, idx) => (
+                      <div key={idx} className="relative group rounded-xl overflow-hidden border border-gray-100">
+                        <img
+                          src={img.preview || img.url}
+                          alt={`Product image ${idx + 1}`}
+                          className="h-20 w-full object-cover"
+                          onError={(e) => { e.target.src = ''; e.target.style.background = '#f3f4f6'; }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeImage(idx)}
+                          className="absolute top-1 right-1 rounded-full bg-red-500 text-white p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
                         >
-                          <img
-                            src={image.preview}
-                            alt={`Product ${index + 1}`}
-                            className="h-full w-full object-cover"
-                          />
-
-                          {index === 0 && (
-                            <span className="absolute left-2 top-2 rounded-md bg-black/70 px-2 py-1 text-[9px] font-bold text-white">
-                              MAIN
-                            </span>
-                          )}
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              removeImage(
-                                index
-                              )
-                            }
-                            className="absolute right-2 top-2 rounded-full bg-red-500 p-1.5 text-white opacity-0 group-hover:opacity-100 transition"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        </div>
-                      )
-                    )}
-
+                          <X className="h-3 w-3" />
+                        </button>
+                        {idx === 0 && (
+                          <span className="absolute bottom-1 left-1 text-[9px] font-bold bg-black/60 text-white px-1.5 py-0.5 rounded">
+                            Main
+                          </span>
+                        )}
+                      </div>
+                    ))}
                   </div>
                 )}
-
               </section>
 
-              {/* PRICING */}
+              {/* ── PRICING ────────────────────────────────────────────────── */}
               <section className="border-t pt-5">
+                <h4 className="text-sm font-black text-gray-800 mb-4">Pricing</h4>
+                <div className="grid sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
+                      MRP (Base Price) *
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">₹</span>
+                      <input
+                        type="number"
+                        value={form.price}
+                        onChange={(e) => updateField('price', e.target.value)}
+                        placeholder="499"
+                        min="0"
+                        step="0.01"
+                        required
+                        className="w-full rounded-xl border border-gray-200 pl-7 pr-3 py-3 text-xs outline-none focus:border-[#F7941D] transition-colors"
+                      />
+                    </div>
+                  </div>
 
-                <h4 className="text-sm font-black mb-3">
-                  Pricing & Stock
-                </h4>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
+                      COD / Regular Price
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">₹</span>
+                      <input
+                        type="number"
+                        value={form.codPrice}
+                        onChange={(e) => updateField('codPrice', e.target.value)}
+                        placeholder="389"
+                        min="0"
+                        step="0.01"
+                        className="w-full rounded-xl border border-gray-200 pl-7 pr-3 py-3 text-xs outline-none focus:border-[#F7941D] transition-colors"
+                      />
+                    </div>
+                    <p className="text-[9px] text-gray-400 mt-0.5">Shown to customers paying COD</p>
+                  </div>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-
-                  <Field
-                    label="Selling Price *"
-                    type="number"
-                    value={form.price}
-                    onChange={(value) =>
-                      updateField(
-                        'price',
-                        value
-                      )
-                    }
-                  />
-
-                  <Field
-                    label="Original MRP"
-                    type="number"
-                    value={
-                      form.originalPrice
-                    }
-                    onChange={(value) =>
-                      updateField(
-                        'originalPrice',
-                        value
-                      )
-                    }
-                  />
-
-                  <Field
-                    label="COD Price"
-                    type="number"
-                    value={form.codPrice}
-                    onChange={(value) =>
-                      updateField(
-                        'codPrice',
-                        value
-                      )
-                    }
-                  />
-
-                  <Field
-                    label="Online Price"
-                    type="number"
-                    value={form.onlinePrice}
-                    onChange={(value) =>
-                      updateField(
-                        'onlinePrice',
-                        value
-                      )
-                    }
-                  />
-
+                  <div>
+                    <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
+                      Prepaid / Online Price
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">₹</span>
+                      <input
+                        type="number"
+                        value={form.onlinePrice}
+                        onChange={(e) => updateField('onlinePrice', e.target.value)}
+                        placeholder="349"
+                        min="0"
+                        step="0.01"
+                        className="w-full rounded-xl border border-gray-200 pl-7 pr-3 py-3 text-xs outline-none focus:border-[#F7941D] transition-colors"
+                      />
+                    </div>
+                    <p className="text-[9px] text-gray-400 mt-0.5">Shown for Razorpay / online payments</p>
+                  </div>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
-
-                  <Field
-                    label="Online Discount"
-                    type="number"
-                    value={
-                      form.onlineDiscount
-                    }
-                    onChange={(value) =>
-                      updateField(
-                        'onlineDiscount',
-                        value
-                      )
-                    }
-                  />
-
-                  <Field
-                    label="Delivery Days"
-                    type="number"
-                    value={
-                      form.estimatedDeliveryDays
-                    }
-                    onChange={(value) =>
-                      updateField(
-                        'estimatedDeliveryDays',
-                        value
-                      )
-                    }
-                  />
-
-                  <Field
-                    label="Seller"
-                    value={form.seller}
-                    onChange={(value) =>
-                      updateField(
-                        'seller',
-                        value
-                      )
-                    }
-                  />
-
-                </div>
-
               </section>
 
-              {/* OPTIONS */}
+              {/* ── REVIEWS ────────────────────────────────────────────────── */}
               <section className="border-t pt-5">
-
-                <h4 className="text-sm font-black mb-3">
-                  Product Options
-                </h4>
-
-                <div className="flex flex-wrap gap-5 text-xs font-bold">
-
-                  <Checkbox
-                    label="COD Available"
-                    checked={
-                      form.codAvailable
-                    }
-                    onChange={(value) =>
-                      updateField(
-                        'codAvailable',
-                        value
-                      )
-                    }
-                  />
-
-                  <Checkbox
-                    label="Online Discount"
-                    checked={
-                      form.enableOnlineDiscount
-                    }
-                    onChange={(value) =>
-                      updateField(
-                        'enableOnlineDiscount',
-                        value
-                      )
-                    }
-                  />
-
-                  <Checkbox
-                    label="In Stock"
-                    checked={
-                      form.inStock
-                    }
-                    onChange={(value) =>
-                      updateField(
-                        'inStock',
-                        value
-                      )
-                    }
-                  />
-
-                  <Checkbox
-                    label="Show Purchase Count"
-                    checked={
-                      form.showPurchaseCount
-                    }
-                    onChange={(value) =>
-                      updateField(
-                        'showPurchaseCount',
-                        value
-                      )
-                    }
-                  />
-
+                <h4 className="text-sm font-black text-gray-800 mb-4">Reviews &amp; Rating</h4>
+                <div className="grid sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
+                      Rating (0–5)
+                    </label>
+                    <input
+                      type="number"
+                      value={form.rating}
+                      onChange={(e) => updateField('rating', e.target.value)}
+                      placeholder="4.5"
+                      min="0"
+                      max="5"
+                      step="0.1"
+                      className="w-full rounded-xl border border-gray-200 px-3 py-3 text-xs outline-none focus:border-[#F7941D] transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
+                      Review Count
+                    </label>
+                    <input
+                      type="number"
+                      value={form.reviewCount}
+                      onChange={(e) => updateField('reviewCount', e.target.value)}
+                      placeholder="128"
+                      min="0"
+                      className="w-full rounded-xl border border-gray-200 px-3 py-3 text-xs outline-none focus:border-[#F7941D] transition-colors"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
+                      Avg Rating
+                    </label>
+                    <input
+                      type="number"
+                      value={form.averageRating}
+                      onChange={(e) => updateField('averageRating', e.target.value)}
+                      placeholder="4.3"
+                      min="0"
+                      max="5"
+                      step="0.1"
+                      className="w-full rounded-xl border border-gray-200 px-3 py-3 text-xs outline-none focus:border-[#F7941D] transition-colors"
+                    />
+                  </div>
                 </div>
-
               </section>
 
-              {/* DESCRIPTION */}
+              {/* ── HIGHLIGHTS ──────────────────────────────────────────────── */}
               <section className="border-t pt-5">
-
-                <h4 className="text-sm font-black mb-3">
-                  Product Details
-                </h4>
-
-                <textarea
-                  value={form.description}
-                  onChange={(e) =>
-                    updateField(
-                      'description',
-                      e.target.value
-                    )
-                  }
-                  rows={4}
-                  placeholder="Describe the product..."
-                  className="w-full rounded-xl border px-3 py-3 text-xs outline-none focus:border-[#F7941D]"
-                />
-
+                <h4 className="text-sm font-black text-gray-800 mb-1">Highlights</h4>
+                <p className="text-[10px] text-gray-400 mb-3">One highlight per line</p>
                 <textarea
                   value={form.highlights}
-                  onChange={(e) =>
-                    updateField(
-                      'highlights',
-                      e.target.value
-                    )
-                  }
+                  onChange={(e) => updateField('highlights', e.target.value)}
                   rows={4}
-                  placeholder={
-                    'Highlights, one per line\nStainless steel\nRust resistant\nEasy installation'
-                  }
-                  className="mt-3 w-full rounded-xl border px-3 py-3 text-xs outline-none focus:border-[#F7941D]"
+                  placeholder="Stainless steel construction&#10;Rust-resistant coating&#10;Easy to install"
+                  className="w-full rounded-xl border border-gray-200 px-3 py-3 text-xs outline-none focus:border-[#F7941D] transition-colors resize-none"
                 />
-
               </section>
 
-              {/* JSON */}
+              {/* ── SPECIFICATIONS ──────────────────────────────────────────── */}
               <section className="border-t pt-5">
-
-                <div className="grid md:grid-cols-2 gap-4">
-
-                  <div>
-                    <label className="text-[10px] font-bold uppercase text-gray-400">
-                      Specifications JSON
-                    </label>
-
-                    <textarea
-                      value={
-                        form.specifications
-                      }
-                      onChange={(e) =>
-                        updateField(
-                          'specifications',
-                          e.target.value
-                        )
-                      }
-                      rows={6}
-                      className="mt-1 w-full rounded-xl border px-3 py-3 text-xs font-mono outline-none focus:border-[#F7941D]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] font-bold uppercase text-gray-400">
-                      Variants JSON
-                    </label>
-
-                    <textarea
-                      value={form.variants}
-                      onChange={(e) =>
-                        updateField(
-                          'variants',
-                          e.target.value
-                        )
-                      }
-                      rows={6}
-                      className="mt-1 w-full rounded-xl border px-3 py-3 text-xs font-mono outline-none focus:border-[#F7941D]"
-                    />
-                  </div>
-
-                </div>
-
+                <h4 className="text-sm font-black text-gray-800 mb-1">Specifications</h4>
+                <p className="text-[10px] text-gray-400 mb-3">JSON format: {"{ \"Material\": \"Steel\", \"Weight\": \"300g\" }"}</p>
+                <textarea
+                  value={form.specifications}
+                  onChange={(e) => updateField('specifications', e.target.value)}
+                  rows={4}
+                  className="w-full rounded-xl border border-gray-200 px-3 py-3 text-xs font-mono outline-none focus:border-[#F7941D] transition-colors resize-none"
+                />
               </section>
 
-              {/* BUTTONS */}
-              <div className="sticky bottom-0 bg-white border-t pt-4 flex justify-end gap-3">
+              {/* ── VISIBILITY ──────────────────────────────────────────────── */}
+              <section className="border-t pt-5">
+                <h4 className="text-sm font-black text-gray-800 mb-4">Visibility</h4>
+                <label className="flex items-center gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={form.active}
+                    onChange={(e) => updateField('active', e.target.checked)}
+                    className="h-4 w-4 accent-[#F7941D] cursor-pointer"
+                  />
+                  <span className="text-sm font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">
+                    Active — visible to customers
+                  </span>
+                </label>
+                <p className="text-[10px] text-gray-400 mt-1 ml-7">
+                  Uncheck to hide from the customer storefront without deleting.
+                </p>
+              </section>
 
+              {/* ── SUBMIT ──────────────────────────────────────────────────── */}
+              <div className="border-t pt-5 flex items-center gap-3">
+                <button
+                  type="submit"
+                  disabled={saving || uploading}
+                  className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-[#F7941D] py-3.5 text-sm font-bold text-white hover:bg-[#E07D10] disabled:opacity-50 transition-colors"
+                >
+                  {saving ? (
+                    <><Loader2 className="h-4 w-4 animate-spin" /> Saving…</>
+                  ) : (
+                    <><CheckCircle className="h-4 w-4" /> {editingProduct ? 'Update Product' : 'Create Product'}</>
+                  )}
+                </button>
                 <button
                   type="button"
-                  onClick={() =>
-                    setModalOpen(false)
-                  }
-                  className="rounded-xl border px-5 py-3 text-xs font-bold text-gray-500 hover:bg-gray-50"
+                  onClick={() => setModalOpen(false)}
+                  className="px-6 py-3.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-500 hover:bg-gray-50 transition-colors"
                 >
                   Cancel
                 </button>
-
-                <button
-                  type="submit"
-                  disabled={
-                    saving ||
-                    uploading
-                  }
-                  className="flex items-center gap-2 rounded-xl bg-[#F7941D] px-6 py-3 text-xs font-bold text-white hover:bg-[#E07D10] disabled:opacity-50"
-                >
-                  {saving && (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  )}
-
-                  {saving
-                    ? 'Saving...'
-                    : editingProduct
-                      ? 'Save Changes'
-                      : 'Publish Product'}
-                </button>
-
               </div>
 
             </form>
@@ -1581,56 +1051,5 @@ export default function Products() {
         </div>
       )}
     </div>
-  );
-}
-
-/**
- * Reusable field.
- */
-function Field({
-  label,
-  type = 'text',
-  value,
-  onChange,
-}) {
-  return (
-    <div>
-      <label className="text-[10px] font-bold uppercase text-gray-400">
-        {label}
-      </label>
-
-      <input
-        type={type}
-        value={value ?? ''}
-        onChange={(e) =>
-          onChange(e.target.value)
-        }
-        className="mt-1 w-full rounded-xl border px-3 py-3 text-xs outline-none focus:border-[#F7941D]"
-      />
-    </div>
-  );
-}
-
-/**
- * Checkbox.
- */
-function Checkbox({
-  label,
-  checked,
-  onChange,
-}) {
-  return (
-    <label className="flex items-center gap-2 cursor-pointer">
-      <input
-        type="checkbox"
-        checked={checked}
-        onChange={(e) =>
-          onChange(e.target.checked)
-        }
-        className="h-4 w-4 accent-[#F7941D]"
-      />
-
-      {label}
-    </label>
   );
 }

@@ -11,6 +11,7 @@ import {
   X,
   ToggleLeft,
   ToggleRight,
+  Package,
 } from 'lucide-react';
 
 import apiClient from '../api/client';

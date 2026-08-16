@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import multer from 'multer';
+import { uploadImage } from '../services/cloudinary.service.js';
 
 const uploadDirectory = path.resolve(
     process.cwd(),
@@ -65,7 +66,7 @@ export const uploadProductImages = multer({
     },
 }).array('images', 8);
 
-export const uploadImages = async (req, res) => {
+export const uploadImages = async (req, res, next) => {
     if (!req.files || req.files.length === 0) {
         return res.status(400).json({
             success: false,
@@ -73,22 +74,25 @@ export const uploadImages = async (req, res) => {
         });
     }
 
-    const baseUrl =
-        `${req.protocol}://${req.get('host')}`;
+    try {
+        const images = [];
+        for (const file of req.files) {
+            const result = await uploadImage(file.path, 'rikkas_products');
+            images.push({
+                name: file.originalname,
+                filename: file.filename,
+                url: result.secure_url,
+                size: file.size,
+                type: file.mimetype,
+            });
+        }
 
-    const images = req.files.map((file) => ({
-        name: file.originalname,
-        filename: file.filename,
-        url: `${baseUrl}/uploads/imported/${encodeURIComponent(
-            file.filename
-        )}`,
-        size: file.size,
-        type: file.mimetype,
-    }));
-
-    res.status(201).json({
-        success: true,
-        message: 'Images uploaded successfully.',
-        images,
-    });
+        res.status(201).json({
+            success: true,
+            message: 'Images uploaded successfully.',
+            images,
+        });
+    } catch (error) {
+        next(error);
+    }
 };

@@ -25,6 +25,7 @@ import badgeRoutes from './src/routes/badge.routes.js';
 import settingRoutes from './src/routes/setting.routes.js';
 import paymentRoutes from './src/routes/payment.routes.js';
 import storeRoutes from './src/routes/store.routes.js';
+import uploadRoutes from './src/routes/upload.routes.js';
 
 dotenv.config();
 
@@ -402,6 +403,11 @@ app.use(
 app.use(
   '/api/payments',
   paymentRoutes
+);
+
+app.use(
+  '/api/uploads',
+  uploadRoutes
 );
 
 app.use(

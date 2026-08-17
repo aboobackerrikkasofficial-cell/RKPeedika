@@ -37,7 +37,7 @@ export default function WishlistPage() {
             showToast('🔑 Please sign in to access your wishlist', 'warning');
             setCurrentView('profile');
           }}
-          className="mt-6 px-6 py-3 bg-[#0F7A6B] text-white font-bold text-xs rounded-full shadow hover:bg-[#0A5A4F] transition-all min-h-[44px] cursor-pointer"
+          className="mt-6 px-6 py-3 bg-[#0B1B2B] text-white font-bold text-xs rounded-full shadow hover:bg-[#071320] transition-all min-h-[44px] cursor-pointer"
         >
           Sign In / Register
         </button>
@@ -57,7 +57,7 @@ export default function WishlistPage() {
         </p>
         <button
           onClick={handleBackToHome}
-          className="mt-6 px-6 py-3 bg-[#0F7A6B] text-white font-bold text-xs rounded-full shadow hover:bg-[#0A5A4F] transition-colors min-h-[44px] cursor-pointer"
+          className="mt-6 px-6 py-3 bg-[#0B1B2B] text-white font-bold text-xs rounded-full shadow hover:bg-[#071320] transition-colors min-h-[44px] cursor-pointer"
         >
           Continue Shopping
         </button>

@@ -50,7 +50,7 @@ export default function CartPage() {
         </p>
         <button
           onClick={() => setCurrentView('home')}
-          className="mt-6 px-6 py-3 bg-[#0F7A6B] text-white font-bold text-xs rounded-premium shadow hover:bg-[#0A5A4F] transition-colors min-h-[44px] cursor-pointer"
+          className="mt-6 px-6 py-3 bg-[#0B1B2B] text-white font-bold text-xs rounded-premium shadow hover:bg-[#071320] transition-colors min-h-[44px] cursor-pointer"
         >
           Continue Shopping
         </button>
@@ -138,7 +138,7 @@ export default function CartPage() {
               <span>Total MRP</span>
               <span className="line-through text-gray-400">₹{originalSubtotal.toLocaleString('en-IN')}</span>
             </div>
-            <div className="flex justify-between text-emerald-600 font-bold">
+            <div className="flex justify-between text-[#1F9D55] font-bold">
               <span>Discount on MRP</span>
               <span>- ₹{totalDiscount.toLocaleString('en-IN')}</span>
             </div>
@@ -148,7 +148,7 @@ export default function CartPage() {
             </div>
             <div className="border-t border-gray-50 pt-3 flex justify-between text-sm font-black text-charcoal">
               <span>Order Total</span>
-              <span className="text-[#0F7A6B]">₹{finalTotal.toLocaleString('en-IN')}</span>
+              <span className="text-[#0B1B2B]">₹{finalTotal.toLocaleString('en-IN')}</span>
             </div>
           </div>
         </div>
@@ -158,11 +158,11 @@ export default function CartPage() {
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 p-3 flex items-center justify-between shadow-[0_-4px_10px_rgba(0,0,0,0.05)] md:pb-6">
         <div>
           <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wide">Total Price</p>
-          <p className="text-base font-black text-[#0F7A6B]">₹{finalTotal.toLocaleString('en-IN')}</p>
+          <p className="text-base font-black text-[#0B1B2B]">₹{finalTotal.toLocaleString('en-IN')}</p>
         </div>
         <button
           onClick={handleProceedToCheckout}
-          className="rounded-premium bg-[#0F7A6B] px-8 py-3 text-xs font-bold text-white hover:bg-[#0A5A4F] transition-colors shadow min-h-[44px] cursor-pointer"
+          className="rounded-premium bg-[#0B1B2B] px-8 py-3 text-xs font-bold text-white hover:bg-[#071320] transition-colors shadow min-h-[44px] cursor-pointer"
         >
           Proceed to Checkout
         </button>

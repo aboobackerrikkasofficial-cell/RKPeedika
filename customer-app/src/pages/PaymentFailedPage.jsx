@@ -24,15 +24,15 @@ export default function PaymentFailedPage() {
       <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
         <button 
           onClick={() => setCurrentView('checkout')}
-          className="rounded-xl border border-gray-200 px-6 py-4 text-base font-bold text-charcoal hover:border-[#0F7A6B] hover:bg-teal-50/50 flex items-center justify-center gap-2 transition-all"
+          className="rounded-xl border border-gray-200 px-6 py-4 text-base font-bold text-charcoal hover:border-[#0B1B2B] hover:bg-[#0B1B2B]/10/50 flex items-center justify-center gap-2 transition-all"
           style={{ minHeight: 48 }}
         >
-          <RefreshCcw className="h-5 w-5 text-[#0F7A6B]" /> Try Payment Again
+          <RefreshCcw className="h-5 w-5 text-[#0B1B2B]" /> Try Payment Again
         </button>
 
         <button 
           onClick={() => setCurrentView('checkout')}
-          className="rounded-xl bg-[#0F7A6B] px-8 py-4 text-base font-black text-white hover:bg-[#0A5A4F] flex items-center justify-center gap-2 transition-all shadow-md shadow-teal-500/10"
+          className="rounded-xl bg-[#0B1B2B] px-8 py-4 text-base font-black text-white hover:bg-[#071320] flex items-center justify-center gap-2 transition-all shadow-md shadow-indigo-500/5"
           style={{ minHeight: 48 }}
         >
           <CreditCard className="h-5 w-5 text-white" /> Change Payment Method

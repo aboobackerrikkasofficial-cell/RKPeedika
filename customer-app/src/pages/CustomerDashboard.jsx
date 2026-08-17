@@ -71,7 +71,7 @@ function OTPInput({ length = 6, value, onChange, onComplete }) {
           onChange={(e) => handleChange(e, idx)}
           onKeyDown={(e) => handleKeyDown(e, idx)}
           ref={(el) => (inputsRef.current[idx] = el)}
-          className="w-12 h-12 text-center text-lg font-bold border border-gray-200 rounded-xl focus:border-[#0F7A6B] outline-none shadow-sm transition-all focus:ring-2 focus:ring-[#0F7A6B]/20"
+          className="w-12 h-12 text-center text-lg font-bold border border-gray-200 rounded-xl focus:border-[#0B1B2B] outline-none shadow-sm transition-all focus:ring-2 focus:ring-[#0B1B2B]/20"
         />
       ))}
     </div>
@@ -215,7 +215,7 @@ export default function CustomerDashboard() {
                 value={newName} 
                 onChange={(e) => setNewName(e.target.value)} 
                 placeholder="e.g. Rahul Sharma" 
-                className="w-full border border-gray-200 px-3.5 py-2.5 rounded-xl text-sm outline-none focus:border-[#0F7A6B]"
+                className="w-full border border-gray-200 px-3.5 py-2.5 rounded-xl text-sm outline-none focus:border-[#0B1B2B]"
               />
             </div>
             <div>
@@ -225,7 +225,7 @@ export default function CustomerDashboard() {
                 value={newEmail} 
                 onChange={(e) => setNewEmail(e.target.value)} 
                 placeholder="e.g. rahul@test.com" 
-                className="w-full border border-gray-200 px-3.5 py-2.5 rounded-xl text-sm outline-none focus:border-[#0F7A6B]"
+                className="w-full border border-gray-200 px-3.5 py-2.5 rounded-xl text-sm outline-none focus:border-[#0B1B2B]"
               />
             </div>
             <div>
@@ -239,7 +239,7 @@ export default function CustomerDashboard() {
                       value={g} 
                       checked={newGender === g}
                       onChange={(e) => setNewGender(e.target.value)}
-                      className="text-[#0F7A6B] focus:ring-[#0F7A6B]"
+                      className="text-[#0B1B2B] focus:ring-[#0B1B2B]"
                     />
                     <span>{g}</span>
                   </label>
@@ -252,14 +252,14 @@ export default function CustomerDashboard() {
                 type="date" 
                 value={newDob} 
                 onChange={(e) => setNewDob(e.target.value)} 
-                className="w-full border border-gray-200 px-3.5 py-2.5 rounded-xl text-sm outline-none focus:border-[#0F7A6B]"
+                className="w-full border border-gray-200 px-3.5 py-2.5 rounded-xl text-sm outline-none focus:border-[#0B1B2B]"
               />
             </div>
             
             <button 
               type="submit" 
               disabled={isSubmitting}
-              className="w-full bg-[#0F7A6B] text-white py-3 rounded-xl font-bold hover:bg-[#0A5A4F] transition disabled:opacity-50 text-sm shadow shadow-teal-500/10 min-h-[44px]"
+              className="w-full bg-[#0B1B2B] text-white py-3 rounded-xl font-bold hover:bg-[#071320] transition disabled:opacity-50 text-sm shadow shadow-indigo-500/5 min-h-[44px]"
             >
               {isSubmitting ? "Saving details..." : "Save & Continue"}
             </button>
@@ -288,13 +288,13 @@ export default function CustomerDashboard() {
                 value={newName} 
                 onChange={(e) => setNewName(e.target.value)} 
                 placeholder="e.g. Rahul Sharma" 
-                className="w-full border border-gray-200 px-3.5 py-2.5 rounded-xl text-sm outline-none focus:border-[#0F7A6B]"
+                className="w-full border border-gray-200 px-3.5 py-2.5 rounded-xl text-sm outline-none focus:border-[#0B1B2B]"
               />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Mobile Number</label>
-              <div className="flex rounded-xl border border-gray-200 focus-within:border-[#0F7A6B] overflow-hidden bg-white">
+              <div className="flex rounded-xl border border-gray-200 focus-within:border-[#0B1B2B] overflow-hidden bg-white">
                 <div className="flex items-center bg-gray-50 px-3 border-r border-gray-100 text-sm font-bold text-gray-600 gap-1 select-none">
                   <span>🇮🇳</span> <span>+91</span>
                 </div>
@@ -319,7 +319,7 @@ export default function CustomerDashboard() {
                 id="rememberMe"
                 checked={rememberMe} 
                 onChange={(e) => setRememberMe(e.target.checked)} 
-                className="rounded border-gray-300 text-[#0F7A6B] focus:ring-[#0F7A6B]" 
+                className="rounded border-gray-300 text-[#0B1B2B] focus:ring-[#0B1B2B]" 
               />
               <label htmlFor="rememberMe" className="text-xs font-bold text-gray-500 cursor-pointer select-none">
                 Keep me signed in for 30 days
@@ -329,7 +329,7 @@ export default function CustomerDashboard() {
             <button 
               type="submit" 
               disabled={isSubmitting || loginPhone.length !== 10 || !newName.trim()}
-              className="w-full bg-[#0F7A6B] text-white py-3 rounded-xl font-bold hover:bg-[#0A5A4F] transition disabled:opacity-50 text-sm shadow shadow-teal-500/10 min-h-[44px]"
+              className="w-full bg-[#0B1B2B] text-white py-3 rounded-xl font-bold hover:bg-[#071320] transition disabled:opacity-50 text-sm shadow shadow-indigo-500/5 min-h-[44px]"
             >
               {isSubmitting ? "Logging in..." : "Continue"}
             </button>
@@ -441,20 +441,20 @@ export default function CustomerDashboard() {
                   <div key={order.orderId} className="border border-gray-100 rounded-premium p-4 flex flex-col md:flex-row md:justify-between md:items-center bg-gray-50/50 gap-4">
                     <div className="flex items-start space-x-3">
                       <div className="p-2 bg-white rounded shadow-sm border border-gray-100 mt-1">
-                        <Package className="h-5 w-5 text-[#0F7A6B]" />
+                        <Package className="h-5 w-5 text-[#0B1B2B]" />
                       </div>
                       <div>
                         <p className="font-bold text-charcoal text-sm">{order.orderId}</p>
                         <p className="text-xs text-gray-500">{order.date}</p>
                         <div className="flex flex-wrap items-center gap-2 mt-1">
-                          <span className="inline-block text-[10px] uppercase font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100">{order.status}</span>
+                          <span className="inline-block text-[10px] uppercase font-bold text-[#1F9D55] bg-[#1F9D55]/10 px-2 py-0.5 rounded border border-[#1F9D55]/20">{order.status}</span>
                           <span className="inline-block text-[10px] uppercase font-bold text-gray-500 bg-gray-100 px-2 py-0.5 rounded border border-gray-200">{order.paymentMethod === 'cod' ? 'COD' : 'Online'}</span>
                           {order.invoiceNumber && <span className="inline-block text-[10px] uppercase font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded border border-blue-100">INV: {order.invoiceNumber}</span>}
                         </div>
                       </div>
                     </div>
                     <div className="flex items-center justify-between md:flex-col md:items-end w-full md:w-auto">
-                      <p className="font-bold text-[#0F7A6B] text-sm">₹{order.pricing?.finalTotal}</p>
+                      <p className="font-bold text-[#0B1B2B] text-sm">₹{order.pricing?.finalTotal}</p>
                       <button 
                         onClick={() => { setTrackingOrderId(order.orderId); setCurrentView('order-tracking'); }}
                         className="text-[10px] font-bold uppercase tracking-wider text-charcoal bg-white border border-gray-200 px-3 py-1.5 rounded-premium hover:bg-gray-50 mt-2"
@@ -477,7 +477,7 @@ export default function CustomerDashboard() {
               {!isEditingProfile && (
                 <button 
                   onClick={() => setIsEditingProfile(true)}
-                  className="flex items-center space-x-1.5 text-xs font-bold text-[#0F7A6B] bg-teal-50 px-3 py-1.5 rounded-premium min-h-[44px] md:min-h-[auto]"
+                  className="flex items-center space-x-1.5 text-xs font-bold text-[#0B1B2B] bg-[#0B1B2B]/10 px-3 py-1.5 rounded-premium min-h-[44px] md:min-h-[auto]"
                 >
                   <Edit2 className="h-3.5 w-3.5" /> <span>Edit Profile</span>
                 </button>
@@ -487,12 +487,12 @@ export default function CustomerDashboard() {
             {!isEditingProfile ? (
               <div className="bg-gray-50/50 rounded-premium border border-gray-100 p-5 space-y-4">
                 <div className="flex items-center space-x-4 mb-6">
-                  <div className="h-16 w-16 bg-[#0F7A6B]/10 rounded-full flex items-center justify-center text-[#0F7A6B] font-black text-xl border-2 border-[#0F7A6B]/20">
+                  <div className="h-16 w-16 bg-[#0B1B2B]/10 rounded-full flex items-center justify-center text-[#0B1B2B] font-black text-xl border-2 border-[#0B1B2B]/20">
                     {userProfile?.name?.charAt(0) || 'U'}
                   </div>
                   <div>
                     <h4 className="text-base font-bold text-charcoal">{userProfile?.name || 'Customer'}</h4>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-100 flex items-center w-max mt-1">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-[#1F9D55] bg-[#1F9D55]/10 px-2 py-0.5 rounded border border-[#1F9D55]/20 flex items-center w-max mt-1">
                       <CheckCircle className="h-3 w-3 mr-1" /> Active Account
                     </span>
                   </div>
@@ -521,7 +521,7 @@ export default function CustomerDashboard() {
                     type="text" 
                     value={profileName}
                     onChange={e => setProfileName(e.target.value)}
-                    className="w-full rounded-xl border border-gray-200 px-3.5 py-3 text-xs text-charcoal outline-none focus:border-[#0F7A6B]"
+                    className="w-full rounded-xl border border-gray-200 px-3.5 py-3 text-xs text-charcoal outline-none focus:border-[#0B1B2B]"
                   />
                 </div>
 
@@ -531,7 +531,7 @@ export default function CustomerDashboard() {
                     type="email" 
                     value={profileEmail}
                     onChange={e => setProfileEmail(e.target.value)}
-                    className="w-full rounded-xl border border-gray-200 px-3.5 py-3 text-xs text-charcoal outline-none focus:border-[#0F7A6B]"
+                    className="w-full rounded-xl border border-gray-200 px-3.5 py-3 text-xs text-charcoal outline-none focus:border-[#0B1B2B]"
                   />
                 </div>
 
@@ -542,14 +542,14 @@ export default function CustomerDashboard() {
                     value={profilePhone}
                     onChange={e => setProfilePhone(e.target.value)}
                     placeholder="+91 XXXXX XXXXX"
-                    className="w-full rounded-xl border border-gray-200 px-3.5 py-3 text-xs text-charcoal outline-none focus:border-[#0F7A6B]"
+                    className="w-full rounded-xl border border-gray-200 px-3.5 py-3 text-xs text-charcoal outline-none focus:border-[#0B1B2B]"
                   />
                 </div>
 
                 <div className="flex items-center space-x-3 pt-2">
                   <button 
                     type="submit"
-                    className="flex-1 rounded-xl bg-[#0F7A6B] px-6 py-3 min-h-[44px] text-xs font-bold text-white hover:bg-[#0A5A4F] transition-all shadow-sm"
+                    className="flex-1 rounded-xl bg-[#0B1B2B] px-6 py-3 min-h-[44px] text-xs font-bold text-white hover:bg-[#071320] transition-all shadow-sm"
                   >
                     Save Profile
                   </button>
@@ -596,7 +596,7 @@ export default function CustomerDashboard() {
                     {addresses.map(addr => (
                       <div key={addr.id} className="border border-gray-100 p-4 rounded-premium bg-gray-50/50 space-y-1 relative group">
                         {addr.isDefault && (
-                          <span className="absolute top-3 right-3 text-[9px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded">Default</span>
+                          <span className="absolute top-3 right-3 text-[9px] font-bold uppercase tracking-wider text-[#1F9D55] bg-[#1F9D55]/10 px-2 py-0.5 rounded">Default</span>
                         )}
                         <p className="text-sm text-charcoal font-bold">{addr.fullName}</p>
                         <p className="text-xs text-gray-600">{addr.houseFlatNumber}, {addr.streetRoadName}</p>
@@ -607,7 +607,7 @@ export default function CustomerDashboard() {
                         <div className="flex items-center space-x-3 pt-2 mt-2 border-t border-gray-100/60">
                           <button
                             onClick={() => setEditingAddress(addr)}
-                            className="flex items-center space-x-1 text-xs font-semibold text-[#0F7A6B] hover:text-[#0A5A4F] transition-colors"
+                            className="flex items-center space-x-1 text-xs font-semibold text-[#0B1B2B] hover:text-[#071320] transition-colors"
                           >
                             <Edit2 className="h-3.5 w-3.5" /> <span>Edit</span>
                           </button>
@@ -905,15 +905,15 @@ export default function CustomerDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-white p-4 rounded border border-gray-100">
                   <p className="text-[10px] text-gray-400 font-bold uppercase">Support Email</p>
-                  <a href={`mailto:${storeSettings?.supportEmail}?subject=RK%20Peedika%20Customer%20Support%20Request`} className="text-[#0F7A6B] font-bold mt-1 inline-block">{storeSettings?.supportEmail}</a>
+                  <a href={`mailto:${storeSettings?.supportEmail}?subject=RK%20Peedika%20Customer%20Support%20Request`} className="text-[#0B1B2B] font-bold mt-1 inline-block">{storeSettings?.supportEmail}</a>
                 </div>
                 <div className="bg-white p-4 rounded border border-gray-100">
                   <p className="text-[10px] text-gray-400 font-bold uppercase">Helpline Phone</p>
-                  <a href={`tel:${storeSettings?.supportPhone}`} className="font-bold text-charcoal mt-1 block hover:text-[#0F7A6B]">{storeSettings?.supportPhone}</a>
+                  <a href={`tel:${storeSettings?.supportPhone}`} className="font-bold text-charcoal mt-1 block hover:text-[#0B1B2B]">{storeSettings?.supportPhone}</a>
                 </div>
                 <div className="bg-white p-4 rounded border border-gray-100">
                   <p className="text-[10px] text-gray-400 font-bold uppercase">WhatsApp Support</p>
-                  <a href={`https://wa.me/${storeSettings?.whatsappNumber?.replace(/\D/g, '')}?text=Hello,%20I%20need%20help%20with%20my%20RK%20Peedika%20order.`} target="_blank" rel="noreferrer" className="font-bold text-charcoal mt-1 block hover:text-[#0F7A6B]">{storeSettings?.whatsappNumber}</a>
+                  <a href={`https://wa.me/${storeSettings?.whatsappNumber?.replace(/\D/g, '')}?text=Hello,%20I%20need%20help%20with%20my%20RK%20Peedika%20order.`} target="_blank" rel="noreferrer" className="font-bold text-charcoal mt-1 block hover:text-[#0B1B2B]">{storeSettings?.whatsappNumber}</a>
                 </div>
                 <div className="bg-white p-4 rounded border border-gray-100">
                   <p className="text-[10px] text-gray-400 font-bold uppercase">GST Number</p>
@@ -964,11 +964,11 @@ export default function CustomerDashboard() {
                             setErrorMsg("");
                           }}
                           className={`w-full flex justify-between items-center px-4 py-3 min-h-[44px] transition-premium ${
-                            isActive ? 'text-[#0F7A6B] bg-teal-50/50 font-bold border-b-2 md:border-b-0 md:border-l-2 border-[#0F7A6B]' : 'text-gray-600 hover:bg-gray-50 hover:text-charcoal border-b-2 md:border-b-0 md:border-l-2 border-transparent'
+                            isActive ? 'text-[#0B1B2B] bg-[#0B1B2B]/10/50 font-bold border-b-2 md:border-b-0 md:border-l-2 border-[#0B1B2B]' : 'text-gray-600 hover:bg-gray-50 hover:text-charcoal border-b-2 md:border-b-0 md:border-l-2 border-transparent'
                           }`}
                         >
                           <div className="flex items-center space-x-3 text-sm">
-                            <Icon className={`h-4 w-4 ${isActive ? 'text-[#0F7A6B]' : 'text-gray-400'}`} />
+                            <Icon className={`h-4 w-4 ${isActive ? 'text-[#0B1B2B]' : 'text-gray-400'}`} />
                             <span>{item.label}</span>
                           </div>
                         </button>
@@ -994,7 +994,7 @@ export default function CustomerDashboard() {
         <div className="block flex-1 bg-white border border-gray-100 rounded-premium shadow-sm p-4 md:p-8 relative">
           
           {successMsg && (
-            <div className="mb-4 text-xs font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-3 py-2 rounded-premium">
+            <div className="mb-4 text-xs font-bold text-[#1F9D55] bg-[#1F9D55]/10 border border-emerald-200 px-3 py-2 rounded-premium">
               {successMsg}
             </div>
           )}

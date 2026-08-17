@@ -113,7 +113,7 @@ export default function SessionTimeoutHandler() {
       <div className="bg-white rounded-xl border border-gray-100 shadow-2xl p-6 md:p-8 max-w-sm w-full text-center space-y-4 font-sans">
         <h3 className="text-lg font-bold text-gray-900">Your session is expiring</h3>
         <p className="text-xs text-gray-500">
-          For your security, you will be logged out automatically in <span className="font-extrabold text-[#0F7A6B] text-sm">{Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, '0')}</span> due to inactivity.
+          For your security, you will be logged out automatically in <span className="font-extrabold text-[#0B1B2B] text-sm">{Math.floor(countdown / 60)}:{(countdown % 60).toString().padStart(2, '0')}</span> due to inactivity.
         </p>
         <div className="flex gap-4 pt-2">
           <button 
@@ -124,7 +124,7 @@ export default function SessionTimeoutHandler() {
           </button>
           <button 
             onClick={handleStayLoggedIn}
-            className="flex-1 bg-[#0F7A6B] hover:bg-[#0A5A4F] text-white py-2.5 rounded-xl text-xs font-bold transition-all min-h-[44px]"
+            className="flex-1 bg-[#0B1B2B] hover:bg-[#071320] text-white py-2.5 rounded-xl text-xs font-bold transition-all min-h-[44px]"
           >
             Stay Logged In
           </button>

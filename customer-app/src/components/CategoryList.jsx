@@ -96,7 +96,7 @@ export default function CategoryList() {
               setSelectedCategory('All');
               setCurrentView('products');
             }}
-            className="text-[12px] font-bold text-[#0F7A6B]"
+            className="text-[12px] font-bold text-[#0B1B2B]"
           >
             View All
           </button>

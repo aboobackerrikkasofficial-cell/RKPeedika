@@ -111,8 +111,8 @@ export default function OrdersPage() {
                   {/* Simple Status Tracker */}
                   <div className="pt-2 border-t border-gray-50 flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <span className="h-2 w-2 rounded-full bg-[#0F7A6B]" />
-                      <span className="text-[10px] font-extrabold uppercase text-[#0F7A6B] tracking-wide">
+                      <span className="h-2 w-2 rounded-full bg-[#0B1B2B]" />
+                      <span className="text-[10px] font-extrabold uppercase text-[#0B1B2B] tracking-wide">
                         {order.status}
                       </span>
                     </div>
@@ -121,7 +121,7 @@ export default function OrdersPage() {
                         setTrackingOrderId(order.orderId);
                         setCurrentView('order-tracking');
                       }}
-                      className="flex items-center text-[10px] font-extrabold uppercase text-charcoal tracking-wider hover:text-[#0F7A6B]"
+                      className="flex items-center text-[10px] font-extrabold uppercase text-charcoal tracking-wider hover:text-[#0B1B2B]"
                     >
                       View Order <ChevronRight size={12} className="ml-0.5" />
                     </button>
@@ -156,7 +156,7 @@ export default function OrdersPage() {
                 value={searchOrderId}
                 onChange={(e) => setSearchOrderId(e.target.value)}
                 placeholder="ODR-XXXXXX"
-                className="w-full bg-gray-50 border border-gray-100 rounded-premium px-3 py-2.5 text-xs text-charcoal outline-none focus:border-[#0F7A6B] transition-colors"
+                className="w-full bg-gray-50 border border-gray-100 rounded-premium px-3 py-2.5 text-xs text-charcoal outline-none focus:border-[#0B1B2B] transition-colors"
                 required
               />
             </div>
@@ -171,7 +171,7 @@ export default function OrdersPage() {
                 value={searchPhone}
                 onChange={(e) => setSearchPhone(e.target.value)}
                 placeholder="10-digit phone number"
-                className="w-full bg-gray-50 border border-gray-100 rounded-premium px-3 py-2.5 text-xs text-charcoal outline-none focus:border-[#0F7A6B] transition-colors"
+                className="w-full bg-gray-50 border border-gray-100 rounded-premium px-3 py-2.5 text-xs text-charcoal outline-none focus:border-[#0B1B2B] transition-colors"
                 required
               />
             </div>

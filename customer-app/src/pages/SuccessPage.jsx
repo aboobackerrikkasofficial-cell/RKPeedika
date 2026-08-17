@@ -14,7 +14,7 @@ export default function SuccessPage() {
         <h2 className="text-2xl font-black text-charcoal tracking-tight mb-4">No order found</h2>
         <button 
           onClick={() => setCurrentView('home')}
-          className="rounded-xl bg-[#0F7A6B] px-8 py-4 text-base font-black text-white hover:bg-[#0A5A4F] transition shadow-md shadow-teal-500/10"
+          className="rounded-xl bg-[#0B1B2B] px-8 py-4 text-base font-black text-white hover:bg-[#071320] transition shadow-md shadow-indigo-500/5"
         >
           Continue Shopping
         </button>
@@ -127,7 +127,7 @@ export default function SuccessPage() {
     <div className="mx-auto max-w-2xl px-4 py-12 md:py-20 text-center font-sans">
       
       {/* Animated Success Check */}
-      <div className="relative mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 mb-6">
+      <div className="relative mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[#1F9D55]/10 text-[#1F9D55] mb-6">
         <CheckCircle className="h-12 w-12" />
         <div className="absolute inset-0 rounded-full border-2 border-emerald-500/20 animate-ping"></div>
       </div>
@@ -159,9 +159,9 @@ export default function SuccessPage() {
           )}
           <div className="flex items-center gap-3 mt-2 flex-wrap">
             <span className="text-sm font-semibold text-gray-500">Qty: {firstItem?.quantity || 1}</span>
-            <span className="text-base font-black text-[#0F7A6B]">₹{(order.pricing?.finalTotal || order.amount).toLocaleString('en-IN')}</span>
+            <span className="text-base font-black text-[#0B1B2B]">₹{(order.pricing?.finalTotal || order.amount).toLocaleString('en-IN')}</span>
             <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${
-              order.paymentMethod === 'cod' ? 'bg-amber-50 text-amber-600 border border-amber-250' : 'bg-emerald-50 text-emerald-600 border border-emerald-250'
+              order.paymentMethod === 'cod' ? 'bg-amber-50 text-amber-600 border border-amber-250' : 'bg-[#1F9D55]/10 text-[#1F9D55] border border-emerald-250'
             }`}>
               {order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Prepaid'}
             </span>
@@ -177,7 +177,7 @@ export default function SuccessPage() {
         </div>
         <div className="flex justify-between border-b border-gray-200/60 pb-2.5">
           <span className="font-bold text-gray-400 uppercase tracking-wider text-[10px]">Estimated Delivery</span>
-          <span className="font-bold text-emerald-600">
+          <span className="font-bold text-[#1F9D55]">
             {order.estimatedDelivery ? new Date(order.estimatedDelivery).toLocaleDateString('en-IN', {
               weekday: 'long',
               month: 'long',
@@ -197,23 +197,23 @@ export default function SuccessPage() {
       <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
         <button 
           onClick={handlePrintInvoice}
-          className="rounded-xl border border-gray-200 px-6 py-4 text-base font-bold text-charcoal hover:border-[#0F7A6B] hover:bg-teal-50/50 flex items-center justify-center gap-2 transition-all"
+          className="rounded-xl border border-gray-200 px-6 py-4 text-base font-bold text-charcoal hover:border-[#0B1B2B] hover:bg-[#0B1B2B]/10/50 flex items-center justify-center gap-2 transition-all"
           style={{ minHeight: 48 }}
         >
-          <FileText className="h-5 w-5 text-[#0F7A6B]" /> Print Invoice
+          <FileText className="h-5 w-5 text-[#0B1B2B]" /> Print Invoice
         </button>
 
         <button 
           onClick={() => { setTrackingOrderId(order.orderId); setCurrentView('order-tracking'); }}
-          className="rounded-xl border border-gray-200 px-6 py-4 text-base font-bold text-charcoal hover:border-[#0F7A6B] hover:bg-teal-50/50 flex items-center justify-center gap-2 transition-all"
+          className="rounded-xl border border-gray-200 px-6 py-4 text-base font-bold text-charcoal hover:border-[#0B1B2B] hover:bg-[#0B1B2B]/10/50 flex items-center justify-center gap-2 transition-all"
           style={{ minHeight: 48 }}
         >
-          <Truck className="h-5 w-5 text-[#0F7A6B]" /> Track Order
+          <Truck className="h-5 w-5 text-[#0B1B2B]" /> Track Order
         </button>
 
         <button 
           onClick={() => setCurrentView('home')}
-          className="rounded-xl bg-[#0F7A6B] px-8 py-4 text-base font-black text-white hover:bg-[#0A5A4F] flex items-center justify-center gap-2 transition-all shadow-md shadow-teal-500/10"
+          className="rounded-xl bg-[#0B1B2B] px-8 py-4 text-base font-black text-white hover:bg-[#071320] flex items-center justify-center gap-2 transition-all shadow-md shadow-indigo-500/5"
           style={{ minHeight: 48 }}
         >
           Continue Shopping <ArrowRight className="h-5 w-5" />

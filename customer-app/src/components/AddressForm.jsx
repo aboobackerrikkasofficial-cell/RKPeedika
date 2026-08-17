@@ -156,7 +156,7 @@ export default function AddressForm({ userProfile, onSubmit, onCancel, submitLab
     `w-full rounded-xl border px-3.5 py-2.5 text-xs text-gray-800 outline-none transition-all ${
       errors[field]
         ? 'border-red-400 bg-red-50 focus:border-red-500 focus:ring-2 focus:ring-red-100'
-        : 'border-gray-200 bg-white focus:border-[#0F7A6B] focus:ring-2 focus:ring-teal-100'
+        : 'border-gray-200 bg-white focus:border-[#0B1B2B] focus:ring-2 focus:ring-teal-100'
     }`;
 
   return (
@@ -230,7 +230,7 @@ export default function AddressForm({ userProfile, onSubmit, onCancel, submitLab
               className={inputCls('pincode') + ' pr-9'}
             />
             <span className="absolute right-3 top-1/2 -translate-y-1/2">
-              {pincodeStatus === 'checking' && <Loader className="h-3.5 w-3.5 text-[#0F7A6B] animate-spin" />}
+              {pincodeStatus === 'checking' && <Loader className="h-3.5 w-3.5 text-[#0B1B2B] animate-spin" />}
               {pincodeStatus === 'valid'    && <CheckCircle className="h-3.5 w-3.5 text-emerald-500" />}
               {pincodeStatus === 'invalid'  && <XCircle className="h-3.5 w-3.5 text-red-400" />}
             </span>
@@ -260,12 +260,12 @@ export default function AddressForm({ userProfile, onSubmit, onCancel, submitLab
 
       {/* Pincode status hint */}
       {pincodeStatus === 'valid' && (
-        <p className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600 -mt-1">
+        <p className="flex items-center gap-1.5 text-[11px] font-semibold text-[#1F9D55] -mt-1">
           <CheckCircle className="h-3.5 w-3.5" /> Pincode verified — {form.city}, {form.state}
         </p>
       )}
       {pincodeStatus === 'checking' && (
-        <p className="flex items-center gap-1.5 text-[11px] font-semibold text-[#0F7A6B] -mt-1">
+        <p className="flex items-center gap-1.5 text-[11px] font-semibold text-[#0B1B2B] -mt-1">
           <Loader className="h-3.5 w-3.5 animate-spin" /> Verifying pincode...
         </p>
       )}
@@ -275,7 +275,7 @@ export default function AddressForm({ userProfile, onSubmit, onCancel, submitLab
         <button
           type="submit"
           disabled={saving}
-          className="flex-1 md:flex-none rounded-xl bg-[#0F7A6B] px-8 py-3 text-xs font-bold text-white hover:bg-[#0A5A4F] transition-all shadow shadow-teal-500/10 disabled:opacity-60 disabled:cursor-not-allowed min-h-[44px]"
+          className="flex-1 md:flex-none rounded-xl bg-[#0B1B2B] px-8 py-3 text-xs font-bold text-white hover:bg-[#071320] transition-all shadow shadow-indigo-500/5 disabled:opacity-60 disabled:cursor-not-allowed min-h-[44px]"
         >
           {saving ? 'Saving...' : submitLabel}
         </button>

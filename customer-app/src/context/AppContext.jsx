@@ -977,7 +977,7 @@ export const AppProvider = ({ children }) => {
             contact: userProfile?.phone ? (userProfile.phone.startsWith('+91') ? userProfile.phone : '+91' + userProfile.phone) : ""
           },
           theme: {
-            color: "#0F7A6B"
+            color: "#0B1B2B"
           },
           modal: {
             ondismiss: function () {

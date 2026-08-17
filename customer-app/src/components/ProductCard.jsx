@@ -103,20 +103,22 @@ export default function ProductCard({ product }) {
     setImageFailed(false);
   };
 
+  const hasOffer = (product?.enableOnlineDiscount && product?.onlinePrice) || discount > 0;
+
   /* ------------------------------------------------------------------
      RENDER
   ------------------------------------------------------------------ */
   return (
     <article
-      className="bg-white rounded-xl border border-[#EDEDED] overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.08)] transition-all duration-200 active:scale-[0.98] hover:shadow-md flex flex-col h-full p-2"
+      className="bg-white rounded-xl border border-[#EDEDED] overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.08)] transition-all duration-200 active:scale-[0.98] hover:shadow-md flex flex-col h-full relative"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       {/* ============================================================
-          IMAGE AREA
+          IMAGE AREA (Full-bleed, rounded top corners only)
       ============================================================ */}
       <div
-        className="aspect-square w-full overflow-hidden bg-white relative rounded-lg cursor-pointer"
+        className="w-full h-[180px] sm:h-[200px] md:h-[220px] overflow-hidden bg-gray-50 relative rounded-t-xl cursor-pointer shrink-0"
         onClick={handleCardClick}
         role="button"
         tabIndex={0}
@@ -128,12 +130,12 @@ export default function ProductCard({ product }) {
             src={imageUrl}
             alt={product?.name || 'Product'}
             loading="lazy"
-            className="w-full h-full object-contain p-1 transition-transform duration-300 hover:scale-105"
+            className="w-full h-full object-cover transition-transform duration-300 hover:scale-105"
             onError={handleImageError}
           />
         ) : (
           <div className="w-full h-full flex flex-col items-center justify-center bg-[#FAFAFA] text-gray-300">
-            <ShoppingCart size={28} className="mb-1 text-gray-400" />
+            <ShoppingCart size={28} className="mb-1 text-gray-450" />
             <span className="text-[10px]">No image</span>
           </div>
         )}
@@ -167,10 +169,10 @@ export default function ProductCard({ product }) {
       </div>
 
       {/* ============================================================
-          PRODUCT INFO
+          PRODUCT INFO (Padded)
       ============================================================ */}
       <div
-        className="pt-2 px-1 flex-grow flex flex-col gap-1 cursor-pointer"
+        className="p-3 flex-grow flex flex-col gap-1 cursor-pointer"
         onClick={handleCardClick}
         role="button"
         tabIndex={-1}
@@ -178,7 +180,7 @@ export default function ProductCard({ product }) {
       >
         {/* Category Label */}
         <div className="flex">
-          <span className="bg-teal-50/70 text-[#0F7A6B] text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+          <span className="bg-[#0B1B2B]/10/70 text-[#0B1B2B] text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
             {typeof product?.category === 'object' ? product.category?.name : product?.category || 'General'}
           </span>
         </div>
@@ -205,11 +207,20 @@ export default function ProductCard({ product }) {
           )}
         </div>
 
+        {/* Offer Applied Badge */}
+        {hasOffer && (
+          <div className="flex mt-0.5">
+            <span className="bg-[#1F9D55]/10 text-[#1F9D55] text-[9.5px] font-black px-1.5 py-0.5 rounded flex items-center gap-1">
+              🏷️ 1 offer applied for you
+            </span>
+          </div>
+        )}
+
         {/* Rating */}
         {(product?.rating > 0 || product?.reviewCount > 0) && (
           <div className="flex items-center gap-1.5 mt-0.5">
-            <div className="flex items-center gap-0.5 bg-[#2FA84F]/10 text-[#2FA84F] font-black px-1.5 py-0.5 rounded text-[10px]">
-              <Star size={10} className="fill-current text-[#2FA84F]" />
+            <div className="flex items-center gap-0.5 bg-[#1F9D55]/10 text-[#1F9D55] font-black px-1.5 py-0.5 rounded text-[10px]">
+              <Star size={10} className="fill-current text-[#1F9D55]" />
               <span>{Number(product?.rating || 0).toFixed(1)}</span>
             </div>
             {product?.reviewCount > 0 && (
@@ -228,7 +239,7 @@ export default function ProductCard({ product }) {
             Free Delivery
           </span>
           {product?.codAvailable !== false && (
-            <span className="bg-[#2FA84F]/10 text-[#2FA84F] text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+            <span className="bg-[#1F9D55]/10 text-[#1F9D55] text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider">
               COD
             </span>
           )}
@@ -237,7 +248,7 @@ export default function ProductCard({ product }) {
         {/* Prepaid Offer label if available */}
         {product?.enableOnlineDiscount && product?.onlinePrice && (
           <div className="mt-1.5 flex">
-            <span className="bg-teal-50 text-[#0F7A6B] text-[9px] font-extrabold px-1.5 py-0.5 rounded border border-teal-100 uppercase tracking-wide">
+            <span className="bg-[#0B1B2B]/10 text-[#0B1B2B] text-[9px] font-extrabold px-1.5 py-0.5 rounded border border-[#0B1B2B]/15 uppercase tracking-wide">
               ₹{product.onlinePrice} with Online Payment
             </span>
           </div>

@@ -92,13 +92,13 @@ export default function Header() {
     <>
       {/* Announcement Bar */}
       {storeSettings?.announcementBar && (
-        <div className="w-full bg-[#0F7A6B] px-4 py-1.5 text-center text-[10px] font-extrabold text-white tracking-wide uppercase">
+        <div className="w-full bg-[#071320] px-4 py-1.5 text-center text-[10px] font-extrabold text-white tracking-wide uppercase">
           {storeSettings.announcementBar}
         </div>
       )}
 
       {/* Header */}
-      <header className="sticky top-0 z-40 w-full bg-white border-b border-[#EDEDED] shadow-sm font-sans">
+      <header className="sticky top-0 z-40 w-full bg-[#0B1B2B] border-b border-[#071320] shadow-sm font-sans">
         {/* Main Header Content */}
         <div className="flex items-center justify-between px-4 py-2.5 md:px-8 md:py-3">
           
@@ -109,7 +109,7 @@ export default function Header() {
               setSelectedCategory('All');
               setSearchQuery('');
             }}
-            className="flex items-center gap-2 focus:outline-none"
+            className="flex items-center gap-2 focus:outline-none cursor-pointer"
             aria-label="Go to home"
           >
             {storeSettings?.storeLogo ? (
@@ -119,15 +119,15 @@ export default function Header() {
                 className="h-8 w-auto object-contain rounded-md"
               />
             ) : (
-              <span className="text-xl md:text-2xl font-black tracking-tight text-[#0F7A6B] leading-none">
+              <span className="text-xl md:text-2xl font-black tracking-tight text-white leading-none">
                 {storeSettings?.storeName || 'RK Peedika'}
               </span>
             )}
           </button>
 
           {/* Desktop Search Bar (Hidden on mobile) */}
-          <div className="hidden md:flex mx-6 flex-1 max-w-lg items-center gap-2 rounded-full border border-[#EDEDED] bg-[#FAFAFA] px-4 py-1.5 focus-within:border-[#0F7A6B] focus-within:bg-white transition-all relative shadow-sm">
-            <Search size={16} className="text-[#0F7A6B] shrink-0" />
+          <div className="hidden md:flex mx-6 flex-1 max-w-lg items-center gap-2 rounded-full border border-[#EDEDED] bg-[#FAFAFA] px-4 py-1.5 focus-within:border-[#F5A623] focus-within:bg-white transition-all relative shadow-sm">
+            <Search size={16} className="text-[#0B1B2B] shrink-0" />
             <input
               ref={desktopInputRef}
               type="text"
@@ -142,13 +142,13 @@ export default function Header() {
               onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
             />
             <div className="flex items-center gap-2 text-gray-400">
-              <Mic size={16} className="cursor-pointer hover:text-[#0F7A6B] transition-colors" />
-              <Camera size={16} className="cursor-pointer hover:text-[#0F7A6B] transition-colors" />
+              <Mic size={16} className="cursor-pointer hover:text-[#0B1B2B] transition-colors" />
+              <Camera size={16} className="cursor-pointer hover:text-[#0B1B2B] transition-colors" />
             </div>
             {searchQuery && (
               <button
                 onClick={handleClearSearch}
-                className="p-0.5 rounded-full text-gray-400 hover:text-gray-600 focus:outline-none"
+                className="p-0.5 rounded-full text-gray-400 hover:text-gray-600 focus:outline-none cursor-pointer"
                 aria-label="Clear search"
               >
                 <X size={12} />
@@ -162,10 +162,10 @@ export default function Header() {
                   <button
                     key={p.id}
                     onMouseDown={() => handleSearchSubmit(p.name)}
-                    className="w-full px-4 py-2.5 flex items-center justify-between hover:bg-teal-50/30 text-left"
+                    className="w-full px-4 py-2.5 flex items-center justify-between hover:bg-[#0B1B2B]/10/30 text-left cursor-pointer"
                   >
                     <span className="text-xs font-semibold text-charcoal truncate">{p.name}</span>
-                    <span className="text-[9px] text-[#0F7A6B] bg-[#0F7A6B]/10 px-2 py-0.5 rounded-full font-bold uppercase shrink-0 ml-2">
+                    <span className="text-[9px] text-[#0B1B2B] bg-[#0B1B2B]/10 px-2 py-0.5 rounded-full font-bold uppercase shrink-0 ml-2">
                       {typeof p.category === 'object' ? p.category?.name : p.category}
                     </span>
                   </button>
@@ -186,7 +186,7 @@ export default function Header() {
                   setCurrentView('wishlist');
                 }
               }}
-              className="flex rounded-full p-2 text-gray-700 hover:text-[#0F7A6B] transition-colors min-h-[44px] min-w-[44px] items-center justify-center"
+              className="flex rounded-full p-2 text-white/90 hover:text-[#F5A623] transition-colors min-h-[44px] min-w-[44px] items-center justify-center cursor-pointer"
               aria-label="Wishlist"
             >
               <Heart size={24} className={wishlist?.length > 0 ? "fill-[#E14B4B] text-[#E14B4B]" : ""} />
@@ -195,7 +195,7 @@ export default function Header() {
             {/* Profile - Hidden on Mobile (Since bottom nav handles it) */}
             <button
               onClick={() => setCurrentView('profile')}
-              className="hidden md:flex rounded-full p-2 text-gray-700 hover:text-[#0F7A6B] transition-colors min-h-[44px] min-w-[44px] items-center justify-center"
+              className="hidden md:flex rounded-full p-2 text-white/90 hover:text-[#F5A623] transition-colors min-h-[44px] min-w-[44px] items-center justify-center cursor-pointer"
               aria-label="Profile"
             >
               <User size={24} />
@@ -204,7 +204,7 @@ export default function Header() {
             {/* Cart Icon */}
             <button
               onClick={() => setCurrentView('cart')}
-              className="relative flex items-center justify-center p-2 text-gray-700 hover:text-[#0F7A6B] transition-colors min-h-[44px] min-w-[44px]"
+              className="relative flex items-center justify-center p-2 text-white/90 hover:text-[#F5A623] transition-colors min-h-[44px] min-w-[44px] cursor-pointer"
               aria-label="Cart"
             >
               <ShoppingCart size={24} />
@@ -221,11 +221,11 @@ export default function Header() {
         <div className="md:hidden px-4 pb-3 pt-1">
           <button
             onClick={() => setMobileSearchOpen(true)}
-            className="w-full flex items-center gap-2.5 rounded-full border border-[#EDEDED] bg-[#FAFAFA] px-4 py-2 text-left focus:outline-none shadow-sm"
+            className="w-full flex items-center gap-2.5 rounded-full border border-[#EDEDED] bg-[#FAFAFA] px-4 py-2 text-left focus:outline-none shadow-sm cursor-pointer"
             style={{ minHeight: 48 }}
             aria-label="Search products"
           >
-            <Search size={18} className="text-[#0F7A6B] shrink-0" />
+            <Search size={18} className="text-[#0B1B2B] shrink-0" />
             <span className="flex-grow text-sm text-gray-450 truncate font-semibold">
               {searchQuery || 'Search for products...'}
             </span>
@@ -262,8 +262,8 @@ export default function Header() {
             >
               <ArrowLeft size={18} />
             </button>
-            <div className="flex-1 flex items-center gap-2 rounded-premium border border-[#0F7A6B] bg-gray-50 px-3 py-2">
-              <Search size={14} className="text-[#0F7A6B] shrink-0" />
+            <div className="flex-1 flex items-center gap-2 rounded-premium border border-[#0B1B2B] bg-gray-50 px-3 py-2">
+              <Search size={14} className="text-[#0B1B2B] shrink-0" />
               <input
                 ref={mobileInputRef}
                 type="text"
@@ -328,7 +328,7 @@ export default function Header() {
                       <button
                         key={term}
                         onClick={() => handleSearchSubmit(term)}
-                        className="px-3 py-1.5 bg-gray-50 rounded-full text-xs text-gray-600 font-bold hover:bg-teal-50/50 hover:text-[#0F7A6B] transition-colors"
+                        className="px-3 py-1.5 bg-gray-50 rounded-full text-xs text-gray-600 font-bold hover:bg-[#0B1B2B]/10/50 hover:text-[#0B1B2B] transition-colors"
                       >
                         {term}
                       </button>

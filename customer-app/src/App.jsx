@@ -388,19 +388,19 @@ function AppContent() {
               )}
               <form onSubmit={handleExchangeSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <input type="text" placeholder="Order ID" required value={exchangeForm.orderId} onChange={e => setExchangeForm({...exchangeForm, orderId: e.target.value})} className="w-full border p-2 rounded text-sm outline-none focus:border-[#0F7A6B]" />
-                  <input type="text" placeholder="Customer Name" required value={exchangeForm.customerName} onChange={e => setExchangeForm({...exchangeForm, customerName: e.target.value})} className="w-full border p-2 rounded text-sm outline-none focus:border-[#0F7A6B]" />
+                  <input type="text" placeholder="Order ID" required value={exchangeForm.orderId} onChange={e => setExchangeForm({...exchangeForm, orderId: e.target.value})} className="w-full border p-2 rounded text-sm outline-none focus:border-[#0B1B2B]" />
+                  <input type="text" placeholder="Customer Name" required value={exchangeForm.customerName} onChange={e => setExchangeForm({...exchangeForm, customerName: e.target.value})} className="w-full border p-2 rounded text-sm outline-none focus:border-[#0B1B2B]" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <input type="tel" placeholder="Phone Number" required value={exchangeForm.phone} onChange={e => setExchangeForm({...exchangeForm, phone: e.target.value})} className="w-full border p-2 rounded text-sm outline-none focus:border-[#0F7A6B]" />
-                  <input type="text" placeholder="Reason for Exchange" required value={exchangeForm.reason} onChange={e => setExchangeForm({...exchangeForm, reason: e.target.value})} className="w-full border p-2 rounded text-sm outline-none focus:border-[#0F7A6B]" />
+                  <input type="tel" placeholder="Phone Number" required value={exchangeForm.phone} onChange={e => setExchangeForm({...exchangeForm, phone: e.target.value})} className="w-full border p-2 rounded text-sm outline-none focus:border-[#0B1B2B]" />
+                  <input type="text" placeholder="Reason for Exchange" required value={exchangeForm.reason} onChange={e => setExchangeForm({...exchangeForm, reason: e.target.value})} className="w-full border p-2 rounded text-sm outline-none focus:border-[#0B1B2B]" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold mb-1 text-charcoal">Upload Product Images (Mandatory)</label>
                   <input type="file" multiple accept="image/*" required onChange={e => setExchangeImages(Array.from(e.target.files))} className="w-full border p-2 rounded text-sm" />
                 </div>
-                <textarea placeholder="Additional Notes" value={exchangeForm.notes} onChange={e => setExchangeForm({...exchangeForm, notes: e.target.value})} className="w-full border p-2 rounded text-sm h-20 outline-none focus:border-[#0F7A6B]"></textarea>
-                <button type="submit" disabled={isExchangeSubmitting} className="w-full bg-[#0F7A6B] text-white py-2 rounded font-bold hover:bg-[#0A5A4F] transition">
+                <textarea placeholder="Additional Notes" value={exchangeForm.notes} onChange={e => setExchangeForm({...exchangeForm, notes: e.target.value})} className="w-full border p-2 rounded text-sm h-20 outline-none focus:border-[#0B1B2B]"></textarea>
+                <button type="submit" disabled={isExchangeSubmitting} className="w-full bg-[#0B1B2B] text-white py-2 rounded font-bold hover:bg-[#071320] transition">
                   {isExchangeSubmitting ? 'Submitting...' : 'Submit Request'}
                 </button>
               </form>
@@ -415,15 +415,15 @@ function AppContent() {
             <div className="space-y-2.5 pt-2 text-xs font-semibold">
               <p>
                 <strong>WhatsApp Helpline: </strong> 
-                <a href="https://wa.me/919188072646" target="_blank" rel="noreferrer" className="text-[#0F7A6B] hover:underline font-bold">+91 9188072646</a>
+                <a href="https://wa.me/919188072646" target="_blank" rel="noreferrer" className="text-[#0B1B2B] hover:underline font-bold">+91 9188072646</a>
               </p>
               <p>
                 <strong>Helpline Phone: </strong> 
-                <a href="tel:+919188072646" className="text-[#0F7A6B] hover:underline font-bold">+91 9188072646</a>
+                <a href="tel:+919188072646" className="text-[#0B1B2B] hover:underline font-bold">+91 9188072646</a>
               </p>
               <p>
                 <strong>Email Address: </strong> 
-                <a href="mailto:rikkas.aboo@gmail.com" className="text-[#0F7A6B] hover:underline font-bold">rikkas.aboo@gmail.com</a>
+                <a href="mailto:rikkas.aboo@gmail.com" className="text-[#0B1B2B] hover:underline font-bold">rikkas.aboo@gmail.com</a>
               </p>
               <p>
                 <strong>Business Address: </strong> 
@@ -469,11 +469,11 @@ function AppContent() {
               <p><strong>Support Hours: </strong>{storeSettings?.supportHours}</p>
               <p>
                 <strong>WhatsApp Helpline: </strong> 
-                <a href="https://wa.me/919188072646" target="_blank" rel="noreferrer" className="text-[#0F7A6B] hover:underline font-bold">+91 9188072646</a>
+                <a href="https://wa.me/919188072646" target="_blank" rel="noreferrer" className="text-[#0B1B2B] hover:underline font-bold">+91 9188072646</a>
               </p>
               <p>
                 <strong>Helpline Email: </strong> 
-                <a href="mailto:rikkas.aboo@gmail.com" className="text-[#0F7A6B] hover:underline font-bold">rikkas.aboo@gmail.com</a>
+                <a href="mailto:rikkas.aboo@gmail.com" className="text-[#0B1B2B] hover:underline font-bold">rikkas.aboo@gmail.com</a>
               </p>
             </div>
           </div>
@@ -531,15 +531,15 @@ function AppContent() {
         <div className="max-w-7xl mx-auto space-y-3">
           <h4 className="font-extrabold text-charcoal text-sm">{storeSettings?.storeName || "RK Peedika"}</h4>
           <div className="flex justify-center flex-wrap gap-x-4 gap-y-1 text-gray-400 font-bold">
-            <button onClick={() => setActiveModal('about')} className="hover:text-[#0F7A6B] transition-premium">About Us</button>
+            <button onClick={() => setActiveModal('about')} className="hover:text-[#0B1B2B] transition-premium">About Us</button>
             <span>·</span>
-            <button onClick={() => setActiveModal('contact')} className="hover:text-[#0F7A6B] transition-premium">Contact Us</button>
+            <button onClick={() => setActiveModal('contact')} className="hover:text-[#0B1B2B] transition-premium">Contact Us</button>
             <span>·</span>
-            <button onClick={() => setActiveModal('privacy')} className="hover:text-[#0F7A6B] transition-premium">Privacy Policy</button>
+            <button onClick={() => setActiveModal('privacy')} className="hover:text-[#0B1B2B] transition-premium">Privacy Policy</button>
             <span>·</span>
-            <button onClick={() => setActiveModal('terms')} className="hover:text-[#0F7A6B] transition-premium">Terms & Conditions</button>
+            <button onClick={() => setActiveModal('terms')} className="hover:text-[#0B1B2B] transition-premium">Terms & Conditions</button>
             <span>·</span>
-            <button onClick={() => setCurrentView('admin')} className="hover:text-[#0F7A6B] transition-premium">Admin Panel</button>
+            <button onClick={() => setCurrentView('admin')} className="hover:text-[#0B1B2B] transition-premium">Admin Panel</button>
           </div>
           <p className="text-[10px] text-gray-400 mt-2 font-medium">
             © {new Date().getFullYear()} {storeSettings?.storeName || "RK Peedika"}. All Rights Reserved. {storeSettings?.gstNumber && `| GSTIN: ${storeSettings.gstNumber}`}
@@ -586,8 +586,8 @@ function AppContent() {
             exit={{ opacity: 0, y: 50 }}
             className={`fixed left-1/2 -translate-x-1/2 z-[110] px-4 py-3 bg-white border-l-4 rounded-md shadow-md text-sm font-bold flex items-center gap-2 md:left-auto md:translate-x-0 md:right-8 ${
               activeToast.type === 'error' ? 'border-red-500 text-red-700' :
-              activeToast.type === 'warning' ? 'border-[#0F7A6B] text-charcoal' :
-              'border-[#0F7A6B] text-charcoal'
+              activeToast.type === 'warning' ? 'border-[#0B1B2B] text-charcoal' :
+              'border-[#0B1B2B] text-charcoal'
             }`}
             style={{
               bottom: 'calc(var(--bottom-nav-height, 60px) + 12px)',

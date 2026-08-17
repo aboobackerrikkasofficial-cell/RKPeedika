@@ -396,7 +396,7 @@ export default function ProductPage() {
         </p>
         <button
           onClick={() => setCurrentView('home')}
-          className="rounded-xl bg-[#0F7A6B] px-6 py-3 text-sm font-bold text-white hover:bg-[#0A5A4F] transition-colors"
+          className="rounded-xl bg-[#0B1B2B] px-6 py-3 text-sm font-bold text-white hover:bg-[#071320] transition-colors"
         >
           Continue Shopping
         </button>
@@ -416,7 +416,7 @@ export default function ProductPage() {
         </p>
         <button
           onClick={() => setCurrentView('home')}
-          className="rounded-xl bg-[#0F7A6B] px-6 py-3 text-sm font-bold text-white hover:bg-[#0A5A4F] transition-colors"
+          className="rounded-xl bg-[#0B1B2B] px-6 py-3 text-sm font-bold text-white hover:bg-[#071320] transition-colors"
         >
           Continue Shopping
         </button>
@@ -460,6 +460,7 @@ export default function ProductPage() {
   const onlinePrice = product.onlinePrice || product.price;
   const savings = Math.max(0, codPrice - onlinePrice);
   const activePrice = paymentOption === 'cod' ? codPrice : onlinePrice;
+  const hasOffer = (product?.enableOnlineDiscount && product?.onlinePrice) || (product?.originalPrice > product?.price);
 
   // Delivery date calculations
   const pincodeData = pincodeDatabase?.[userPincode] || { days: 3 };
@@ -535,13 +536,13 @@ export default function ProductPage() {
               <>
                 <button 
                   onClick={handlePrevImg}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 hover:bg-white text-charcoal hover:text-[#0F7A6B] transition-premium shadow hidden md:flex items-center justify-center"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 hover:bg-white text-charcoal hover:text-[#0B1B2B] transition-premium shadow hidden md:flex items-center justify-center"
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </button>
                 <button 
                   onClick={handleNextImg}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 hover:bg-white text-charcoal hover:text-[#0F7A6B] transition-premium shadow hidden md:flex items-center justify-center"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 hover:bg-white text-charcoal hover:text-[#0B1B2B] transition-premium shadow hidden md:flex items-center justify-center"
                 >
                   <ChevronRight className="h-5 w-5" />
                 </button>
@@ -559,7 +560,7 @@ export default function ProductPage() {
                     setActiveImgIndex(idx);
                   }}
                   className={`w-16 h-16 rounded-premium border-2 overflow-hidden bg-gray-50 transition-premium ${
-                    activeImgIndex === idx ? 'border-[#0F7A6B]' : 'border-gray-200 hover:border-gray-300'
+                    activeImgIndex === idx ? 'border-[#0B1B2B]' : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
                   <img src={img} alt="Product view" className="w-full h-full object-contain bg-white" />
@@ -587,7 +588,7 @@ export default function ProductPage() {
         {/* RIGHT COLUMN: Product Details, Actions & Reviews */}
         <div className="space-y-6">
           <div>
-            <span className="rounded bg-teal-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[#0F7A6B]">
+            <span className="rounded bg-[#0B1B2B]/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[#0B1B2B]">
               {product.category?.name || product.category || 'General Marketplace'}
             </span>
             
@@ -609,24 +610,60 @@ export default function ProductPage() {
               {product.showPurchaseCount !== false && (
                 <>
                   <span className="text-gray-300">|</span>
-                  <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded uppercase tracking-wider ml-2">
+                  <span className="text-xs font-bold text-[#1F9D55] bg-[#1F9D55]/10 px-2 py-0.5 rounded uppercase tracking-wider ml-2">
                     {product.purchaseCount || 0} purchases
                   </span>
                 </>
               )}
             </div>
 
+            {/* Main Price Block - Largest & Boldest */}
+            <div className="mt-4 flex items-baseline gap-2.5 flex-wrap">
+              <span className="text-3xl md:text-4xl font-black text-charcoal tracking-tight">
+                ₹{onlinePrice.toLocaleString('en-IN')}
+              </span>
+              {product.originalPrice > onlinePrice && (
+                <>
+                  <span className="text-base text-gray-400 line-through font-semibold">
+                    MRP: ₹{product.originalPrice.toLocaleString('en-IN')}
+                  </span>
+                  <span className="text-xs text-[#E14B4B] font-extrabold bg-[#E14B4B]/10 px-2.5 py-1 rounded-full">
+                    {Math.round(((product.originalPrice - onlinePrice) / product.originalPrice) * 100)}% OFF
+                  </span>
+                </>
+              )}
+            </div>
+
+            {/* UPI Offer Applied Banner */}
+            {hasOffer && (
+              <div className="mt-3 bg-[#1F9D55]/10 border border-[#1F9D55]/20 rounded-xl p-3 flex items-center justify-between text-xs text-[#1F9D55] font-bold shadow-sm">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">🏷️</span>
+                  <div>
+                    <p className="font-extrabold text-[#1F9D55]">1 UPI offer applied for you</p>
+                    <p className="text-[10px] text-gray-500 font-medium mt-0.5">Pay Online to get extra savings instantly</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => window.showAlert?.("Get an extra instant discount by paying online via UPI or Cards at checkout. No promo code needed!", "Prepaid UPI Discount")}
+                  className="text-[10px] underline uppercase tracking-wider font-extrabold hover:text-[#178546] shrink-0 ml-2 cursor-pointer focus:outline-none"
+                >
+                  View details
+                </button>
+              </div>
+            )}
+
             {/* Trust Badges Row — Above the Fold (Indian Shoppers Trust Signals) */}
             <div className="grid grid-cols-3 gap-2 py-3.5 border-y border-[#EDEDED] mt-4 text-[10px] font-bold text-gray-500 bg-[#FAFAFA] rounded-xl px-2.5 shadow-sm">
               <div className="flex flex-col items-center justify-center text-center gap-1">
                 <span className="text-[16px]">🚚</span>
                 <span className="text-charcoal leading-tight">Delivers by</span>
-                <span className="text-[#0F7A6B] font-extrabold">{formattedDeliveryDate}</span>
+                <span className="text-[#0B1B2B] font-extrabold">{formattedDeliveryDate}</span>
               </div>
               <div className="flex flex-col items-center justify-center text-center gap-1 border-x border-[#EDEDED]">
                 <span className="text-[16px]">💵</span>
                 <span className="text-charcoal leading-tight">COD Available</span>
-                <span className="text-[#2FA84F] font-extrabold">Pay on doorstep</span>
+                <span className="text-[#1F9D55] font-extrabold">Pay on doorstep</span>
               </div>
               <div className="flex flex-col items-center justify-center text-center gap-1">
                 <span className="text-[16px]">🔄</span>
@@ -645,10 +682,10 @@ export default function ProductPage() {
                 <div className="flex items-center justify-between border-b border-gray-200/60 pb-3">
                   <div>
                     <p className="text-base font-bold text-gray-800">Pay Online (UPI / Card)</p>
-                    <p className="text-xs text-emerald-600 font-bold mt-0.5">🔒 Safe &amp; Secure Payment</p>
+                    <p className="text-xs text-[#1F9D55] font-bold mt-0.5">🔒 Safe &amp; Secure Payment</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-2xl font-black text-[#0F7A6B]">₹{onlinePrice.toLocaleString('en-IN')}</p>
+                    <p className="text-2xl font-black text-[#0B1B2B]">₹{onlinePrice.toLocaleString('en-IN')}</p>
                     {product.originalPrice && (
                       <p className="text-xs text-gray-400 line-through font-semibold">MRP: ₹{product.originalPrice.toLocaleString('en-IN')}</p>
                     )}
@@ -670,8 +707,8 @@ export default function ProductPage() {
             </div>
 
             {savings > 0 && product.prepaidAvailable !== false && product.codAvailable !== false && (
-              <div className="bg-[#2FA84F]/10 rounded-xl p-3 border border-[#2FA84F]/25 text-sm text-[#2FA84F] font-bold flex items-center gap-2">
-                <Gift className="h-5 w-5 text-[#2FA84F] shrink-0" />
+              <div className="bg-[#1F9D55]/10 rounded-xl p-3 border border-[#1F9D55]/25 text-sm text-[#1F9D55] font-bold flex items-center gap-2">
+                <Gift className="h-5 w-5 text-[#1F9D55] shrink-0" />
                 <span>Pay Online and Save ₹{savings} instantly!</span>
               </div>
             )}
@@ -697,7 +734,7 @@ export default function ProductPage() {
                           onClick={() => setSelectedVariants(prev => ({ ...prev, [variantName]: option }))}
                           className={`rounded-premium border px-4 py-2 text-xs font-bold transition-premium ${
                             selectedVariants[variantName] === option
-                              ? 'border-[#0F7A6B] bg-teal-50 text-[#0F7A6B]'
+                              ? 'border-[#0B1B2B] bg-[#0B1B2B]/10 text-[#0B1B2B]'
                               : 'border-gray-200 hover:border-gray-300 text-charcoal'
                           }`}
                         >
@@ -737,14 +774,14 @@ export default function ProductPage() {
           <div className="rounded-premium border border-gray-100 bg-white p-4 shadow-premium">
             <div className="grid grid-cols-2 gap-4 text-xs font-bold text-gray-500">
               <div className="flex items-center gap-2">
-                <RotateCcw className="h-4.5 w-4.5 text-[#0F7A6B] stroke-[1.5]" /> 
+                <RotateCcw className="h-4.5 w-4.5 text-[#0B1B2B] stroke-[1.5]" /> 
                 <div>
                   <p className="text-charcoal leading-tight">Easy Exchange</p>
                   <p className="text-[10px] text-gray-400 font-medium mt-0.5">Accepted within {storeSettings?.returnWindow || 3} days. No Refunds • Exchange Only</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <ShieldCheck className="h-4.5 w-4.5 text-[#0F7A6B] stroke-[1.5]" />
+                <ShieldCheck className="h-4.5 w-4.5 text-[#0B1B2B] stroke-[1.5]" />
                 <div>
                   <p className="text-charcoal leading-tight">Verified Manufacturer</p>
                   <p className="text-[10px] text-gray-400 font-medium mt-0.5">GST Invoices & Quality Checks</p>
@@ -788,7 +825,7 @@ export default function ProductPage() {
               <ul className="space-y-2 text-xs font-medium text-gray-600">
                 {highlights.map((h, idx) => (
                   <li key={idx} className="flex items-start gap-2">
-                    <span className="text-[#0F7A6B] text-sm shrink-0">✦</span>
+                    <span className="text-[#0B1B2B] text-sm shrink-0">✦</span>
                     <span className="leading-relaxed">{h}</span>
                   </li>
                 ))}
@@ -821,7 +858,7 @@ export default function ProductPage() {
                 <select
                   value={sortOption}
                   onChange={(e) => setSortOption(e.target.value)}
-                  className="rounded-lg border border-gray-200 px-2 py-1.5 text-xs text-charcoal bg-white outline-none focus:border-[#0F7A6B] font-semibold"
+                  className="rounded-lg border border-gray-200 px-2 py-1.5 text-xs text-charcoal bg-white outline-none focus:border-[#0B1B2B] font-semibold"
                 >
                   <option value="recent">Most Recent</option>
                   <option value="high_rating">Highest Rating</option>
@@ -839,7 +876,7 @@ export default function ProductPage() {
                         setReviewSuccess("");
                         setIsReviewModalOpen(true);
                       }} 
-                      className="text-xs font-bold text-white bg-[#0F7A6B] hover:bg-[#0A5A4F] px-3.5 py-1.5 rounded-premium shadow transition"
+                      className="text-xs font-bold text-white bg-[#0B1B2B] hover:bg-[#071320] px-3.5 py-1.5 rounded-premium shadow transition"
                     >
                       Write a Review
                     </button>
@@ -899,14 +936,14 @@ export default function ProductPage() {
             {reviewSummary.allImages && reviewSummary.allImages.length > 0 && (
               <div className="space-y-2.5">
                 <h5 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <ImageIcon className="h-4 w-4 text-[#0F7A6B]" /> Customer Uploaded Photos ({reviewSummary.allImages.length})
+                  <ImageIcon className="h-4 w-4 text-[#0B1B2B]" /> Customer Uploaded Photos ({reviewSummary.allImages.length})
                 </h5>
                 <div className="flex flex-wrap gap-2.5">
                   {reviewSummary.allImages.map((photo, index) => (
                     <div 
                       key={index}
                       onClick={() => setPreviewImage(photo.imageUrl)}
-                      className="cursor-pointer w-16 h-16 rounded-premium border border-gray-200 bg-gray-50 overflow-hidden hover:border-[#0F7A6B] transition-premium shadow-sm hover:scale-105"
+                      className="cursor-pointer w-16 h-16 rounded-premium border border-gray-200 bg-gray-50 overflow-hidden hover:border-[#0B1B2B] transition-premium shadow-sm hover:scale-105"
                     >
                       <img src={photo.imageUrl} alt="Review attachment" className="w-full h-full object-cover" loading="lazy" />
                     </div>
@@ -937,7 +974,7 @@ export default function ProductPage() {
                         <div className="flex items-center gap-3">
                           {/* Avatar */}
                           <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs shrink-0 uppercase ${
-                            ['bg-teal-50 text-[#0F7A6B]', 'bg-indigo-50 text-indigo-600', 'bg-emerald-50 text-emerald-600', 'bg-rose-50 text-rose-600', 'bg-amber-50 text-amber-600'][
+                            ['bg-[#0B1B2B]/10 text-[#0B1B2B]', 'bg-indigo-50 text-indigo-600', 'bg-[#1F9D55]/10 text-[#1F9D55]', 'bg-rose-50 text-rose-600', 'bg-amber-50 text-amber-600'][
                               (rev.customerName || rev.user?.name || 'A').charCodeAt(0) % 5
                             ]
                           }`}>
@@ -978,7 +1015,7 @@ export default function ProductPage() {
                             <div 
                               key={idx} 
                               onClick={() => setPreviewImage(img)}
-                              className="cursor-pointer w-14 h-14 rounded-premium border border-gray-200 overflow-hidden bg-gray-50 hover:border-[#0F7A6B] transition-premium shadow-sm hover:scale-105"
+                              className="cursor-pointer w-14 h-14 rounded-premium border border-gray-200 overflow-hidden bg-gray-50 hover:border-[#0B1B2B] transition-premium shadow-sm hover:scale-105"
                             >
                               <img src={img} alt="Attached upload" className="w-full h-full object-cover" loading="lazy" />
                             </div>
@@ -988,7 +1025,7 @@ export default function ProductPage() {
 
                       {/* Admin replies block */}
                       {rev.reply && (
-                        <div className="pl-3 border-l-2 border-[#0F7A6B] text-[11px] text-gray-500 bg-teal-50/20 py-2 pr-2 rounded">
+                        <div className="pl-3 border-l-2 border-[#0B1B2B] text-[11px] text-gray-500 bg-[#0B1B2B]/10/20 py-2 pr-2 rounded">
                           <strong className="text-charcoal block mb-0.5">Seller Reply:</strong>
                           "{rev.reply}"
                         </div>
@@ -998,7 +1035,7 @@ export default function ProductPage() {
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-gray-50 text-[10px] font-bold text-gray-400">
                         <div className="flex flex-wrap items-center gap-2">
                           {rev.verifiedPurchase && (
-                            <span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded font-bold uppercase tracking-wider">
+                            <span className="text-[#1F9D55] bg-[#1F9D55]/10 px-2 py-0.5 rounded font-bold uppercase tracking-wider">
                               ✔ Verified Purchase
                             </span>
                           )}
@@ -1014,7 +1051,7 @@ export default function ProductPage() {
                           onClick={() => handleHelpfulVote(rev.id)}
                           className={`flex items-center gap-1 text-[11px] px-3 py-1 border rounded-full transition-premium ${
                             rev.voted 
-                              ? 'bg-teal-50 border-[#0F7A6B] text-[#0F7A6B]' 
+                              ? 'bg-[#0B1B2B]/10 border-[#0B1B2B] text-[#0B1B2B]' 
                               : 'bg-white border-gray-200 hover:border-gray-300 hover:text-charcoal'
                           }`}
                         >
@@ -1035,7 +1072,7 @@ export default function ProductPage() {
                 <button
                   onClick={handleViewAll}
                   disabled={isLoadingReviews}
-                  className="rounded-premium border border-[#0F7A6B] px-8 py-3 text-sm font-bold text-[#0F7A6B] hover:bg-teal-50 transition"
+                  className="rounded-premium border border-[#0B1B2B] px-8 py-3 text-sm font-bold text-[#0B1B2B] hover:bg-[#0B1B2B]/10 transition"
                 >
                   {isLoadingReviews ? "Loading Reviews..." : `View All Reviews (${reviewSummary.totalCount})`}
                 </button>
@@ -1065,8 +1102,8 @@ export default function ProductPage() {
                     <img src={mainImg} alt={item.name} className="w-full h-full object-cover group-hover:scale-[1.02] transition-all duration-300" />
                   </div>
                   <div className="p-3 text-xs">
-                    <h4 className="font-bold text-charcoal line-clamp-1 group-hover:text-[#0F7A6B]">{item.name}</h4>
-                    <p className="font-black text-[#0F7A6B] mt-1">₹{item.price.toLocaleString('en-IN')}</p>
+                    <h4 className="font-bold text-charcoal line-clamp-1 group-hover:text-[#0B1B2B]">{item.name}</h4>
+                    <p className="font-black text-[#0B1B2B] mt-1">₹{item.price.toLocaleString('en-IN')}</p>
                   </div>
                 </div>
               );
@@ -1090,7 +1127,7 @@ export default function ProductPage() {
         </button>
         <button 
           onClick={() => initiateQuickPurchase(product, selectedVariants, paymentOption)}
-          className="flex-1 bg-[#0F7A6B] py-3 rounded-premium text-xs font-bold text-white hover:bg-[#0A5A4F] transition-colors shadow flex items-center justify-center min-h-[44px]"
+          className="flex-1 bg-[#0B1B2B] py-3 rounded-premium text-xs font-bold text-white hover:bg-[#071320] transition-colors shadow flex items-center justify-center min-h-[44px]"
         >
           Buy Now
         </button>
@@ -1149,7 +1186,7 @@ export default function ProductPage() {
                     value={reviewForm.title}
                     onChange={e => setReviewForm(prev => ({ ...prev, title: e.target.value }))}
                     placeholder="e.g. Excellent purchase experience" 
-                    className="w-full border rounded p-2 text-xs outline-none focus:border-[#0F7A6B]"
+                    className="w-full border rounded p-2 text-xs outline-none focus:border-[#0B1B2B]"
                   />
                 </div>
 
@@ -1161,7 +1198,7 @@ export default function ProductPage() {
                     value={reviewForm.comment}
                     onChange={e => setReviewForm(prev => ({ ...prev, comment: e.target.value }))}
                     placeholder="What did you like or dislike about the product?" 
-                    className="w-full border rounded p-2 text-xs outline-none focus:border-[#0F7A6B]"
+                    className="w-full border rounded p-2 text-xs outline-none focus:border-[#0B1B2B]"
                   />
                 </div>
 
@@ -1204,7 +1241,7 @@ export default function ProductPage() {
                 <button 
                   type="submit" 
                   disabled={isSubmittingReview}
-                  className="w-full bg-[#0F7A6B] text-white py-2.5 rounded-premium text-xs font-bold hover:bg-[#0A5A4F] transition shadow disabled:opacity-50"
+                  className="w-full bg-[#0B1B2B] text-white py-2.5 rounded-premium text-xs font-bold hover:bg-[#071320] transition shadow disabled:opacity-50"
                 >
                   {isSubmittingReview ? "Submitting Review..." : "Submit Review"}
                 </button>
@@ -1243,7 +1280,7 @@ export default function ProductPage() {
             addToCart(product, selectedVariants, quantity);
             window.showAlert?.(`${quantity}x added to cart!`, 'Cart Updated');
           }}
-          className="flex-shrink-0 h-14 w-14 rounded-xl border border-[#0F7A6B]/30 text-[#0F7A6B] flex items-center justify-center bg-teal-50/10 active:bg-teal-50/55 transition-colors cursor-pointer"
+          className="flex-shrink-0 h-14 w-14 rounded-xl border border-[#0B1B2B]/30 text-[#0B1B2B] flex items-center justify-center bg-[#0B1B2B]/10/10 active:bg-[#0B1B2B]/10/55 transition-colors cursor-pointer"
         >
           <ShoppingCart size={22} className="stroke-[2.2]" />
         </button>

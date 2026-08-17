@@ -11,7 +11,7 @@ const BANNERS = [
     subtitle: "Up to 60% OFF",
     badge: "Free Delivery + COD",
     image: "/images/category_kitchen.jpg",
-    bgColor: "bg-gradient-to-r from-[#0F7A6B] to-[#128a79]",
+    bgColor: "bg-gradient-to-r from-[#0B1B2B] to-[#128a79]",
   },
   {
     id: 2,
@@ -120,78 +120,13 @@ function BannerCarousel() {
   );
 }
 
-function ShopByCategory() {
-  const { categories, setSelectedCategory, setCurrentView } = useContext(AppContext);
-  const displayCats = categories.slice(0, 6);
 
-  if (displayCats.length === 0) return null;
-
-  return (
-    <div className="bg-white rounded-2xl border border-[#EDEDED] p-4 shadow-[0_1px_3px_rgba(0,0,0,0.05)] mt-3">
-      <h3 className="text-xs font-black text-charcoal uppercase tracking-wider mb-3 px-1">
-        Shop by Category
-      </h3>
-      <div className="grid grid-cols-3 gap-3">
-        {displayCats.map((cat, idx) => {
-          const emoji = getCategoryEmoji(cat.name);
-          return (
-            <button
-              key={cat.id || idx}
-              onClick={() => {
-                setSelectedCategory(cat.name);
-                setCurrentView('products');
-              }}
-              className="flex flex-col items-center gap-2 p-2.5 rounded-xl bg-[#FAFAFA] border border-gray-50 active:bg-teal-50/20 active:border-[#0F7A6B]/20 transition-all duration-150 cursor-pointer"
-            >
-              <div className="w-12 h-12 rounded-full bg-teal-50/60 flex items-center justify-center text-xl shadow-inner shrink-0 border border-teal-100/30">
-                {emoji}
-              </div>
-              <span className="text-[10px] font-bold text-[#1A1A1A] text-center truncate w-full">
-                {cat.name}
-              </span>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-function TrendingRail() {
-  const { products } = useContext(AppContext);
-  
-  const trendingProducts = useMemo(() => {
-    return [...products]
-      .filter((p) => p.status === 'active')
-      .sort((a, b) => (b.purchaseCount || 0) - (a.purchaseCount || 0))
-      .slice(0, 8);
-  }, [products]);
-
-  if (trendingProducts.length === 0) return null;
-
-  return (
-    <div className="space-y-2 mt-4 bg-white rounded-2xl border border-[#EDEDED] p-3 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
-      <div className="section-heading px-1">
-        <h2 className="text-xs font-extrabold text-charcoal uppercase tracking-wider">
-          🔥 Trending & Best Sellers
-        </h2>
-      </div>
-      <div className="flex gap-3 overflow-x-auto no-scrollbar px-1 py-1 snap-x">
-        {trendingProducts.map((p) => (
-          <div key={p.id} className="w-36 shrink-0 snap-start">
-            <ProductCard product={p} />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 function HomeTrustStrip() {
   return (
     <div className="grid grid-cols-3 gap-2 mt-3 bg-white rounded-xl border border-[#EDEDED] p-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] text-center">
       <div className="flex flex-col items-center gap-1">
-        <Truck className="h-4.5 w-4.5 text-[#0F7A6B]" />
+        <Truck className="h-4.5 w-4.5 text-[#0B1B2B]" />
         <span className="text-[9px] font-black text-charcoal uppercase">Free Delivery</span>
       </div>
       <div className="flex flex-col items-center gap-1 border-x border-[#EDEDED]">
@@ -199,7 +134,7 @@ function HomeTrustStrip() {
         <span className="text-[9px] font-black text-charcoal uppercase">Doorstep COD</span>
       </div>
       <div className="flex flex-col items-center gap-1">
-        <ShieldCheck className="h-4.5 w-4.5 text-[#0F7A6B]" />
+        <ShieldCheck className="h-4.5 w-4.5 text-[#0B1B2B]" />
         <span className="text-[9px] font-black text-charcoal uppercase">7-Day Exchange</span>
       </div>
     </div>
@@ -273,11 +208,7 @@ export default function HomePage() {
       {/* Trust Highlights Strip */}
       <HomeTrustStrip />
 
-      {/* Shop by Category Grid */}
-      <ShopByCategory />
 
-      {/* Trending Rail */}
-      <TrendingRail />
 
       {/* Products Grid */}
       <section className="mt-4">
@@ -287,7 +218,7 @@ export default function HomePage() {
           </h2>
           <button
             onClick={() => setCurrentView('products')}
-            className="flex items-center gap-0.5 text-xs text-[#0F7A6B] font-bold"
+            className="flex items-center gap-0.5 text-xs text-[#0B1B2B] font-bold"
           >
             See all <ChevronRight size={14} />
           </button>

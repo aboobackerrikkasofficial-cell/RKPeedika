@@ -1,15 +1,18 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Noto+Sans+Malayalam:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=Noto+Sans+Malayalam:wght@300;400;500;600;700&display=swap');
 
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #ffffff;
-  --color-secondary: #f7941d;
-  --color-secondaryDark: #e07d10;
-  --color-charcoal: #222222;
-  --color-borderLight: #f3f4f6;
-  --color-surface: #f8f8f8;
-  --color-muted: #6b7280;
+  --color-primary: #0F7A6B;
+  --color-primaryDark: #0A5A4F;
+  --color-secondary: #F5A623;
+  --color-charcoal: #1A1A1A;
+  --color-borderLight: #EDEDED;
+  --color-surface: #FAFAFA;
+  --color-muted: #6B6B6B;
+  --color-statusGreen: #2FA84F;
+  --color-statusRed: #E14B4B;
+  --color-statusBlue: #3E7BFA;
 
   --radius-premium: 12px;
   --radius-card: 10px;
@@ -35,7 +38,7 @@
     0 -1px 0 rgba(0, 0, 0, 0.06),
     0 -4px 16px rgba(0, 0, 0, 0.04);
 
-  --bottom-nav-height: 60px;
+  --bottom-nav-height: 68px;
 }
 
 /* =========================================================
@@ -56,12 +59,12 @@ body {
   margin: 0;
 
   font-family:
-    'Outfit',
+    'Manrope',
     'Noto Sans Malayalam',
     sans-serif;
 
-  color: #222222;
-  background-color: #f8f8f8;
+  color: #1A1A1A;
+  background-color: #FAFAFA;
 
   overflow-x: hidden;
 
@@ -206,7 +209,7 @@ img {
 .product-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 4px;
   width: 100%;
 }
 
@@ -311,12 +314,22 @@ img {
 }
 
 .bottom-nav-item.active {
-  color: #f7941d;
+  color: var(--color-primary);
+}
+
+.bottom-nav-item.active::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: var(--color-secondary);
 }
 
 .bottom-nav-item-label {
-  font-size: 10px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 700;
   line-height: 1;
   white-space: nowrap;
 }
@@ -435,24 +448,24 @@ img {
 }
 
 .category-chip.active .category-chip-icon {
-  border-color: #f7941d;
-  box-shadow: 0 0 0 2px rgba(247, 148, 29, 0.2);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 2px rgba(15, 122, 107, 0.2);
 }
 
 .category-chip-label {
-  font-size: 10px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   text-align: center;
   line-height: 1.2;
-  color: #4b5563;
+  color: #1f2937;
   white-space: nowrap;
-  max-width: 64px;
+  max-width: 80px;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .category-chip.active .category-chip-label {
-  color: #f7941d;
+  color: var(--color-primary);
 }
 
 /* =========================================================
@@ -478,6 +491,7 @@ img {
   background: #ffffff;
   border-radius: var(--radius-card);
   overflow: hidden;
+  border: 1px solid #f3f4f6;
   box-shadow: var(--shadow-card);
   transition: box-shadow 0.2s ease, transform 0.2s ease;
   cursor: pointer;
@@ -493,6 +507,7 @@ img {
 @media (min-width: 768px) {
   .product-card:hover {
     box-shadow: var(--shadow-card-hover);
+    border-color: #e5e7eb;
     transform: translateY(-2px);
   }
 }
@@ -511,7 +526,7 @@ img {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  padding: 8px;
+  padding: 2px;
   transition: transform 0.3s ease;
 }
 
@@ -588,7 +603,7 @@ img {
 .section-heading button {
   font-size: 12px;
   font-weight: 600;
-  color: #f7941d;
+  color: var(--color-primary);
   background: none;
   border: none;
   cursor: pointer;

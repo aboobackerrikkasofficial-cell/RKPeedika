@@ -71,7 +71,7 @@ function OTPInput({ length = 6, value, onChange, onComplete }) {
           onChange={(e) => handleChange(e, idx)}
           onKeyDown={(e) => handleKeyDown(e, idx)}
           ref={(el) => (inputsRef.current[idx] = el)}
-          className="w-12 h-12 text-center text-lg font-bold border border-gray-200 rounded-xl focus:border-[#F7941D] outline-none shadow-sm transition-all focus:ring-2 focus:ring-[#F7941D]/20"
+          className="w-12 h-12 text-center text-lg font-bold border border-gray-200 rounded-xl focus:border-[#0F7A6B] outline-none shadow-sm transition-all focus:ring-2 focus:ring-[#0F7A6B]/20"
         />
       ))}
     </div>
@@ -215,7 +215,7 @@ export default function CustomerDashboard() {
                 value={newName} 
                 onChange={(e) => setNewName(e.target.value)} 
                 placeholder="e.g. Rahul Sharma" 
-                className="w-full border border-gray-200 px-3.5 py-2.5 rounded-xl text-sm outline-none focus:border-[#F7941D]"
+                className="w-full border border-gray-200 px-3.5 py-2.5 rounded-xl text-sm outline-none focus:border-[#0F7A6B]"
               />
             </div>
             <div>
@@ -225,7 +225,7 @@ export default function CustomerDashboard() {
                 value={newEmail} 
                 onChange={(e) => setNewEmail(e.target.value)} 
                 placeholder="e.g. rahul@test.com" 
-                className="w-full border border-gray-200 px-3.5 py-2.5 rounded-xl text-sm outline-none focus:border-[#F7941D]"
+                className="w-full border border-gray-200 px-3.5 py-2.5 rounded-xl text-sm outline-none focus:border-[#0F7A6B]"
               />
             </div>
             <div>
@@ -239,7 +239,7 @@ export default function CustomerDashboard() {
                       value={g} 
                       checked={newGender === g}
                       onChange={(e) => setNewGender(e.target.value)}
-                      className="text-[#F7941D] focus:ring-[#F7941D]"
+                      className="text-[#0F7A6B] focus:ring-[#0F7A6B]"
                     />
                     <span>{g}</span>
                   </label>
@@ -252,14 +252,14 @@ export default function CustomerDashboard() {
                 type="date" 
                 value={newDob} 
                 onChange={(e) => setNewDob(e.target.value)} 
-                className="w-full border border-gray-200 px-3.5 py-2.5 rounded-xl text-sm outline-none focus:border-[#F7941D]"
+                className="w-full border border-gray-200 px-3.5 py-2.5 rounded-xl text-sm outline-none focus:border-[#0F7A6B]"
               />
             </div>
             
             <button 
               type="submit" 
               disabled={isSubmitting}
-              className="w-full bg-[#F7941D] text-white py-3 rounded-xl font-bold hover:bg-[#e5891b] transition disabled:opacity-50 text-sm shadow shadow-orange-500/10 min-h-[44px]"
+              className="w-full bg-[#0F7A6B] text-white py-3 rounded-xl font-bold hover:bg-[#0A5A4F] transition disabled:opacity-50 text-sm shadow shadow-teal-500/10 min-h-[44px]"
             >
               {isSubmitting ? "Saving details..." : "Save & Continue"}
             </button>
@@ -288,13 +288,13 @@ export default function CustomerDashboard() {
                 value={newName} 
                 onChange={(e) => setNewName(e.target.value)} 
                 placeholder="e.g. Rahul Sharma" 
-                className="w-full border border-gray-200 px-3.5 py-2.5 rounded-xl text-sm outline-none focus:border-[#F7941D]"
+                className="w-full border border-gray-200 px-3.5 py-2.5 rounded-xl text-sm outline-none focus:border-[#0F7A6B]"
               />
             </div>
 
             <div>
               <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Mobile Number</label>
-              <div className="flex rounded-xl border border-gray-200 focus-within:border-[#F7941D] overflow-hidden bg-white">
+              <div className="flex rounded-xl border border-gray-200 focus-within:border-[#0F7A6B] overflow-hidden bg-white">
                 <div className="flex items-center bg-gray-50 px-3 border-r border-gray-100 text-sm font-bold text-gray-600 gap-1 select-none">
                   <span>🇮🇳</span> <span>+91</span>
                 </div>
@@ -319,7 +319,7 @@ export default function CustomerDashboard() {
                 id="rememberMe"
                 checked={rememberMe} 
                 onChange={(e) => setRememberMe(e.target.checked)} 
-                className="rounded border-gray-300 text-[#F7941D] focus:ring-[#F7941D]" 
+                className="rounded border-gray-300 text-[#0F7A6B] focus:ring-[#0F7A6B]" 
               />
               <label htmlFor="rememberMe" className="text-xs font-bold text-gray-500 cursor-pointer select-none">
                 Keep me signed in for 30 days
@@ -329,7 +329,7 @@ export default function CustomerDashboard() {
             <button 
               type="submit" 
               disabled={isSubmitting || loginPhone.length !== 10 || !newName.trim()}
-              className="w-full bg-[#F7941D] text-white py-3 rounded-xl font-bold hover:bg-[#e5891b] transition disabled:opacity-50 text-sm shadow shadow-orange-500/10 min-h-[44px]"
+              className="w-full bg-[#0F7A6B] text-white py-3 rounded-xl font-bold hover:bg-[#0A5A4F] transition disabled:opacity-50 text-sm shadow shadow-teal-500/10 min-h-[44px]"
             >
               {isSubmitting ? "Logging in..." : "Continue"}
             </button>
@@ -441,7 +441,7 @@ export default function CustomerDashboard() {
                   <div key={order.orderId} className="border border-gray-100 rounded-premium p-4 flex flex-col md:flex-row md:justify-between md:items-center bg-gray-50/50 gap-4">
                     <div className="flex items-start space-x-3">
                       <div className="p-2 bg-white rounded shadow-sm border border-gray-100 mt-1">
-                        <Package className="h-5 w-5 text-[#F7941D]" />
+                        <Package className="h-5 w-5 text-[#0F7A6B]" />
                       </div>
                       <div>
                         <p className="font-bold text-charcoal text-sm">{order.orderId}</p>
@@ -454,7 +454,7 @@ export default function CustomerDashboard() {
                       </div>
                     </div>
                     <div className="flex items-center justify-between md:flex-col md:items-end w-full md:w-auto">
-                      <p className="font-bold text-[#F7941D] text-sm">₹{order.pricing?.finalTotal}</p>
+                      <p className="font-bold text-[#0F7A6B] text-sm">₹{order.pricing?.finalTotal}</p>
                       <button 
                         onClick={() => { setTrackingOrderId(order.orderId); setCurrentView('order-tracking'); }}
                         className="text-[10px] font-bold uppercase tracking-wider text-charcoal bg-white border border-gray-200 px-3 py-1.5 rounded-premium hover:bg-gray-50 mt-2"
@@ -477,7 +477,7 @@ export default function CustomerDashboard() {
               {!isEditingProfile && (
                 <button 
                   onClick={() => setIsEditingProfile(true)}
-                  className="flex items-center space-x-1.5 text-xs font-bold text-[#F7941D] bg-orange-50 px-3 py-1.5 rounded-premium min-h-[44px] md:min-h-[auto]"
+                  className="flex items-center space-x-1.5 text-xs font-bold text-[#0F7A6B] bg-teal-50 px-3 py-1.5 rounded-premium min-h-[44px] md:min-h-[auto]"
                 >
                   <Edit2 className="h-3.5 w-3.5" /> <span>Edit Profile</span>
                 </button>
@@ -487,7 +487,7 @@ export default function CustomerDashboard() {
             {!isEditingProfile ? (
               <div className="bg-gray-50/50 rounded-premium border border-gray-100 p-5 space-y-4">
                 <div className="flex items-center space-x-4 mb-6">
-                  <div className="h-16 w-16 bg-[#F7941D]/10 rounded-full flex items-center justify-center text-[#F7941D] font-black text-xl border-2 border-[#F7941D]/20">
+                  <div className="h-16 w-16 bg-[#0F7A6B]/10 rounded-full flex items-center justify-center text-[#0F7A6B] font-black text-xl border-2 border-[#0F7A6B]/20">
                     {userProfile?.name?.charAt(0) || 'U'}
                   </div>
                   <div>
@@ -521,7 +521,7 @@ export default function CustomerDashboard() {
                     type="text" 
                     value={profileName}
                     onChange={e => setProfileName(e.target.value)}
-                    className="w-full rounded-xl border border-gray-200 px-3.5 py-3 text-xs text-charcoal outline-none focus:border-[#F7941D]"
+                    className="w-full rounded-xl border border-gray-200 px-3.5 py-3 text-xs text-charcoal outline-none focus:border-[#0F7A6B]"
                   />
                 </div>
 
@@ -531,7 +531,7 @@ export default function CustomerDashboard() {
                     type="email" 
                     value={profileEmail}
                     onChange={e => setProfileEmail(e.target.value)}
-                    className="w-full rounded-xl border border-gray-200 px-3.5 py-3 text-xs text-charcoal outline-none focus:border-[#F7941D]"
+                    className="w-full rounded-xl border border-gray-200 px-3.5 py-3 text-xs text-charcoal outline-none focus:border-[#0F7A6B]"
                   />
                 </div>
 
@@ -542,14 +542,14 @@ export default function CustomerDashboard() {
                     value={profilePhone}
                     onChange={e => setProfilePhone(e.target.value)}
                     placeholder="+91 XXXXX XXXXX"
-                    className="w-full rounded-xl border border-gray-200 px-3.5 py-3 text-xs text-charcoal outline-none focus:border-[#F7941D]"
+                    className="w-full rounded-xl border border-gray-200 px-3.5 py-3 text-xs text-charcoal outline-none focus:border-[#0F7A6B]"
                   />
                 </div>
 
                 <div className="flex items-center space-x-3 pt-2">
                   <button 
                     type="submit"
-                    className="flex-1 rounded-xl bg-[#F7941D] px-6 py-3 min-h-[44px] text-xs font-bold text-white hover:bg-[#E07D10] transition-all shadow-sm"
+                    className="flex-1 rounded-xl bg-[#0F7A6B] px-6 py-3 min-h-[44px] text-xs font-bold text-white hover:bg-[#0A5A4F] transition-all shadow-sm"
                   >
                     Save Profile
                   </button>
@@ -607,7 +607,7 @@ export default function CustomerDashboard() {
                         <div className="flex items-center space-x-3 pt-2 mt-2 border-t border-gray-100/60">
                           <button
                             onClick={() => setEditingAddress(addr)}
-                            className="flex items-center space-x-1 text-xs font-semibold text-[#F7941D] hover:text-[#E07D10] transition-colors"
+                            className="flex items-center space-x-1 text-xs font-semibold text-[#0F7A6B] hover:text-[#0A5A4F] transition-colors"
                           >
                             <Edit2 className="h-3.5 w-3.5" /> <span>Edit</span>
                           </button>
@@ -650,60 +650,66 @@ export default function CustomerDashboard() {
             <h3 className="text-lg font-bold text-charcoal mb-3 hidden md:block">Returns & Exchanges</h3>
             <div className="space-y-4 text-xs text-gray-600 leading-relaxed">
               <p className="text-[10px] text-gray-400">Last Updated: August 2026</p>
-              <p>At RK Peedika, we strive to ensure a smooth and satisfying shopping experience. Since we focus on quality products at affordable prices, our return and exchange policy is designed to be fair and transparent.</p>
+              {storeSettings?.returnPolicy ? (
+                <p className="whitespace-pre-line text-xs">{storeSettings.returnPolicy}</p>
+              ) : (
+                <>
+                  <p>At RK Peedika, we strive to ensure a smooth and satisfying shopping experience. Since we focus on quality products at affordable prices, our return and exchange policy is designed to be fair and transparent.</p>
 
-              <div className="space-y-1.5">
-                <h4 className="font-bold text-charcoal">1. Exchange Policy (No Refunds)</h4>
-                <ul className="list-disc pl-5 space-y-1">
-                  <li>We offer <strong>exchanges only</strong> within <strong>3 days of delivery</strong> for eligible items.</li>
-                  <li>We do not offer cash refunds unless a replacement for a damaged/wrong product is unavailable.</li>
-                </ul>
-              </div>
+                  <div className="space-y-1.5">
+                    <h4 className="font-bold text-charcoal">1. Exchange Policy (No Refunds)</h4>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>We offer <strong>exchanges only</strong> within <strong>{storeSettings?.returnWindow || 3} days of delivery</strong> for eligible items.</li>
+                      <li>We do not offer cash refunds unless a replacement for a damaged/wrong product is unavailable.</li>
+                    </ul>
+                  </div>
 
-              <div className="space-y-1.5">
-                <h4 className="font-bold text-charcoal">2. Eligibility for Exchanges</h4>
-                <p>To be eligible for an exchange, the product must meet the following criteria:</p>
-                <ul className="list-disc pl-5 space-y-1">
-                  <li>Must be completely unused, unwashed, and in its original condition.</li>
-                  <li>Must have all original tags, labels, and packaging intact.</li>
-                  <li>Exchanges are only accepted for sizing issues, damaged products, or incorrect items delivered.</li>
-                </ul>
-              </div>
+                  <div className="space-y-1.5">
+                    <h4 className="font-bold text-charcoal">2. Eligibility for Exchanges</h4>
+                    <p>To be eligible for an exchange, the product must meet the following criteria:</p>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>Must be completely unused, unwashed, and in its original condition.</li>
+                      <li>Must have all original tags, labels, and packaging intact.</li>
+                      <li>Exchanges are only accepted for sizing issues, damaged products, or incorrect items delivered.</li>
+                    </ul>
+                  </div>
 
-              <div className="space-y-1.5">
-                <h4 className="font-bold text-charcoal">3. Damaged or Defective Items</h4>
-                <ul className="list-disc pl-5 space-y-1">
-                  <li>Any damage or manufacturing defect must be reported within <strong>24 hours of delivery</strong>.</li>
-                  <li><strong>Photo and video evidence</strong> of the packaging and product is mandatory to process damage claims.</li>
-                </ul>
-              </div>
+                  <div className="space-y-1.5">
+                    <h4 className="font-bold text-charcoal">3. Damaged or Defective Items</h4>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>Any damage or manufacturing defect must be reported within <strong>24 hours of delivery</strong>.</li>
+                      <li><strong>Photo and video evidence</strong> of the packaging and product is mandatory to process damage claims.</li>
+                    </ul>
+                  </div>
 
-              <div className="space-y-1.5">
-                <h4 className="font-bold text-charcoal">4. Non-Returnable / Non-Exchangeable Items</h4>
-                <p>The following categories are strictly non-returnable and non-exchangeable due to hygiene and customization reasons:</p>
-                <ul className="list-disc pl-5 space-y-1">
-                  <li>Personal care, cosmetics, and hygiene products</li>
-                  <li>Customized, personalized, or made-to-order items</li>
-                  <li>Clearance sale items or products marked as final sale</li>
-                  <li>Items without original tags, box, or documentation</li>
-                </ul>
-              </div>
+                  <div className="space-y-1.5">
+                    <h4 className="font-bold text-charcoal">4. Non-Returnable / Non-Exchangeable Items</h4>
+                    <p>The following categories are strictly non-returnable and non-exchangeable due to hygiene and customization reasons:</p>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>Personal care, cosmetics, and hygiene products</li>
+                      <li>Customized, personalized, or made-to-order items</li>
+                      <li>Clearance sale items or products marked as final sale</li>
+                      <li>Items without original tags, box, or documentation</li>
+                    </ul>
+                  </div>
 
-              <div className="space-y-1.5">
-                <h4 className="font-bold text-charcoal">5. Exchange Process</h4>
-                <p>To request an exchange:</p>
-                <ol className="list-decimal pl-5 space-y-1">
-                  <li>Raise a request via the footer exchange form, your customer dashboard, or WhatsApp support (+91 9188072646).</li>
-                  <li>Submit clear photographs of the product showing its unused status and tags.</li>
-                  <li>Once approved, our delivery partner will pick up the package.</li>
-                  <li>Upon quality inspection of the returned package, your replacement will be dispatched within <strong>3-5 business days</strong>.</li>
-                </ol>
-              </div>
+                  <div className="space-y-1.5">
+                    <h4 className="font-bold text-charcoal">5. Exchange Process</h4>
+                    <p>To request an exchange:</p>
+                    <ol className="list-decimal pl-5 space-y-1">
+                      <li>Raise a request via the footer exchange form, your customer dashboard, or WhatsApp support (+91 9188072646).</li>
+                      <li>Submit clear photographs of the product showing its unused status and tags.</li>
+                      <li>Once approved, our delivery partner will pick up the package.</li>
+                      <li>Upon quality inspection of the returned package, your replacement will be dispatched within <strong>3-5 business days</strong>.</li>
+                    </ol>
+                  </div>
+                </>
+              )}
 
               <div className="space-y-1.5">
                 <h4 className="font-bold text-charcoal">6. Contact Support</h4>
                 <p>If you have any questions regarding your return/exchange, please contact us:</p>
-                <p><strong>Email:</strong> rikkas.aboo@gmail.com &nbsp;|&nbsp; <strong>WhatsApp:</strong> +91 9188072646</p>
+                <p><strong>Email:</strong> {storeSettings?.supportEmail || "rikkas.aboo@gmail.com"} &nbsp;|&nbsp; <strong>WhatsApp:</strong> {storeSettings?.whatsappNumber || "+91 9188072646"}</p>
               </div>
             </div>
           </div>
@@ -899,15 +905,15 @@ export default function CustomerDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-white p-4 rounded border border-gray-100">
                   <p className="text-[10px] text-gray-400 font-bold uppercase">Support Email</p>
-                  <a href={`mailto:${storeSettings?.supportEmail}?subject=RK%20Peedika%20Customer%20Support%20Request`} className="text-[#F7941D] font-bold mt-1 inline-block">{storeSettings?.supportEmail}</a>
+                  <a href={`mailto:${storeSettings?.supportEmail}?subject=RK%20Peedika%20Customer%20Support%20Request`} className="text-[#0F7A6B] font-bold mt-1 inline-block">{storeSettings?.supportEmail}</a>
                 </div>
                 <div className="bg-white p-4 rounded border border-gray-100">
                   <p className="text-[10px] text-gray-400 font-bold uppercase">Helpline Phone</p>
-                  <a href={`tel:${storeSettings?.supportPhone}`} className="font-bold text-charcoal mt-1 block hover:text-[#F7941D]">{storeSettings?.supportPhone}</a>
+                  <a href={`tel:${storeSettings?.supportPhone}`} className="font-bold text-charcoal mt-1 block hover:text-[#0F7A6B]">{storeSettings?.supportPhone}</a>
                 </div>
                 <div className="bg-white p-4 rounded border border-gray-100">
                   <p className="text-[10px] text-gray-400 font-bold uppercase">WhatsApp Support</p>
-                  <a href={`https://wa.me/${storeSettings?.whatsappNumber?.replace(/\D/g, '')}?text=Hello,%20I%20need%20help%20with%20my%20RK%20Peedika%20order.`} target="_blank" rel="noreferrer" className="font-bold text-charcoal mt-1 block hover:text-[#F7941D]">{storeSettings?.whatsappNumber}</a>
+                  <a href={`https://wa.me/${storeSettings?.whatsappNumber?.replace(/\D/g, '')}?text=Hello,%20I%20need%20help%20with%20my%20RK%20Peedika%20order.`} target="_blank" rel="noreferrer" className="font-bold text-charcoal mt-1 block hover:text-[#0F7A6B]">{storeSettings?.whatsappNumber}</a>
                 </div>
                 <div className="bg-white p-4 rounded border border-gray-100">
                   <p className="text-[10px] text-gray-400 font-bold uppercase">GST Number</p>
@@ -958,11 +964,11 @@ export default function CustomerDashboard() {
                             setErrorMsg("");
                           }}
                           className={`w-full flex justify-between items-center px-4 py-3 min-h-[44px] transition-premium ${
-                            isActive ? 'text-[#F7941D] bg-orange-50/50 font-bold border-b-2 md:border-b-0 md:border-l-2 border-[#F7941D]' : 'text-gray-600 hover:bg-gray-50 hover:text-charcoal border-b-2 md:border-b-0 md:border-l-2 border-transparent'
+                            isActive ? 'text-[#0F7A6B] bg-teal-50/50 font-bold border-b-2 md:border-b-0 md:border-l-2 border-[#0F7A6B]' : 'text-gray-600 hover:bg-gray-50 hover:text-charcoal border-b-2 md:border-b-0 md:border-l-2 border-transparent'
                           }`}
                         >
                           <div className="flex items-center space-x-3 text-sm">
-                            <Icon className={`h-4 w-4 ${isActive ? 'text-[#F7941D]' : 'text-gray-400'}`} />
+                            <Icon className={`h-4 w-4 ${isActive ? 'text-[#0F7A6B]' : 'text-gray-400'}`} />
                             <span>{item.label}</span>
                           </div>
                         </button>

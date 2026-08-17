@@ -12,6 +12,7 @@ import {
   ToggleLeft,
   ToggleRight,
   Package,
+  Star,
 } from 'lucide-react';
 
 import apiClient from '../api/client';
@@ -31,6 +32,7 @@ function getImageUrl(image) {
   if (
     value.startsWith('http://') ||
     value.startsWith('https://') ||
+    value.startsWith('data:') ||
     value.startsWith('blob:')
   ) {
     return value;
@@ -70,6 +72,11 @@ const EMPTY_FORM = {
   reviewCount: '',
   averageRating: '',
   active: true,
+  codAvailable: true,
+  prepaidAvailable: true,
+  returnAvailable: true,
+  returnWindow: 3,
+  returnPolicy: '',
 };
 
 // ─── Component ─────────────────────────────────────────────────────────────────
@@ -90,6 +97,21 @@ export default function Products() {
   const [status, setStatus] = useState({ type: '', message: '' });
   const [images, setImages] = useState([]);
   const [form, setForm] = useState(EMPTY_FORM);
+
+  // New review states
+  const [productReviews, setProductReviews] = useState([]);
+  const [loadingReviews, setLoadingReviews] = useState(false);
+  const [reviewModalOpen, setReviewModalOpen] = useState(false);
+  const [editingReview, setEditingReview] = useState(null);
+  const [uploadingReviewImages, setUploadingReviewImages] = useState(false);
+  const [reviewForm, setReviewForm] = useState({
+    customerName: '',
+    rating: 5,
+    comment: '',
+    verifiedPurchase: true,
+    createdAt: new Date().toISOString().split('T')[0],
+    images: []
+  });
 
   // ── Data Loading ─────────────────────────────────────────────────────────────
 
@@ -193,12 +215,29 @@ export default function Products() {
 
   // ── Modal Open/Close ──────────────────────────────────────────────────────────
 
+  const fetchReviewsForProduct = useCallback(async (productId) => {
+    try {
+      setLoadingReviews(true);
+      const response = await apiClient.get(`/admin/reviews?productId=${productId}`);
+      if (response.data && Array.isArray(response.data.data)) {
+        setProductReviews(response.data.data);
+      } else {
+        setProductReviews([]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch product reviews:", error);
+    } finally {
+      setLoadingReviews(false);
+    }
+  }, []);
+
   function resetForm() {
     setForm({
       ...EMPTY_FORM,
       categoryId: categories[0]?.id ? String(categories[0].id) : '',
     });
     setImages([]);
+    setProductReviews([]);
   }
 
   function openAddModal() {
@@ -228,6 +267,11 @@ export default function Products() {
       reviewCount: product.reviewCount ?? '',
       averageRating: product.averageRating ?? '',
       active: isActive,
+      codAvailable: product.codAvailable !== false,
+      prepaidAvailable: product.prepaidAvailable !== false,
+      returnAvailable: product.returnAvailable !== false,
+      returnWindow: product.returnWindow ?? 3,
+      returnPolicy: product.returnPolicy ?? '',
     });
 
     setImages(
@@ -239,6 +283,7 @@ export default function Products() {
           }))
         : []
     );
+    fetchReviewsForProduct(product.id);
     setModalOpen(true);
   }
 
@@ -247,6 +292,47 @@ export default function Products() {
   }
 
   // ── Image Upload ──────────────────────────────────────────────────────────────
+
+  function compressImageToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Compress as JPEG at 0.7 quality
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          resolve(dataUrl);
+        };
+        img.onerror = (err) => reject(err);
+        img.src = event.target.result;
+      };
+      reader.onerror = (err) => reject(err);
+      reader.readAsDataURL(file);
+    });
+  }
 
   async function handleImageUpload(event) {
     const files = Array.from(event.target.files || []);
@@ -262,41 +348,29 @@ export default function Products() {
         showStatus('error', `${file.name} is not a valid image.`);
         return;
       }
-      if (file.size > 8 * 1024 * 1024) {
-        showStatus('error', `${file.name} exceeds 8 MB.`);
-        return;
-      }
     }
 
     try {
       setUploading(true);
-      const formData = new FormData();
-      files.forEach((file) => formData.append('images', file));
-
-      const response = await apiClient.post('/uploads/product-images', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
-      });
-
-      const uploaded = response.data?.images || [];
-      const newImages = uploaded.map((img) => ({
-        url: img.url,
-        storedUrl: img.url,
-        preview: img.url,
-      }));
+      const newImages = await Promise.all(
+        files.map(async (file) => {
+          const base64Url = await compressImageToBase64(file);
+          return {
+            url: base64Url,
+            storedUrl: base64Url,
+            preview: base64Url,
+          };
+        })
+      );
 
       setImages((prev) => [...prev, ...newImages]);
       showStatus(
         'success',
-        `${newImages.length} image${newImages.length > 1 ? 's' : ''} uploaded.`
+        `${newImages.length} image${newImages.length > 1 ? 's' : ''} processed.`
       );
     } catch (error) {
-      console.error('Image upload failed:', error);
-      showStatus(
-        'error',
-        error.response?.data?.error?.message ||
-          error.response?.data?.message ||
-          'Image upload failed. Please try again.'
-      );
+      console.error('Image processing failed:', error);
+      showStatus('error', 'Image processing failed. Please try again.');
     } finally {
       setUploading(false);
       event.target.value = '';
@@ -329,6 +403,22 @@ export default function Products() {
       return;
     }
 
+    // Payment configuration validation
+    if (!form.codAvailable && !form.prepaidAvailable && form.active) {
+      showStatus('error', 'Please enable at least one payment method for active products.');
+      return;
+    }
+
+    if (form.codAvailable && (!form.codPrice || Number(form.codPrice) <= 0)) {
+      showStatus('error', 'Please enter a valid COD price since COD is enabled.');
+      return;
+    }
+
+    if (form.prepaidAvailable && (!form.onlinePrice || Number(form.onlinePrice) <= 0)) {
+      showStatus('error', 'Please enter a valid Prepaid price since Prepaid is enabled.');
+      return;
+    }
+
     let specifications = {};
     try {
       specifications = JSON.parse(form.specifications || '{}');
@@ -349,8 +439,8 @@ export default function Products() {
       tagline: form.tagline || `${form.name.trim()} for everyday use.`,
       description: form.description,
       price: Number(form.price),
-      codPrice: form.codPrice === '' ? null : Number(form.codPrice),
-      onlinePrice: form.onlinePrice === '' ? null : Number(form.onlinePrice),
+      codPrice: form.codPrice === '' || !form.codAvailable ? null : Number(form.codPrice),
+      onlinePrice: form.onlinePrice === '' || !form.prepaidAvailable ? null : Number(form.onlinePrice),
       categoryId: String(form.categoryId),
       images: imageUrls,
       highlights,
@@ -359,6 +449,11 @@ export default function Products() {
       reviewCount: form.reviewCount === '' ? undefined : Number(form.reviewCount),
       averageRating: form.averageRating === '' ? undefined : Number(form.averageRating),
       active: Boolean(form.active),
+      codAvailable: Boolean(form.codAvailable),
+      prepaidAvailable: Boolean(form.prepaidAvailable),
+      returnAvailable: Boolean(form.returnAvailable),
+      returnWindow: form.returnAvailable ? Number(form.returnWindow) : 0,
+      returnPolicy: form.returnPolicy,
       // Keep stock alive so backend doesn't fail validation
       stock: 9999,
       seller: 'RK Peedika',
@@ -387,6 +482,117 @@ export default function Products() {
       );
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleReviewImageUpload(event) {
+    const files = Array.from(event.target.files || []);
+    if (!files.length) return;
+    
+    try {
+      setUploadingReviewImages(true);
+      const formData = new FormData();
+      files.forEach(file => formData.append('images', file));
+      
+      const response = await apiClient.post('/uploads/review-images', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      
+      if (response.data && response.data.success) {
+        const urls = response.data.images.map(img => img.url);
+        setReviewForm(prev => ({ ...prev, images: [...prev.images, ...urls] }));
+      }
+    } catch (error) {
+      console.error("Failed to upload review images:", error);
+      showStatus('error', 'Review image upload failed.');
+    } finally {
+      setUploadingReviewImages(false);
+      event.target.value = '';
+    }
+  }
+
+  function removeReviewImage(indexToRemove) {
+    setReviewForm(prev => ({ ...prev, images: prev.images.filter((_, idx) => idx !== indexToRemove) }));
+  }
+
+  function openAddReview() {
+    setEditingReview(null);
+    setReviewForm({
+      customerName: '',
+      rating: 5,
+      comment: '',
+      verifiedPurchase: true,
+      createdAt: new Date().toISOString().split('T')[0],
+      images: []
+    });
+    setReviewModalOpen(true);
+  }
+
+  function openEditReview(review) {
+    setEditingReview(review);
+    setReviewForm({
+      customerName: review.customerName || '',
+      rating: review.rating || 5,
+      comment: review.comment || '',
+      verifiedPurchase: review.verifiedPurchase !== false,
+      createdAt: new Date(review.createdAt).toISOString().split('T')[0],
+      images: Array.isArray(review.images) ? review.images.map(img => typeof img === 'object' ? img.imageUrl : img) : []
+    });
+    setReviewModalOpen(true);
+  }
+
+  async function saveReview(e) {
+    e.preventDefault();
+    if (!reviewForm.customerName.trim()) {
+      showStatus('error', 'Customer name is required.');
+      return;
+    }
+    if (!reviewForm.comment.trim()) {
+      showStatus('error', 'Review comment is required.');
+      return;
+    }
+
+    const payload = {
+      productId: editingProduct.id,
+      rating: Number(reviewForm.rating),
+      comment: reviewForm.comment.trim(),
+      customerName: reviewForm.customerName.trim(),
+      verifiedPurchase: Boolean(reviewForm.verifiedPurchase),
+      createdAt: reviewForm.createdAt,
+      images: reviewForm.images,
+      status: 'approved'
+    };
+
+    try {
+      if (editingReview) {
+        await apiClient.put(`/reviews/${editingReview.id}/moderation`, payload);
+        showStatus('success', 'Review updated successfully.');
+      } else {
+        await apiClient.post('/reviews', payload);
+        showStatus('success', 'Review added successfully.');
+      }
+      setReviewModalOpen(false);
+      setEditingReview(null);
+      await fetchReviewsForProduct(editingProduct.id);
+      await loadProducts();
+    } catch (error) {
+      console.error("Failed to save review:", error);
+      showStatus('error', 'Failed to save review.');
+    }
+  }
+
+  async function handleDeleteReview(reviewId) {
+    const confirmed = window.confirm("Are you sure you want to delete this review?");
+    if (!confirmed) return;
+
+    try {
+      await apiClient.delete(`/reviews/${reviewId}`);
+      showStatus('success', 'Review deleted successfully.');
+      await fetchReviewsForProduct(editingProduct.id);
+      await loadProducts();
+    } catch (error) {
+      console.error("Failed to delete review:", error);
+      showStatus('error', 'Failed to delete review.');
     }
   }
 
@@ -537,7 +743,7 @@ export default function Products() {
                             className="h-12 w-12 rounded-lg object-cover border border-gray-100"
                             onError={(e) => {
                               e.target.onerror = null;
-                              e.target.src = '';
+                              e.target.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
                               e.target.style.display = 'none';
                               e.target.nextSibling?.classList.remove('hidden');
                             }}
@@ -715,13 +921,13 @@ export default function Products() {
       {/* ── PRODUCT MODAL ─────────────────────────────────────────────────────── */}
       {modalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 backdrop-blur-sm p-4 overflow-y-auto"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-0 md:p-4"
           onClick={(e) => { if (e.target === e.currentTarget) setModalOpen(false); }}
         >
-          <div className="w-full max-w-2xl my-8 rounded-2xl bg-white shadow-2xl">
+          <div className="w-full h-[100dvh] md:h-[90vh] md:max-w-[1300px] md:rounded-2xl bg-white shadow-2xl flex flex-col overflow-hidden">
 
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b px-6 py-4">
+            <div className="flex items-center justify-between border-b px-6 py-4 shrink-0 bg-gray-50/50">
               <div>
                 <h3 className="text-lg font-black text-gray-900">
                   {editingProduct ? 'Edit Product' : 'Add Product'}
@@ -740,313 +946,597 @@ export default function Products() {
             </div>
 
             {/* Form */}
-            <form onSubmit={saveProduct} className="p-6 space-y-6">
+            <form onSubmit={saveProduct} className="flex-1 overflow-hidden flex flex-col">
 
-              {/* ── BASIC INFO ──────────────────────────────────────────────── */}
-              <section>
-                <h4 className="text-sm font-black text-gray-800 mb-4">Basic Information</h4>
-                <div className="grid sm:grid-cols-2 gap-4">
-
-                  <div className="sm:col-span-2">
-                    <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
-                      Product Name *
-                    </label>
-                    <input
-                      value={form.name}
-                      onChange={(e) => updateField('name', e.target.value)}
-                      placeholder="Stainless Steel Sink Sponge Holder"
-                      required
-                      className="w-full rounded-xl border border-gray-200 px-3 py-3 text-xs outline-none focus:border-[#F7941D] transition-colors"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
-                      Category *
-                    </label>
-                    <select
-                      value={form.categoryId}
-                      onChange={(e) => updateField('categoryId', e.target.value)}
-                      required
-                      className="w-full rounded-xl border border-gray-200 px-3 py-3 text-xs outline-none focus:border-[#F7941D] transition-colors"
-                    >
-                      <option value="">Select category</option>
-                      {categories.map((cat) => (
-                        <option key={cat.id} value={String(cat.id)}>
-                          {cat.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
-                      Short Tagline
-                    </label>
-                    <input
-                      value={form.tagline}
-                      onChange={(e) => updateField('tagline', e.target.value)}
-                      placeholder="Durable kitchen sink organizer"
-                      className="w-full rounded-xl border border-gray-200 px-3 py-3 text-xs outline-none focus:border-[#F7941D] transition-colors"
-                    />
-                  </div>
-
-                  <div className="sm:col-span-2">
-                    <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
-                      Description
-                    </label>
-                    <textarea
-                      value={form.description}
-                      onChange={(e) => updateField('description', e.target.value)}
-                      rows={4}
-                      placeholder="Detailed product description…"
-                      className="w-full rounded-xl border border-gray-200 px-3 py-3 text-xs outline-none focus:border-[#F7941D] transition-colors resize-none"
-                    />
-                  </div>
-
-                </div>
-              </section>
-
-              {/* ── IMAGES ─────────────────────────────────────────────────── */}
-              <section className="border-t pt-5">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h4 className="text-sm font-black text-gray-800">Product Images</h4>
-                    <p className="text-[10px] text-gray-400 mt-0.5">Up to 8 images · Max 8 MB each</p>
-                  </div>
-                  <label
-                    className={`cursor-pointer flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold text-white transition-colors ${
-                      uploading ? 'bg-gray-400 cursor-wait' : 'bg-[#F7941D] hover:bg-[#E07D10]'
-                    }`}
-                  >
-                    {uploading ? (
-                      <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Uploading…</>
-                    ) : (
-                      <><ImagePlus className="h-3.5 w-3.5" /> Upload Images</>
-                    )}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageUpload}
-                      disabled={uploading}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-
-                {images.length === 0 ? (
-                  <div className="border-2 border-dashed border-gray-200 rounded-xl p-8 text-center">
-                    <ImagePlus className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                    <p className="text-xs text-gray-400 font-semibold">No images yet. Upload above.</p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-4 gap-2">
-                    {images.map((img, idx) => (
-                      <div key={idx} className="relative group rounded-xl overflow-hidden border border-gray-100">
-                        <img
-                          src={img.preview || img.url}
-                          alt={`Product image ${idx + 1}`}
-                          className="h-20 w-full object-cover"
-                          onError={(e) => { e.target.src = ''; e.target.style.background = '#f3f4f6'; }}
+              {/* Scrollable Body */}
+              <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                  
+                  {/* LEFT SIDE COLUMN */}
+                  <div className="space-y-6">
+                    
+                    {/* Basic Info */}
+                    <div className="border border-gray-100 bg-gray-50/30 rounded-xl p-4 space-y-4">
+                      <h4 className="text-xs font-black text-gray-400 uppercase tracking-wider">Basic Information</h4>
+                      
+                      <div>
+                        <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
+                          Product Name *
+                        </label>
+                        <input
+                          value={form.name}
+                          onChange={(e) => updateField('name', e.target.value)}
+                          placeholder="Stainless Steel Sink Sponge Holder"
+                          required
+                          className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-xs outline-none focus:border-[#F7941D] transition-colors"
                         />
-                        <button
-                          type="button"
-                          onClick={() => removeImage(idx)}
-                          className="absolute top-1 right-1 rounded-full bg-red-500 text-white p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
+                            Category *
+                          </label>
+                          <select
+                            value={form.categoryId}
+                            onChange={(e) => updateField('categoryId', e.target.value)}
+                            required
+                            className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-xs outline-none focus:border-[#F7941D] transition-colors bg-white"
+                          >
+                            <option value="">Select category</option>
+                            {categories.map((cat) => (
+                              <option key={cat.id} value={String(cat.id)}>
+                                {cat.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
+                            Short Tagline
+                          </label>
+                          <input
+                            value={form.tagline}
+                            onChange={(e) => updateField('tagline', e.target.value)}
+                            placeholder="Durable kitchen sink organizer"
+                            className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-xs outline-none focus:border-[#F7941D] transition-colors"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
+                          Description
+                        </label>
+                        <textarea
+                          value={form.description}
+                          onChange={(e) => updateField('description', e.target.value)}
+                          rows={3}
+                          placeholder="Detailed product description…"
+                          className="w-full rounded-xl border border-gray-200 px-3 py-2 text-xs outline-none focus:border-[#F7941D] transition-colors resize-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Pricing */}
+                    <div className="border border-gray-100 bg-gray-50/30 rounded-xl p-4 space-y-4">
+                      <h4 className="text-xs font-black text-gray-400 uppercase tracking-wider">Pricing</h4>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div>
+                          <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
+                            MRP (Base Price) *
+                          </label>
+                          <div className="relative">
+                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">₹</span>
+                            <input
+                              type="number"
+                              value={form.price}
+                              onChange={(e) => updateField('price', e.target.value)}
+                              placeholder="499"
+                              min="0"
+                              step="0.01"
+                              required
+                              className="w-full rounded-xl border border-gray-200 pl-6 pr-2 py-2.5 text-xs outline-none focus:border-[#F7941D] transition-colors"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
+                            COD / Regular Price
+                          </label>
+                          <div className="relative">
+                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">₹</span>
+                            <input
+                              type="number"
+                              value={form.codPrice}
+                              disabled={!form.codAvailable}
+                              onChange={(e) => updateField('codPrice', e.target.value)}
+                              placeholder="389"
+                              min="0"
+                              step="0.01"
+                              className="w-full rounded-xl border border-gray-200 pl-6 pr-2 py-2.5 text-xs outline-none focus:border-[#F7941D] transition-colors disabled:opacity-50 disabled:bg-gray-100"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
+                            Prepaid / Online Price
+                          </label>
+                          <div className="relative">
+                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">₹</span>
+                            <input
+                              type="number"
+                              value={form.onlinePrice}
+                              disabled={!form.prepaidAvailable}
+                              onChange={(e) => updateField('onlinePrice', e.target.value)}
+                              placeholder="349"
+                              min="0"
+                              step="0.01"
+                              className="w-full rounded-xl border border-gray-200 pl-6 pr-2 py-2.5 text-xs outline-none focus:border-[#F7941D] transition-colors disabled:opacity-50 disabled:bg-gray-100"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Availability */}
+                    <div className="border border-gray-100 bg-gray-50/30 rounded-xl p-4 space-y-4">
+                      <h4 className="text-xs font-black text-gray-400 uppercase tracking-wider">Payment Availability</h4>
+                      <div className="flex gap-6">
+                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={form.codAvailable}
+                            onChange={(e) => updateField('codAvailable', e.target.checked)}
+                            className="accent-[#F7941D] h-4 w-4 cursor-pointer"
+                          />
+                          <span className="text-xs font-bold text-gray-700">COD Available</span>
+                        </label>
+                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={form.prepaidAvailable}
+                            onChange={(e) => updateField('prepaidAvailable', e.target.checked)}
+                            className="accent-[#F7941D] h-4 w-4 cursor-pointer"
+                          />
+                          <span className="text-xs font-bold text-gray-700">Prepaid (Online) Available</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Returns & Delivery */}
+                    <div className="border border-gray-100 bg-gray-50/30 rounded-xl p-4 space-y-4">
+                      <h4 className="text-xs font-black text-gray-400 uppercase tracking-wider">Returns &amp; Delivery</h4>
+                      <div className="grid grid-cols-3 gap-3 items-end">
+                        <div>
+                          <label className="flex items-center gap-2 cursor-pointer select-none pb-3">
+                            <input
+                              type="checkbox"
+                              checked={form.returnAvailable}
+                              onChange={(e) => updateField('returnAvailable', e.target.checked)}
+                              className="accent-[#F7941D] h-4 w-4 cursor-pointer"
+                            />
+                            <span className="text-xs font-bold text-gray-700">Return Available</span>
+                          </label>
+                        </div>
+                        <div className="col-span-2">
+                          <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
+                            Return Window (Days)
+                          </label>
+                          <input
+                            type="number"
+                            value={form.returnWindow}
+                            disabled={!form.returnAvailable}
+                            onChange={(e) => updateField('returnWindow', e.target.value)}
+                            min="0"
+                            placeholder="3"
+                            className="w-full rounded-xl border border-gray-200 px-3 py-2 text-xs outline-none focus:border-[#F7941D] transition-colors disabled:opacity-50 disabled:bg-gray-100"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">Return / Delivery Policy Details</label>
+                        <textarea
+                          value={form.returnPolicy}
+                          disabled={!form.returnAvailable}
+                          onChange={(e) => updateField('returnPolicy', e.target.value)}
+                          rows={2}
+                          placeholder="E.g. Return or exchange requests accepted within 3 days..."
+                          className="w-full rounded-xl border border-gray-200 px-3 py-2 text-xs outline-none focus:border-[#F7941D] transition-colors resize-none disabled:opacity-50 disabled:bg-gray-100"
+                        />
+                      </div>
+                    </div>
+
+                  </div>
+
+                  {/* RIGHT SIDE COLUMN */}
+                  <div className="space-y-6">
+
+                    {/* Product Images */}
+                    <div className="border border-gray-100 bg-gray-50/30 rounded-xl p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-xs font-black text-gray-400 uppercase tracking-wider">Product Images</h4>
+                        <label
+                          className={`cursor-pointer flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold text-white transition-colors ${
+                            uploading ? 'bg-gray-400 cursor-wait' : 'bg-[#F7941D] hover:bg-[#E07D10]'
+                          }`}
                         >
-                          <X className="h-3 w-3" />
-                        </button>
-                        {idx === 0 && (
-                          <span className="absolute bottom-1 left-1 text-[9px] font-bold bg-black/60 text-white px-1.5 py-0.5 rounded">
-                            Main
-                          </span>
+                          {uploading ? (
+                            <><Loader2 className="h-3 w-3 animate-spin" /> Uploading…</>
+                          ) : (
+                            <><ImagePlus className="h-3 w-3" /> Upload</>
+                          )}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handleImageUpload}
+                            disabled={uploading}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+
+                      {images.length === 0 ? (
+                        <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 text-center">
+                          <ImagePlus className="h-6 w-6 text-gray-300 mx-auto mb-1" />
+                          <p className="text-[10px] text-gray-400 font-semibold">No images yet. Upload above.</p>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-4 gap-2">
+                          {images.map((img, idx) => (
+                            <div key={idx} className="relative group rounded-xl overflow-hidden border border-gray-100 bg-white">
+                              <img
+                                src={getImageUrl(img.preview || img.url)}
+                                alt={`Product image ${idx + 1}`}
+                                className="h-16 w-full object-cover"
+                                onError={(e) => { e.target.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7'; e.target.style.background = '#f3f4f6'; }}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => removeImage(idx)}
+                                className="absolute top-0.5 right-0.5 rounded-full bg-red-500 text-white p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <X className="h-2.5 w-2.5" />
+                              </button>
+                              {idx === 0 ? (
+                                <span className="absolute bottom-0.5 left-0.5 text-[8px] font-bold bg-black/60 text-white px-1 py-0.2 rounded">
+                                  Main
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setImages(prev => {
+                                      const updated = [...prev];
+                                      const [target] = updated.splice(idx, 1);
+                                      updated.unshift(target);
+                                      return updated;
+                                    });
+                                  }}
+                                  className="absolute bottom-0.5 left-0.5 text-[8px] font-bold bg-[#F7941D]/80 text-white px-1 py-0.2 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  Set Main
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Ratings & Details (Highlights & Specs) */}
+                    <div className="border border-gray-100 bg-gray-50/30 rounded-xl p-4 space-y-4">
+                      <h4 className="text-xs font-black text-gray-400 uppercase tracking-wider">Product Details</h4>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">Highlights (One per line)</label>
+                          <textarea
+                            value={form.highlights}
+                            onChange={(e) => updateField('highlights', e.target.value)}
+                            rows={3}
+                            placeholder="Stainless steel construction&#10;Rust-resistant coating"
+                            className="w-full rounded-xl border border-gray-200 px-3 py-2 text-xs outline-none focus:border-[#F7941D] transition-colors resize-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">Specifications (JSON Format)</label>
+                          <textarea
+                            value={form.specifications}
+                            onChange={(e) => updateField('specifications', e.target.value)}
+                            rows={3}
+                            className="w-full rounded-xl border border-gray-200 px-3 py-2 text-xs font-mono outline-none focus:border-[#F7941D] transition-colors resize-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-3 gap-3">
+                        <div>
+                          <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">Rating</label>
+                          <input
+                            type="number"
+                            value={form.rating}
+                            onChange={(e) => updateField('rating', e.target.value)}
+                            placeholder="4.5"
+                            min="0"
+                            max="5"
+                            step="0.1"
+                            className="w-full rounded-xl border border-gray-200 px-3 py-2 text-xs outline-none focus:border-[#F7941D] transition-colors"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">Review Count</label>
+                          <input
+                            type="number"
+                            value={form.reviewCount}
+                            onChange={(e) => updateField('reviewCount', e.target.value)}
+                            placeholder="128"
+                            min="0"
+                            className="w-full rounded-xl border border-gray-200 px-3 py-2 text-xs outline-none focus:border-[#F7941D] transition-colors"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">Avg Rating</label>
+                          <input
+                            type="number"
+                            value={form.averageRating}
+                            onChange={(e) => updateField('averageRating', e.target.value)}
+                            placeholder="4.3"
+                            min="0"
+                            max="5"
+                            step="0.1"
+                            className="w-full rounded-xl border border-gray-200 px-3 py-2 text-xs outline-none focus:border-[#F7941D] transition-colors"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex justify-between items-center pt-2 border-t border-gray-100">
+                        <label className="flex items-center gap-2 cursor-pointer select-none">
+                          <input
+                            type="checkbox"
+                            checked={form.active}
+                            onChange={(e) => updateField('active', e.target.checked)}
+                            className="accent-[#F7941D] h-4 w-4 cursor-pointer"
+                          />
+                          <span className="text-xs font-bold text-gray-700">Active (Visible to customers)</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* ── REVIEWS SECTION ────────────────────────────────────────── */}
+                    {editingProduct && (
+                      <div className="border border-gray-100 bg-gray-50/30 rounded-xl p-4 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h4 className="text-xs font-black text-gray-400 uppercase tracking-wider">Customer Reviews</h4>
+                          <button
+                            type="button"
+                            onClick={openAddReview}
+                            className="flex items-center gap-1 bg-[#F7941D]/10 hover:bg-[#F7941D]/20 text-[#F7941D] rounded-lg px-2.5 py-1 text-[10px] font-bold transition-colors"
+                          >
+                            <Plus className="h-3 w-3" /> Add Review
+                          </button>
+                        </div>
+
+                        {loadingReviews ? (
+                          <div className="flex justify-center py-4">
+                            <Loader2 className="h-4 w-4 animate-spin text-[#F7941D]" />
+                          </div>
+                        ) : productReviews.length === 0 ? (
+                          <p className="text-[10px] text-gray-400 italic">No reviews found for this product.</p>
+                        ) : (
+                          <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                            {productReviews.map((rev) => (
+                              <div key={rev.id} className="border border-gray-100 rounded-xl p-2.5 bg-white flex justify-between gap-3 text-[11px] leading-relaxed shadow-sm">
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center flex-wrap gap-1.5 mb-1">
+                                    <span className="font-bold text-gray-900">{rev.customerName || 'Anonymous'}</span>
+                                    <span className="text-amber-400 font-bold">★ {rev.rating}</span>
+                                    {rev.verifiedPurchase && (
+                                      <span className="text-[8px] bg-emerald-50 text-emerald-700 font-bold px-1.5 py-0.2 rounded uppercase tracking-wider shrink-0">
+                                        Verified
+                                      </span>
+                                    )}
+                                  </div>
+                                  <p className="text-gray-600 font-semibold break-words">{rev.comment}</p>
+                                  <div className="flex items-center gap-2 text-[9px] text-gray-400 font-semibold mt-1">
+                                    <span>{new Date(rev.createdAt).toLocaleDateString()}</span>
+                                    {rev.images && rev.images.length > 0 && (
+                                      <span className="flex items-center gap-0.5">
+                                        📷 {rev.images.length} photo{rev.images.length > 1 ? 's' : ''}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {rev.images && rev.images.length > 0 && (
+                                    <div className="flex gap-1 mt-1.5 flex-wrap">
+                                      {rev.images.map((img, idx) => (
+                                        <img key={idx} src={getImageUrl(img.imageUrl || img)} className="w-8 h-8 rounded object-cover border" />
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex flex-col gap-1 items-end shrink-0 justify-center">
+                                  <button
+                                    type="button"
+                                    onClick={() => openEditReview(rev)}
+                                    className="px-2 py-0.5 rounded bg-gray-50 hover:bg-orange-50 hover:text-[#F7941D] text-[9px] font-bold border"
+                                  >
+                                    Edit
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteReview(rev.id)}
+                                    className="px-2 py-0.5 rounded bg-gray-50 hover:bg-red-55 hover:text-red-600 text-[9px] font-bold border"
+                                  >
+                                    Delete
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
                         )}
                       </div>
-                    ))}
-                  </div>
-                )}
-              </section>
+                    )}
 
-              {/* ── PRICING ────────────────────────────────────────────────── */}
-              <section className="border-t pt-5">
-                <h4 className="text-sm font-black text-gray-800 mb-4">Pricing</h4>
-                <div className="grid sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
-                      MRP (Base Price) *
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">₹</span>
-                      <input
-                        type="number"
-                        value={form.price}
-                        onChange={(e) => updateField('price', e.target.value)}
-                        placeholder="499"
-                        min="0"
-                        step="0.01"
-                        required
-                        className="w-full rounded-xl border border-gray-200 pl-7 pr-3 py-3 text-xs outline-none focus:border-[#F7941D] transition-colors"
-                      />
-                    </div>
                   </div>
 
-                  <div>
-                    <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
-                      COD / Regular Price
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">₹</span>
-                      <input
-                        type="number"
-                        value={form.codPrice}
-                        onChange={(e) => updateField('codPrice', e.target.value)}
-                        placeholder="389"
-                        min="0"
-                        step="0.01"
-                        className="w-full rounded-xl border border-gray-200 pl-7 pr-3 py-3 text-xs outline-none focus:border-[#F7941D] transition-colors"
-                      />
-                    </div>
-                    <p className="text-[9px] text-gray-400 mt-0.5">Shown to customers paying COD</p>
-                  </div>
-
-                  <div>
-                    <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
-                      Prepaid / Online Price
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">₹</span>
-                      <input
-                        type="number"
-                        value={form.onlinePrice}
-                        onChange={(e) => updateField('onlinePrice', e.target.value)}
-                        placeholder="349"
-                        min="0"
-                        step="0.01"
-                        className="w-full rounded-xl border border-gray-200 pl-7 pr-3 py-3 text-xs outline-none focus:border-[#F7941D] transition-colors"
-                      />
-                    </div>
-                    <p className="text-[9px] text-gray-400 mt-0.5">Shown for Razorpay / online payments</p>
-                  </div>
                 </div>
-              </section>
+              </div>
 
-              {/* ── REVIEWS ────────────────────────────────────────────────── */}
-              <section className="border-t pt-5">
-                <h4 className="text-sm font-black text-gray-800 mb-4">Reviews &amp; Rating</h4>
-                <div className="grid sm:grid-cols-3 gap-4">
-                  <div>
-                    <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
-                      Rating (0–5)
-                    </label>
-                    <input
-                      type="number"
-                      value={form.rating}
-                      onChange={(e) => updateField('rating', e.target.value)}
-                      placeholder="4.5"
-                      min="0"
-                      max="5"
-                      step="0.1"
-                      className="w-full rounded-xl border border-gray-200 px-3 py-3 text-xs outline-none focus:border-[#F7941D] transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
-                      Review Count
-                    </label>
-                    <input
-                      type="number"
-                      value={form.reviewCount}
-                      onChange={(e) => updateField('reviewCount', e.target.value)}
-                      placeholder="128"
-                      min="0"
-                      className="w-full rounded-xl border border-gray-200 px-3 py-3 text-xs outline-none focus:border-[#F7941D] transition-colors"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
-                      Avg Rating
-                    </label>
-                    <input
-                      type="number"
-                      value={form.averageRating}
-                      onChange={(e) => updateField('averageRating', e.target.value)}
-                      placeholder="4.3"
-                      min="0"
-                      max="5"
-                      step="0.1"
-                      className="w-full rounded-xl border border-gray-200 px-3 py-3 text-xs outline-none focus:border-[#F7941D] transition-colors"
-                    />
-                  </div>
-                </div>
-              </section>
-
-              {/* ── HIGHLIGHTS ──────────────────────────────────────────────── */}
-              <section className="border-t pt-5">
-                <h4 className="text-sm font-black text-gray-800 mb-1">Highlights</h4>
-                <p className="text-[10px] text-gray-400 mb-3">One highlight per line</p>
-                <textarea
-                  value={form.highlights}
-                  onChange={(e) => updateField('highlights', e.target.value)}
-                  rows={4}
-                  placeholder="Stainless steel construction&#10;Rust-resistant coating&#10;Easy to install"
-                  className="w-full rounded-xl border border-gray-200 px-3 py-3 text-xs outline-none focus:border-[#F7941D] transition-colors resize-none"
-                />
-              </section>
-
-              {/* ── SPECIFICATIONS ──────────────────────────────────────────── */}
-              <section className="border-t pt-5">
-                <h4 className="text-sm font-black text-gray-800 mb-1">Specifications</h4>
-                <p className="text-[10px] text-gray-400 mb-3">JSON format: {"{ \"Material\": \"Steel\", \"Weight\": \"300g\" }"}</p>
-                <textarea
-                  value={form.specifications}
-                  onChange={(e) => updateField('specifications', e.target.value)}
-                  rows={4}
-                  className="w-full rounded-xl border border-gray-200 px-3 py-3 text-xs font-mono outline-none focus:border-[#F7941D] transition-colors resize-none"
-                />
-              </section>
-
-              {/* ── VISIBILITY ──────────────────────────────────────────────── */}
-              <section className="border-t pt-5">
-                <h4 className="text-sm font-black text-gray-800 mb-4">Visibility</h4>
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={form.active}
-                    onChange={(e) => updateField('active', e.target.checked)}
-                    className="h-4 w-4 accent-[#F7941D] cursor-pointer"
-                  />
-                  <span className="text-sm font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">
-                    Active — visible to customers
-                  </span>
-                </label>
-                <p className="text-[10px] text-gray-400 mt-1 ml-7">
-                  Uncheck to hide from the customer storefront without deleting.
-                </p>
-              </section>
-
-              {/* ── SUBMIT ──────────────────────────────────────────────────── */}
-              <div className="border-t pt-5 flex items-center gap-3">
+              {/* Modal Footer (Sticky bottom action bar) */}
+              <div className="border-t px-6 py-4 flex items-center justify-end gap-3 bg-gray-50 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  className="px-5 py-2.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-500 hover:bg-gray-100 transition-colors"
+                >
+                  Cancel
+                </button>
                 <button
                   type="submit"
                   disabled={saving || uploading}
-                  className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-[#F7941D] py-3.5 text-sm font-bold text-white hover:bg-[#E07D10] disabled:opacity-50 transition-colors"
+                  className="flex items-center justify-center gap-2 rounded-xl bg-[#F7941D] px-6 py-2.5 text-xs font-bold text-white hover:bg-[#E07D10] disabled:opacity-50 transition-colors"
                 >
                   {saving ? (
                     <><Loader2 className="h-4 w-4 animate-spin" /> Saving…</>
                   ) : (
-                    <><CheckCircle className="h-4 w-4" /> {editingProduct ? 'Update Product' : 'Create Product'}</>
+                    <><CheckCircle className="h-4 w-4" /> {editingProduct ? 'Save Product' : 'Create Product'}</>
                   )}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setModalOpen(false)}
-                  className="px-6 py-3.5 rounded-xl border border-gray-200 text-xs font-bold text-gray-500 hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
                 </button>
               </div>
 
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── ADD/EDIT REVIEW SUB-MODAL ── */}
+      {reviewModalOpen && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl relative space-y-4">
+            <button
+              type="button"
+              onClick={() => { setReviewModalOpen(false); setEditingReview(null); }}
+              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 rounded-full p-1 hover:bg-gray-100"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <h4 className="text-base font-black text-gray-900 border-b pb-2 flex items-center gap-1.5">
+              {editingReview ? 'Edit Review' : 'Add Customer Review'}
+            </h4>
+            
+            <form onSubmit={saveReview} className="space-y-4 text-xs">
+              <div>
+                <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">Customer Name *</label>
+                <input
+                  value={reviewForm.customerName}
+                  onChange={e => setReviewForm(prev => ({ ...prev, customerName: e.target.value }))}
+                  required
+                  placeholder="Rahul"
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 outline-none focus:border-[#F7941D] transition-colors"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">Rating Score (1-5) *</label>
+                  <select
+                    value={reviewForm.rating}
+                    onChange={e => setReviewForm(prev => ({ ...prev, rating: Number(e.target.value) }))}
+                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 outline-none focus:border-[#F7941D] transition-colors bg-white"
+                  >
+                    {[5, 4, 3, 2, 1].map(num => <option key={num} value={num}>{num} Star{num > 1 ? 's' : ''}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">Review Date</label>
+                  <input
+                    type="date"
+                    value={reviewForm.createdAt}
+                    onChange={e => setReviewForm(prev => ({ ...prev, createdAt: e.target.value }))}
+                    className="w-full rounded-xl border border-gray-200 px-3 py-2.5 outline-none focus:border-[#F7941D] transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">Review Comment *</label>
+                <textarea
+                  value={reviewForm.comment}
+                  onChange={e => setReviewForm(prev => ({ ...prev, comment: e.target.value }))}
+                  required
+                  rows={3}
+                  placeholder="Loved it! 👍 Very useful product."
+                  className="w-full rounded-xl border border-gray-200 px-3 py-2.5 outline-none focus:border-[#F7941D] transition-colors resize-none"
+                />
+              </div>
+
+              {/* Review Images */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-[10px] font-bold uppercase text-gray-400 block">Review Images</label>
+                  <label className={`cursor-pointer text-[10px] font-bold text-[#F7941D] ${uploadingReviewImages ? 'opacity-50 cursor-wait' : ''}`}>
+                    {uploadingReviewImages ? 'Uploading...' : '+ Upload'}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleReviewImageUpload}
+                      disabled={uploadingReviewImages}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+                {reviewForm.images.length === 0 ? (
+                  <p className="text-[10px] text-gray-400 italic">No images uploaded.</p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {reviewForm.images.map((url, idx) => (
+                      <div key={idx} className="relative w-12 h-12 rounded border bg-gray-50 overflow-hidden shrink-0">
+                        <img src={getImageUrl(url)} alt="Review attachment" className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => removeReviewImage(idx)}
+                          className="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full p-0.5"
+                        >
+                          <X className="h-2 w-2" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={reviewForm.verifiedPurchase}
+                    onChange={e => setReviewForm(prev => ({ ...prev, verifiedPurchase: e.target.checked }))}
+                    className="accent-[#F7941D] h-3.5 w-3.5 cursor-pointer"
+                  />
+                  <span className="font-bold text-gray-700">Verified Purchase review</span>
+                </label>
+              </div>
+
+              <div className="border-t pt-4 flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => { setReviewModalOpen(false); setEditingReview(null); }}
+                  className="px-4 py-2 border rounded-xl text-gray-500 hover:bg-gray-50 font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={uploadingReviewImages}
+                  className="px-5 py-2 rounded-xl bg-[#F7941D] text-white hover:bg-[#E07D10] font-bold disabled:opacity-50"
+                >
+                  Save Review
+                </button>
+              </div>
             </form>
           </div>
         </div>

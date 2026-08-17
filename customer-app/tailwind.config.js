@@ -7,11 +7,11 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: "#FFFFFF",
-        secondary: "#F7941D",
-        secondaryDark: "#E07D10",
-        charcoal: "#222222",
-        borderLight: "#F3F4F6",
+        primary: "#0F7A6B",
+        primaryDark: "#0A5A4F",
+        secondary: "#F5A623",
+        charcoal: "#1A1A1A",
+        borderLight: "#EDEDED",
       },
       borderRadius: {
         premium: "12px",

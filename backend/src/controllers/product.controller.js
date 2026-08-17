@@ -291,6 +291,10 @@ export const createProduct = async (req, res, next) => {
       onlineDiscount,
       enableOnlineDiscount,
       codAvailable,
+      prepaidAvailable,
+      returnAvailable,
+      returnWindow,
+      returnPolicy,
       inStock,
       highlights,
       specifications,
@@ -388,6 +392,22 @@ export const createProduct = async (req, res, next) => {
         codAvailable:
           codAvailable !== false &&
           codAvailable !== 'false',
+
+        prepaidAvailable:
+          prepaidAvailable !== false &&
+          prepaidAvailable !== 'false',
+
+        returnAvailable:
+          returnAvailable !== false &&
+          returnAvailable !== 'false',
+
+        returnWindow:
+          returnWindow !== undefined && returnWindow !== null && returnWindow !== ''
+            ? Number(returnWindow)
+            : 3,
+
+        returnPolicy:
+          returnPolicy || '',
 
         inStock: true,
 
@@ -533,6 +553,29 @@ export const updateProduct = async (req, res, next) => {
       data.codAvailable =
         data.codAvailable !== false &&
         data.codAvailable !== 'false';
+    }
+
+    if (data.prepaidAvailable !== undefined) {
+      data.prepaidAvailable =
+        data.prepaidAvailable !== false &&
+        data.prepaidAvailable !== 'false';
+    }
+
+    if (data.returnAvailable !== undefined) {
+      data.returnAvailable =
+        data.returnAvailable !== false &&
+        data.returnAvailable !== 'false';
+    }
+
+    if (data.returnWindow !== undefined) {
+      data.returnWindow =
+        data.returnWindow === '' || data.returnWindow === null
+          ? 3
+          : Number(data.returnWindow);
+    }
+
+    if (data.returnPolicy !== undefined) {
+      data.returnPolicy = data.returnPolicy || '';
     }
 
     data.inStock = true;

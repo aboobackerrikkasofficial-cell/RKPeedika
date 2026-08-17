@@ -28,4 +28,19 @@ router.post(
     uploadImages
 );
 
+/**
+ * Upload customer review images.
+ *
+ * POST /api/uploads/review-images
+ *
+ * FormData:
+ * images = multiple image files
+ */
+router.post(
+    '/review-images',
+    authenticate,
+    uploadProductImages,
+    uploadImages
+);
+
 export default router;

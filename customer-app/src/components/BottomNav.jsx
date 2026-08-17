@@ -1,15 +1,17 @@
 import React, { useContext } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Home, Grid2x2, Package, ShoppingCart, User } from 'lucide-react';
+import { Home, Grid2x2, Heart, ShoppingCart, User } from 'lucide-react';
 
 export default function BottomNav() {
   const {
     currentView,
     setCurrentView,
     cart,
+    wishlist,
   } = useContext(AppContext);
 
   const cartCount = cart.reduce((t, i) => t + i.quantity, 0);
+  const wishlistCount = wishlist?.length || 0;
 
   const tabs = [
     {
@@ -27,26 +29,27 @@ export default function BottomNav() {
       activeViews: ['categories'],
     },
     {
-      id: 'profile',
-      label: 'Profile',
-      icon: User,
-      action: () => setCurrentView('profile'),
-      activeViews: ['profile'],
-    },
-    {
-      id: 'orders',
-      label: 'Orders',
-      icon: Package,
-      action: () => setCurrentView('orders', 'order-tracking'),
-      activeViews: ['orders', 'order-tracking'],
-    },
-    {
       id: 'cart',
       label: 'Cart',
       icon: ShoppingCart,
       badge: cartCount,
       action: () => setCurrentView('cart'),
       activeViews: ['cart'],
+    },
+    {
+      id: 'wishlist',
+      label: 'Wishlist',
+      icon: Heart,
+      badge: wishlistCount,
+      action: () => setCurrentView('wishlist'),
+      activeViews: ['wishlist'],
+    },
+    {
+      id: 'profile',
+      label: 'Account',
+      icon: User,
+      action: () => setCurrentView('profile'),
+      activeViews: ['profile'],
     },
   ];
 
@@ -70,15 +73,16 @@ export default function BottomNav() {
             aria-label={tab.label}
             aria-current={isActive ? 'page' : undefined}
           >
-            <span className="relative">
+            <span className="relative flex items-center justify-center">
               <Icon
                 size={22}
                 strokeWidth={isActive ? 2.2 : 1.8}
+                fill={isActive ? (tab.id === 'wishlist' || tab.id === 'home' || tab.id === 'profile' ? 'currentColor' : 'none') : 'none'}
               />
-              {/* Cart badge */}
+              {/* Cart / Wishlist badge */}
               {tab.badge > 0 && (
                 <span
-                  className="absolute -top-1.5 -right-2 flex items-center justify-center rounded-full bg-[#f7941d] text-white font-bold leading-none"
+                  className="absolute -top-1.5 -right-2.5 flex items-center justify-center rounded-full bg-[#F5A623] text-white font-extrabold leading-none shadow-sm animate-bounce"
                   style={{ minWidth: 16, height: 16, fontSize: 9, padding: '0 3px' }}
                 >
                   {tab.badge > 9 ? '9+' : tab.badge}

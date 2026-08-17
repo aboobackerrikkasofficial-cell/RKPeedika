@@ -24,9 +24,10 @@ const syncProductMetrics = async (productId) => {
 };
 
 export const createReview = async (req, res, next) => {
-  const { productId, rating, comment, title, images } = req.body;
+  const { productId, rating, comment, title, images, customerName: customName, verifiedPurchase, purchaseMonth: customPurchaseMonth, createdAt } = req.body;
   const userId = req.user.id;
-  const customerName = req.user.name || "Anonymous";
+  const isAdmin = req.user.role === 'admin';
+  const customerName = (isAdmin && customName) ? customName : (req.user.name || "Anonymous");
 
   if (!productId || !rating || !comment) {
     return next(new BadRequestError("ProductId, rating score (1-5), and comment text are required."));
@@ -38,46 +39,55 @@ export const createReview = async (req, res, next) => {
       return next(new NotFoundError("Product not found."));
     }
 
-    // Backend order verification: find the user's most recent delivered order containing this product
-    const order = await prisma.order.findFirst({
-      where: {
-        userId: userId,
-        status: "delivered",
-        orderItems: {
-          some: {
-            productId: productId
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
-      }
-    });
+    let orderId = null;
+    let purchaseMonth = customPurchaseMonth || "";
 
-    if (!order) {
-      return next(new BadRequestError("You can review this product after your order has been delivered."));
+    if (!isAdmin) {
+      // Backend order verification: find the user's most recent delivered order containing this product
+      const order = await prisma.order.findFirst({
+        where: {
+          userId: userId,
+          status: "delivered",
+          orderItems: {
+            some: {
+              productId: productId
+            }
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      });
+
+      if (!order) {
+        return next(new BadRequestError("You can review this product after your order has been delivered."));
+      }
+
+      orderId = order.orderId;
+      const purchaseDate = order.createdAt ? new Date(order.createdAt) : new Date();
+      purchaseMonth = purchaseDate.toLocaleString('en-US', { month: 'long', year: 'numeric' });
     }
 
     // Get client IP and Device details (User-Agent)
     const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || "";
     const device = req.headers['user-agent'] || "";
-    const purchaseDate = order.createdAt ? new Date(order.createdAt) : new Date();
-    const purchaseMonth = purchaseDate.toLocaleString('en-US', { month: 'long', year: 'numeric' });
 
     const review = await prisma.review.create({
       data: {
         productId,
-        userId,
+        userId: isAdmin ? null : userId,
         rating: Number(rating),
         comment,
         customerName,
-        orderId: order.orderId,
+        orderId,
         title: title || "",
         ipAddress,
         device,
         helpfulUsers: "[]",
         purchaseMonth,
-        status: "pending"
+        status: isAdmin ? "approved" : "pending",
+        verifiedPurchase: verifiedPurchase !== false,
+        ...(isAdmin && createdAt && { createdAt: new Date(createdAt) })
       }
     });
 
@@ -102,12 +112,12 @@ export const createReview = async (req, res, next) => {
       }
     }
 
-    // Ensure metrics are in sync (even if pending, just to be strictly synchronized with approved state)
+    // Ensure metrics are in sync
     await syncProductMetrics(productId);
 
     res.status(201).json({
       success: true,
-      message: "Review registered for approval moderation",
+      message: isAdmin ? "Review created successfully" : "Review registered for approval moderation",
       review
     });
   } catch (error) {
@@ -300,7 +310,7 @@ export const getReviewsForProduct = async (req, res, next) => {
 
 export const updateReviewStatus = async (req, res, next) => {
   const { id } = req.params;
-  const { status, rating, comment, customerName, title, purchaseMonth } = req.body;
+  const { status, rating, comment, customerName, title, purchaseMonth, verifiedPurchase, createdAt, images } = req.body;
 
   try {
     const updateData = {};
@@ -315,11 +325,43 @@ export const updateReviewStatus = async (req, res, next) => {
     if (customerName !== undefined) updateData.customerName = customerName;
     if (title !== undefined) updateData.title = title;
     if (purchaseMonth !== undefined) updateData.purchaseMonth = purchaseMonth;
+    if (verifiedPurchase !== undefined) {
+      updateData.verifiedPurchase = verifiedPurchase === true || verifiedPurchase === 'true';
+    }
+    if (createdAt !== undefined) {
+      updateData.createdAt = new Date(createdAt);
+    }
 
     const review = await prisma.review.update({
       where: { id },
       data: updateData
     });
+
+    if (images !== undefined) {
+      // Replace review images
+      await prisma.reviewImage.deleteMany({
+        where: { reviewId: id }
+      });
+
+      let parsedImages = [];
+      if (typeof images === 'string') {
+        try { parsedImages = JSON.parse(images); } catch(e){}
+      } else if (Array.isArray(images)) {
+        parsedImages = images;
+      }
+
+      if (parsedImages.length > 0) {
+        await prisma.reviewImage.createMany({
+          data: parsedImages.map(img => ({
+            reviewId: id,
+            productId: review.productId,
+            imageUrl: img,
+            thumbnailUrl: img,
+            status: 'active'
+          }))
+        });
+      }
+    }
 
     // Re-calculate product global average rating and total count based on approved reviews
     await syncProductMetrics(review.productId);

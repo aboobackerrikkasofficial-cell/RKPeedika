@@ -10,7 +10,11 @@
 - [x] Refactor `HomePage.jsx` to be product-first, removing hero banner and trust cards
 - [x] Refactor `ProductCard.jsx` image ratio and info layout
 - [x] Update `ProductPage.jsx` structure and sticky buy bar
-- [x] Refactor `CheckoutPage.jsx` with Shopify-style flow and guest auto-login
+- [x] Update customer-app frontend:
+  - [x] Map `codAvailable` and `prepaidAvailable` in `AppContext.jsx` cart loading/saving
+  - [x] Dynamic payment card visibility on `ProductPage.jsx`
+  - [x] Dynamic verified reviews badge and review image upload system on `ProductPage.jsx`
+  - [x] Cart-level payment options restrictions in `CheckoutPage.jsx` with Shopify-style flow and guest auto-login
 - [x] Simplify `SuccessPage.jsx` confirmation details
 - [x] Refactor `OrderTrackingPage.jsx` status timeline
 - [x] Simplify `CustomerDashboard.jsx` profile list

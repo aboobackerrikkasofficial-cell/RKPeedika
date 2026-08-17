@@ -75,78 +75,91 @@ export default function CategoryList() {
   if (!categories || categories.length === 0) return null;
 
   return (
-    <section aria-label="Product categories" className="bg-white border-b border-gray-100">
-      {/* Section header */}
-      <div className="flex items-center justify-between px-3 pt-3 pb-1 md:px-6">
-        <h2 className="text-[13px] font-bold text-[#222222] tracking-tight">Shop by Category</h2>
-        <button
-          onClick={() => {
-            setSelectedCategory('All');
-            setCurrentView('products');
-          }}
-          className="text-[11px] font-semibold text-[#f7941d]"
-        >
-          View All
-        </button>
-      </div>
+    <section aria-label="Product categories" className="relative border-b border-gray-100 bg-white overflow-hidden">
+      {/* Subtle Background Image Overlay */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center pointer-events-none"
+        style={{ 
+          backgroundImage: "url('/images/promo_indian_market.jpg')", 
+          opacity: 0.12 
+        }} 
+      />
+      {/* Semi-transparent overlay to ensure contrast */}
+      <div className="absolute inset-0 bg-white/45 pointer-events-none" />
 
-      {/* Horizontal scroll chip row */}
-      <div className="category-scroller">
-        {/* "All" chip */}
-        <button
-          onClick={() => {
-            setSelectedCategory('All');
-            setCurrentView('products');
-            setSearchQuery('');
-          }}
-          className={`category-chip${selectedCategory === 'All' ? ' active' : ''}`}
-          aria-label="All categories"
-        >
-          <span className="category-chip-icon">
-            <span style={{ fontSize: 22 }}>🛍️</span>
-          </span>
-          <span className="category-chip-label">All</span>
-        </button>
+      <div className="relative z-10">
+        {/* Section header */}
+        <div className="flex items-center justify-between px-3 pt-3 pb-1 md:px-6">
+          <h2 className="text-[14px] font-extrabold text-[#222222] tracking-tight">Shop by Category</h2>
+          <button
+            onClick={() => {
+              setSelectedCategory('All');
+              setCurrentView('products');
+            }}
+            className="text-[12px] font-bold text-[#0F7A6B]"
+          >
+            View All
+          </button>
+        </div>
 
-        {categories.map((cat, index) => {
-          const isActive = selectedCategory === cat.name;
-          const imageUrl = getCategoryImageUrl(cat.image);
-          const emoji = getCategoryEmoji(cat.name);
+        {/* Horizontal scroll chip row */}
+        <div className="category-scroller">
+          {/* "All" chip */}
+          <button
+            onClick={() => {
+              setSelectedCategory('All');
+              setCurrentView('products');
+              setSearchQuery('');
+            }}
+            className={`category-chip${selectedCategory === 'All' ? ' active' : ''}`}
+            aria-label="All categories"
+          >
+            <span className="category-chip-icon">
+              <span style={{ fontSize: 22 }}>🛍️</span>
+            </span>
+            <span className="category-chip-label">All</span>
+          </button>
 
-          return (
-            <button
-              key={cat.id || index}
-              onClick={() => handleCategoryClick(cat.name)}
-              className={`category-chip${isActive ? ' active' : ''}`}
-              aria-label={cat.name}
-              aria-pressed={isActive}
-            >
-              <span className="category-chip-icon">
-                {imageUrl ? (
-                  <img
-                    src={imageUrl}
-                    alt={cat.name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.style.display = 'none';
-                      e.currentTarget.nextElementSibling.style.display = 'flex';
+          {categories.map((cat, index) => {
+            const isActive = selectedCategory === cat.name;
+            const imageUrl = getCategoryImageUrl(cat.image);
+            const emoji = getCategoryEmoji(cat.name);
+
+            return (
+              <button
+                key={cat.id || index}
+                onClick={() => handleCategoryClick(cat.name)}
+                className={`category-chip${isActive ? ' active' : ''}`}
+                aria-label={cat.name}
+                aria-pressed={isActive}
+              >
+                <span className="category-chip-icon">
+                  {imageUrl ? (
+                    <img
+                      src={imageUrl}
+                      alt={cat.name}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        e.currentTarget.style.display = 'none';
+                        e.currentTarget.nextElementSibling.style.display = 'flex';
+                      }}
+                    />
+                  ) : null}
+                  <span
+                    className="w-full h-full flex items-center justify-center"
+                    style={{
+                      display: imageUrl ? 'none' : 'flex',
+                      fontSize: 22,
                     }}
-                  />
-                ) : null}
-                <span
-                  className="w-full h-full flex items-center justify-center"
-                  style={{
-                    display: imageUrl ? 'none' : 'flex',
-                    fontSize: 22,
-                  }}
-                >
-                  {emoji}
+                  >
+                    {emoji}
+                  </span>
                 </span>
-              </span>
-              <span className="category-chip-label">{cat.name}</span>
-            </button>
-          );
-        })}
+                <span className="category-chip-label">{cat.name}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
     </section>
   );

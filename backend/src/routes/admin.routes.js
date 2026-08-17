@@ -135,7 +135,9 @@ router.put('/exchanges/:id/status', authenticate, authorize('admin'), async (req
 // --- Reviews Admin Routes ---
 router.get('/reviews', authenticate, authorize('admin'), async (req, res) => {
   try {
+    const { productId } = req.query;
     const reviews = await prisma.review.findMany({
+      where: productId ? { productId } : {},
       include: {
         product: { select: { name: true } },
         user: { select: { name: true } },

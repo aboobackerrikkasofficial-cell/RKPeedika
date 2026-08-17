@@ -51,7 +51,7 @@ export default function Settings() {
         setBusinessAddress(s.businessAddress || "");
         setSupportHours(s.supportHours || "");
         setGstNumber(s.gstNumber || "");
-        setReturnPolicyWindow(s.returnPolicyWindow || 7);
+        setReturnPolicyWindow(s.returnWindow || 7);
         setExchangeWindow(s.exchangeWindow || 7);
         setCancellationRules(s.cancellationRules || "");
         setRefundRules(s.refundRules || "");

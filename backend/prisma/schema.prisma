@@ -90,6 +90,10 @@ model Product {
   onlineDiscount        Float?
   enableOnlineDiscount  Boolean        @default(false)
   codAvailable          Boolean        @default(true)
+  prepaidAvailable      Boolean        @default(true)
+  returnAvailable       Boolean        @default(true)
+  returnWindow          Int            @default(3)
+  returnPolicy          String         @default("")
   inStock               Boolean        @default(true)
   estimatedDeliveryDays Int            @default(3)
   highlights            String?        // Stores bullet highlights as JSON string or comma-separated
@@ -261,25 +265,26 @@ model Coupon {
 }
 
 model Review {
-  id           String   @id @default(uuid())
-  productId    String
-  userId       String
-  rating       Int
-  comment      String
-  status       String   @default("pending") // pending, approved, rejected, hidden
-  customerName String?
-  orderId      String?
-  title        String?
-  images       ReviewImage[]
-  reply        String?
-  ipAddress    String?
-  device       String?
-  helpfulUsers String   @default("[]") // JSON array of userIds who voted helpful
-  purchaseMonth String?
-  createdAt    DateTime @default(now())
+  id               String   @id @default(uuid())
+  productId        String
+  userId           String?
+  rating           Int
+  comment          String
+  status           String   @default("pending") // pending, approved, rejected, hidden
+  customerName     String?
+  orderId          String?
+  title            String?
+  images           ReviewImage[]
+  reply            String?
+  ipAddress        String?
+  device           String?
+  helpfulUsers     String   @default("[]") // JSON array of userIds who voted helpful
+  purchaseMonth    String?
+  verifiedPurchase Boolean  @default(true)
+  createdAt        DateTime @default(now())
 
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model WishlistItem {

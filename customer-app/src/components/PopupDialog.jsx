@@ -78,7 +78,7 @@ export default function PopupDialog() {
           )}
           <button
             onClick={handleConfirm}
-            className="rounded-premium bg-[#F7941D] px-5 py-2 text-xs font-bold text-white hover:bg-[#E07D10] transition-premium shadow-md shadow-orange-500/10"
+            className="rounded-premium bg-[#0F7A6B] px-5 py-2 text-xs font-bold text-white hover:bg-[#0A5A4F] transition-premium shadow-md shadow-teal-500/10"
           >
             {type === 'confirm' ? 'Confirm' : 'Got it'}
           </button>

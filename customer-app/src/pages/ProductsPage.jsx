@@ -209,7 +209,7 @@ export default function ProductsPage() {
                 onClick={() => { setSelectedCategory(cat); setCurrentPage(1); }}
                 className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left ${
                   selectedCategory === cat
-                    ? 'bg-orange-50 text-[#f7941d] font-semibold'
+                    ? 'bg-teal-50 text-[#0F7A6B] font-semibold'
                     : 'text-gray-600 hover:bg-gray-50'
                 }`}
               >
@@ -233,7 +233,7 @@ export default function ProductsPage() {
                     type="checkbox"
                     checked={selectedSubcategories.includes(sub)}
                     onChange={() => toggleSubcategory(sub)}
-                    className="rounded border-gray-300 text-[#f7941d] focus:ring-[#f7941d] accent-[#f7941d]"
+                    className="rounded border-gray-300 text-[#0F7A6B] focus:ring-[#0F7A6B] accent-[#0F7A6B]"
                   />
                   <span className="text-sm text-gray-600">{sub}</span>
                 </label>
@@ -248,7 +248,7 @@ export default function ProductsPage() {
             <h4 className="text-xs font-bold uppercase tracking-wider text-[#222222]">
               Max Price
             </h4>
-            <span className="text-sm font-bold text-[#f7941d]">₹{maxPrice.toLocaleString('en-IN')}</span>
+            <span className="text-sm font-bold text-[#0F7A6B]">₹{maxPrice.toLocaleString('en-IN')}</span>
           </div>
           <input
             type="range"
@@ -256,7 +256,7 @@ export default function ProductsPage() {
             max={maxProductPrice || 5000}
             value={maxPrice}
             onChange={(e) => { setMaxPrice(Number(e.target.value)); setCurrentPage(1); }}
-            className="w-full accent-[#f7941d]"
+            className="w-full accent-[#0F7A6B]"
           />
           <div className="flex justify-between text-[10px] text-gray-400 font-medium mt-1">
             <span>₹0</span>
@@ -274,7 +274,7 @@ export default function ProductsPage() {
               type="checkbox"
               checked={inStockOnly}
               onChange={(e) => { setInStockOnly(e.target.checked); setCurrentPage(1); }}
-              className="rounded border-gray-300 accent-[#f7941d]"
+              className="rounded border-gray-300 accent-[#0F7A6B]"
             />
             <span className="text-sm text-gray-600">In Stock Only</span>
           </label>
@@ -291,7 +291,7 @@ export default function ProductsPage() {
         </button>
         <button
           onClick={onApply}
-          className="flex-1 py-2.5 bg-[#f7941d] rounded-xl text-sm font-semibold text-white hover:bg-[#e07d10]"
+          className="flex-1 py-2.5 bg-[#0F7A6B] rounded-xl text-sm font-semibold text-white hover:bg-[#0A5A4F]"
         >
           Apply Filters
         </button>
@@ -349,14 +349,14 @@ export default function ProductsPage() {
             onClick={() => setShowFilterSheet(true)}
             className={`flex items-center gap-1.5 shrink-0 rounded-full border px-3 py-1.5 text-[11px] font-semibold transition-colors ${
               activeFilterCount > 0
-                ? 'border-[#f7941d] bg-orange-50 text-[#f7941d]'
+                ? 'border-[#0F7A6B] bg-teal-50 text-[#0F7A6B]'
                 : 'border-gray-200 bg-white text-gray-600'
             }`}
           >
             <Filter size={12} />
             Filter
             {activeFilterCount > 0 && (
-              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#f7941d] text-[9px] font-bold text-white">
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#0F7A6B] text-[9px] font-bold text-white">
                 {activeFilterCount}
               </span>
             )}
@@ -381,7 +381,7 @@ export default function ProductsPage() {
             </span>
           )}
           {selectedCategory !== 'All' && (
-            <span className="flex items-center gap-1 shrink-0 rounded-full bg-orange-50 px-2.5 py-1 text-[10px] font-medium text-[#f7941d]">
+            <span className="flex items-center gap-1 shrink-0 rounded-full bg-teal-50 px-2.5 py-1 text-[10px] font-medium text-[#0F7A6B]">
               {selectedCategory}
               <button onClick={() => setSelectedCategory('All')}>
                 <X size={10} />
@@ -409,7 +409,7 @@ export default function ProductsPage() {
             </span>
           )}
           {selectedCategory !== 'All' && (
-            <span className="flex items-center gap-1 rounded-full bg-orange-50 border border-orange-100 px-2.5 py-1 text-[11px] font-medium text-[#f7941d]">
+            <span className="flex items-center gap-1 rounded-full bg-teal-50 border border-teal-100 px-2.5 py-1 text-[11px] font-medium text-[#0F7A6B]">
               {selectedCategory}
               <button onClick={() => setSelectedCategory('All')}>
                 <X size={10} />
@@ -430,13 +430,13 @@ export default function ProductsPage() {
       {/* ============================================================
           MAIN CONTENT
       ============================================================ */}
-      <div className="flex gap-5 max-w-7xl mx-auto px-3 py-4 md:px-6 items-start">
+      <div className="flex gap-5 max-w-7xl mx-auto px-2 py-4 md:px-6 items-start">
 
         {/* DESKTOP SIDEBAR FILTER */}
         <aside className="hidden md:block w-56 shrink-0 bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm sticky top-44">
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
             <h3 className="text-xs font-bold uppercase tracking-wider text-[#222222] flex items-center gap-1.5">
-              <SlidersHorizontal size={13} className="text-[#f7941d]" />
+              <SlidersHorizontal size={13} className="text-[#0F7A6B]" />
               Filters
             </h3>
             {activeFilterCount > 0 && (
@@ -462,7 +462,7 @@ export default function ProductsPage() {
               </p>
               <button
                 onClick={handleClearFilters}
-                className="mt-4 bg-[#f7941d] text-white text-xs font-semibold px-5 py-2.5 rounded-xl"
+                className="mt-4 bg-[#0F7A6B] text-white text-xs font-semibold px-5 py-2.5 rounded-xl"
                 style={{ minHeight: 44 }}
               >
                 Reset All Filters
@@ -482,7 +482,7 @@ export default function ProductsPage() {
                   <button
                     disabled={currentPage === 1}
                     onClick={() => { setCurrentPage((p) => Math.max(p - 1, 1)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                    className="p-2 border border-gray-200 rounded-lg text-gray-600 hover:border-[#f7941d] disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="p-2 border border-gray-200 rounded-lg text-gray-600 hover:border-[#0F7A6B] disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <ChevronLeft size={16} />
                   </button>
@@ -499,8 +499,8 @@ export default function ProductsPage() {
                         onClick={() => { setCurrentPage(page); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
                         className={`h-9 w-9 rounded-lg text-xs font-semibold border transition ${
                           currentPage === page
-                            ? 'bg-[#f7941d] border-[#f7941d] text-white'
-                            : 'border-gray-200 text-gray-600 hover:border-[#f7941d]'
+                            ? 'bg-[#0F7A6B] border-[#0F7A6B] text-white'
+                            : 'border-gray-200 text-gray-600 hover:border-[#0F7A6B]'
                         }`}
                       >
                         {page}
@@ -511,7 +511,7 @@ export default function ProductsPage() {
                   <button
                     disabled={currentPage === totalPages}
                     onClick={() => { setCurrentPage((p) => Math.min(p + 1, totalPages)); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-                    className="p-2 border border-gray-200 rounded-lg text-gray-600 hover:border-[#f7941d] disabled:opacity-40 disabled:cursor-not-allowed"
+                    className="p-2 border border-gray-200 rounded-lg text-gray-600 hover:border-[#0F7A6B] disabled:opacity-40 disabled:cursor-not-allowed"
                   >
                     <ChevronRight size={16} />
                   </button>
@@ -535,7 +535,7 @@ export default function ProductsPage() {
             {/* Sheet handle */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
               <h3 className="text-sm font-bold text-[#222222] flex items-center gap-2">
-                <Filter size={15} className="text-[#f7941d]" />
+                <Filter size={15} className="text-[#0F7A6B]" />
                 Filter Products
               </h3>
               <button
@@ -580,7 +580,7 @@ export default function ProductsPage() {
                   }}
                   className={`w-full flex items-center justify-between px-4 py-3.5 rounded-xl text-sm font-medium transition-colors ${
                     sortBy === option.value
-                      ? 'bg-orange-50 text-[#f7941d] font-semibold'
+                      ? 'bg-teal-50 text-[#0F7A6B] font-semibold'
                       : 'text-gray-700 hover:bg-gray-50'
                   }`}
                 >

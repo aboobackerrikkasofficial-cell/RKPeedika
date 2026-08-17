@@ -2,6 +2,7 @@ import React, { useContext, useState } from 'react';
 import { AppContext, AppProvider } from './context/AppContext';
 import Header from './components/Header';
 import BottomNav from './components/BottomNav';
+import apiClient from './api/client';
 import HomePage from './pages/HomePage';
 import ProductPage from './pages/ProductPage';
 import CheckoutPage from './pages/CheckoutPage';
@@ -14,6 +15,7 @@ import ProductsPage from './pages/ProductsPage';
 import CategoriesPage from './pages/CategoriesPage';
 import CartPage from './pages/CartPage';
 import OrdersPage from './pages/OrdersPage';
+import WishlistPage from './pages/WishlistPage';
 import { Mail, ShieldCheck, Landmark, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SessionTimeoutHandler from './components/SessionTimeoutHandler';
@@ -97,7 +99,7 @@ function AppContent() {
 
     try {
       const res = await apiClient.post('/exchanges', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        timeout: 60000
       });
       const data = res.data;
       
@@ -183,7 +185,7 @@ function AppContent() {
             <div className="space-y-1.5">
               <h3 className="text-sm font-bold text-charcoal">5. Exchange & Return Policy</h3>
               <ul className="list-disc pl-5 space-y-1 text-xs">
-                <li>Exchange requests must be raised within 3 days of delivery through your account dashboard or WhatsApp support.</li>
+                <li>Exchange requests must be raised within {storeSettings?.returnWindow || 3} days of delivery through your account dashboard or WhatsApp support.</li>
                 <li>Products must be unused, unworn, and in original packaging with all tags intact.</li>
                 <li>Photo evidence of the product condition is mandatory for all exchange/return requests.</li>
                 <li><strong>Exchanges only — no refunds</strong>, unless the delivered item is wrong or damaged and a replacement is unavailable.</li>
@@ -314,60 +316,66 @@ function AppContent() {
             <h2 className="text-xl font-bold text-charcoal">Returns & Exchange Policy</h2>
             <div className="space-y-4 text-xs text-gray-600 leading-relaxed max-h-[40vh] overflow-y-auto pr-2 border-b pb-4">
               <p className="text-[10px] text-gray-400">Last Updated: August 2026</p>
-              <p>At RK Peedika, we strive to ensure a smooth and satisfying shopping experience. Since we focus on quality products at affordable prices, our return and exchange policy is designed to be fair and transparent.</p>
+              {storeSettings?.returnPolicy ? (
+                <p className="whitespace-pre-line text-xs">{storeSettings.returnPolicy}</p>
+              ) : (
+                <>
+                  <p>At RK Peedika, we strive to ensure a smooth and satisfying shopping experience. Since we focus on quality products at affordable prices, our return and exchange policy is designed to be fair and transparent.</p>
 
-              <div className="space-y-1.5">
-                <h4 className="font-bold text-charcoal text-xs">1. Exchange Policy (No Refunds)</h4>
-                <ul className="list-disc pl-5 space-y-1">
-                  <li>We offer <strong>exchanges only</strong> within <strong>3 days of delivery</strong> for eligible items.</li>
-                  <li>We do not offer cash refunds unless a replacement for a damaged/wrong product is unavailable.</li>
-                </ul>
-              </div>
+                  <div className="space-y-1.5">
+                    <h4 className="font-bold text-charcoal text-xs">1. Exchange Policy (No Refunds)</h4>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>We offer <strong>exchanges only</strong> within <strong>{storeSettings?.returnWindow || 3} days of delivery</strong> for eligible items.</li>
+                      <li>We do not offer cash refunds unless a replacement for a damaged/wrong product is unavailable.</li>
+                    </ul>
+                  </div>
 
-              <div className="space-y-1.5">
-                <h4 className="font-bold text-charcoal text-xs">2. Eligibility for Exchanges</h4>
-                <p>To be eligible for an exchange, the product must meet the following criteria:</p>
-                <ul className="list-disc pl-5 space-y-1">
-                  <li>Must be completely unused, unwashed, and in its original condition.</li>
-                  <li>Must have all original tags, labels, and packaging intact.</li>
-                  <li>Exchanges are only accepted for sizing issues, damaged products, or incorrect items delivered.</li>
-                </ul>
-              </div>
+                  <div className="space-y-1.5">
+                    <h4 className="font-bold text-charcoal text-xs">2. Eligibility for Exchanges</h4>
+                    <p>To be eligible for an exchange, the product must meet the following criteria:</p>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>Must be completely unused, unwashed, and in its original condition.</li>
+                      <li>Must have all original tags, labels, and packaging intact.</li>
+                      <li>Exchanges are only accepted for sizing issues, damaged products, or incorrect items delivered.</li>
+                    </ul>
+                  </div>
 
-              <div className="space-y-1.5">
-                <h4 className="font-bold text-charcoal text-xs">3. Damaged or Defective Items</h4>
-                <ul className="list-disc pl-5 space-y-1">
-                  <li>Any damage or manufacturing defect must be reported within <strong>24 hours of delivery</strong>.</li>
-                  <li><strong>Photo and video evidence</strong> of the packaging and product is mandatory to process damage claims.</li>
-                </ul>
-              </div>
+                  <div className="space-y-1.5">
+                    <h4 className="font-bold text-charcoal text-xs">3. Damaged or Defective Items</h4>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>Any damage or manufacturing defect must be reported within <strong>24 hours of delivery</strong>.</li>
+                      <li><strong>Photo and video evidence</strong> of the packaging and product is mandatory to process damage claims.</li>
+                    </ul>
+                  </div>
 
-              <div className="space-y-1.5">
-                <h4 className="font-bold text-charcoal text-xs">4. Non-Returnable / Non-Exchangeable Items</h4>
-                <p>The following categories are strictly non-returnable and non-exchangeable due to hygiene and customization reasons:</p>
-                <ul className="list-disc pl-5 space-y-1">
-                  <li>Personal care, cosmetics, and hygiene products</li>
-                  <li>Customized, personalized, or made-to-order items</li>
-                  <li>Clearance sale items or products marked as final sale</li>
-                  <li>Items without original tags, box, or documentation</li>
-                </ul>
-              </div>
+                  <div className="space-y-1.5">
+                    <h4 className="font-bold text-charcoal text-xs">4. Non-Returnable / Non-Exchangeable Items</h4>
+                    <p>The following categories are strictly non-returnable and non-exchangeable due to hygiene and customization reasons:</p>
+                    <ul className="list-disc pl-5 space-y-1">
+                      <li>Personal care, cosmetics, and hygiene products</li>
+                      <li>Customized, personalized, or made-to-order items</li>
+                      <li>Clearance sale items or products marked as final sale</li>
+                      <li>Items without original tags, box, or documentation</li>
+                    </ul>
+                  </div>
 
-              <div className="space-y-1.5">
-                <h4 className="font-bold text-charcoal text-xs">5. Exchange Process</h4>
-                <p>To request an exchange:</p>
-                <ol className="list-decimal pl-5 space-y-1">
-                  <li>Raise a request via the exchange form below, your customer dashboard, or WhatsApp support (+91 9188072646).</li>
-                  <li>Submit clear photographs of the product showing its unused status and tags.</li>
-                  <li>Once approved, our delivery partner will pick up the package.</li>
-                  <li>Upon quality inspection of the returned package, your replacement will be dispatched within <strong>3-5 business days</strong>.</li>
-                </ol>
-              </div>
+                  <div className="space-y-1.5">
+                    <h4 className="font-bold text-charcoal text-xs">5. Exchange Process</h4>
+                    <p>To request an exchange:</p>
+                    <ol className="list-decimal pl-5 space-y-1">
+                      <li>Raise a request via the exchange form below, your customer dashboard, or WhatsApp support (+91 9188072646).</li>
+                      <li>Submit clear photographs of the product showing its unused status and tags.</li>
+                      <li>Once approved, our delivery partner will pick up the package.</li>
+                      <li>Upon quality inspection of the returned package, your replacement will be dispatched within <strong>3-5 business days</strong>.</li>
+                    </ol>
+                  </div>
+                </>
+              )}
 
-              <div className="space-y-1.5">
-                <h4 className="font-bold text-charcoal text-xs">6. Contact Support</h4>
+              <div className="space-y-1.5 mt-4">
+                <h4 className="font-bold text-charcoal text-xs">Contact Support</h4>
                 <p>If you have any questions regarding your return/exchange, please contact us:</p>
-                <p><strong>Email:</strong> rikkas.aboo@gmail.com &nbsp;|&nbsp; <strong>WhatsApp:</strong> +91 9188072646</p>
+                <p><strong>Email:</strong> {storeSettings?.supportEmail || "rikkas.aboo@gmail.com"} &nbsp;|&nbsp; <strong>WhatsApp:</strong> {storeSettings?.whatsappNumber || "+91 9188072646"}</p>
               </div>
             </div>
             
@@ -380,19 +388,19 @@ function AppContent() {
               )}
               <form onSubmit={handleExchangeSubmit} className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
-                  <input type="text" placeholder="Order ID" required value={exchangeForm.orderId} onChange={e => setExchangeForm({...exchangeForm, orderId: e.target.value})} className="w-full border p-2 rounded text-sm outline-none focus:border-[#F7941D]" />
-                  <input type="text" placeholder="Customer Name" required value={exchangeForm.customerName} onChange={e => setExchangeForm({...exchangeForm, customerName: e.target.value})} className="w-full border p-2 rounded text-sm outline-none focus:border-[#F7941D]" />
+                  <input type="text" placeholder="Order ID" required value={exchangeForm.orderId} onChange={e => setExchangeForm({...exchangeForm, orderId: e.target.value})} className="w-full border p-2 rounded text-sm outline-none focus:border-[#0F7A6B]" />
+                  <input type="text" placeholder="Customer Name" required value={exchangeForm.customerName} onChange={e => setExchangeForm({...exchangeForm, customerName: e.target.value})} className="w-full border p-2 rounded text-sm outline-none focus:border-[#0F7A6B]" />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
-                  <input type="tel" placeholder="Phone Number" required value={exchangeForm.phone} onChange={e => setExchangeForm({...exchangeForm, phone: e.target.value})} className="w-full border p-2 rounded text-sm outline-none focus:border-[#F7941D]" />
-                  <input type="text" placeholder="Reason for Exchange" required value={exchangeForm.reason} onChange={e => setExchangeForm({...exchangeForm, reason: e.target.value})} className="w-full border p-2 rounded text-sm outline-none focus:border-[#F7941D]" />
+                  <input type="tel" placeholder="Phone Number" required value={exchangeForm.phone} onChange={e => setExchangeForm({...exchangeForm, phone: e.target.value})} className="w-full border p-2 rounded text-sm outline-none focus:border-[#0F7A6B]" />
+                  <input type="text" placeholder="Reason for Exchange" required value={exchangeForm.reason} onChange={e => setExchangeForm({...exchangeForm, reason: e.target.value})} className="w-full border p-2 rounded text-sm outline-none focus:border-[#0F7A6B]" />
                 </div>
                 <div>
                   <label className="block text-xs font-bold mb-1 text-charcoal">Upload Product Images (Mandatory)</label>
                   <input type="file" multiple accept="image/*" required onChange={e => setExchangeImages(Array.from(e.target.files))} className="w-full border p-2 rounded text-sm" />
                 </div>
-                <textarea placeholder="Additional Notes" value={exchangeForm.notes} onChange={e => setExchangeForm({...exchangeForm, notes: e.target.value})} className="w-full border p-2 rounded text-sm h-20 outline-none focus:border-[#F7941D]"></textarea>
-                <button type="submit" disabled={isExchangeSubmitting} className="w-full bg-[#F7941D] text-white py-2 rounded font-bold hover:bg-[#e5891b] transition">
+                <textarea placeholder="Additional Notes" value={exchangeForm.notes} onChange={e => setExchangeForm({...exchangeForm, notes: e.target.value})} className="w-full border p-2 rounded text-sm h-20 outline-none focus:border-[#0F7A6B]"></textarea>
+                <button type="submit" disabled={isExchangeSubmitting} className="w-full bg-[#0F7A6B] text-white py-2 rounded font-bold hover:bg-[#0A5A4F] transition">
                   {isExchangeSubmitting ? 'Submitting...' : 'Submit Request'}
                 </button>
               </form>
@@ -407,15 +415,15 @@ function AppContent() {
             <div className="space-y-2.5 pt-2 text-xs font-semibold">
               <p>
                 <strong>WhatsApp Helpline: </strong> 
-                <a href="https://wa.me/919188072646" target="_blank" rel="noreferrer" className="text-[#F7941D] hover:underline font-bold">+91 9188072646</a>
+                <a href="https://wa.me/919188072646" target="_blank" rel="noreferrer" className="text-[#0F7A6B] hover:underline font-bold">+91 9188072646</a>
               </p>
               <p>
                 <strong>Helpline Phone: </strong> 
-                <a href="tel:+919188072646" className="text-[#F7941D] hover:underline font-bold">+91 9188072646</a>
+                <a href="tel:+919188072646" className="text-[#0F7A6B] hover:underline font-bold">+91 9188072646</a>
               </p>
               <p>
                 <strong>Email Address: </strong> 
-                <a href="mailto:rikkas.aboo@gmail.com" className="text-[#F7941D] hover:underline font-bold">rikkas.aboo@gmail.com</a>
+                <a href="mailto:rikkas.aboo@gmail.com" className="text-[#0F7A6B] hover:underline font-bold">rikkas.aboo@gmail.com</a>
               </p>
               <p>
                 <strong>Business Address: </strong> 
@@ -443,7 +451,7 @@ function AppContent() {
               </div>
               <div>
                 <h4 className="font-bold text-charcoal">3. What is the return/exchange policy?</h4>
-                <p className="text-gray-500 mt-1">We offer a 3-day exchange policy for unused items in original packaging. Photo evidence is required for damaged items.</p>
+                <p className="text-gray-500 mt-1">We offer a {storeSettings?.returnWindow || 3}-day exchange policy for unused items in original packaging. Photo evidence is required for damaged items.</p>
               </div>
               <div>
                 <h4 className="font-bold text-charcoal">4. Can I cancel my order?</h4>
@@ -461,11 +469,11 @@ function AppContent() {
               <p><strong>Support Hours: </strong>{storeSettings?.supportHours}</p>
               <p>
                 <strong>WhatsApp Helpline: </strong> 
-                <a href="https://wa.me/919188072646" target="_blank" rel="noreferrer" className="text-[#F7941D] hover:underline font-bold">+91 9188072646</a>
+                <a href="https://wa.me/919188072646" target="_blank" rel="noreferrer" className="text-[#0F7A6B] hover:underline font-bold">+91 9188072646</a>
               </p>
               <p>
                 <strong>Helpline Email: </strong> 
-                <a href="mailto:rikkas.aboo@gmail.com" className="text-[#F7941D] hover:underline font-bold">rikkas.aboo@gmail.com</a>
+                <a href="mailto:rikkas.aboo@gmail.com" className="text-[#0F7A6B] hover:underline font-bold">rikkas.aboo@gmail.com</a>
               </p>
             </div>
           </div>
@@ -490,6 +498,7 @@ function AppContent() {
       case 'categories': return <CategoriesPage />;
       case 'cart': return <CartPage />;
       case 'orders': return <OrdersPage />;
+      case 'wishlist': return <WishlistPage />;
       default: return <HomePage />;
     }
   };
@@ -522,15 +531,15 @@ function AppContent() {
         <div className="max-w-7xl mx-auto space-y-3">
           <h4 className="font-extrabold text-charcoal text-sm">{storeSettings?.storeName || "RK Peedika"}</h4>
           <div className="flex justify-center flex-wrap gap-x-4 gap-y-1 text-gray-400 font-bold">
-            <button onClick={() => setActiveModal('about')} className="hover:text-[#F7941D] transition-premium">About Us</button>
+            <button onClick={() => setActiveModal('about')} className="hover:text-[#0F7A6B] transition-premium">About Us</button>
             <span>·</span>
-            <button onClick={() => setActiveModal('contact')} className="hover:text-[#F7941D] transition-premium">Contact Us</button>
+            <button onClick={() => setActiveModal('contact')} className="hover:text-[#0F7A6B] transition-premium">Contact Us</button>
             <span>·</span>
-            <button onClick={() => setActiveModal('privacy')} className="hover:text-[#F7941D] transition-premium">Privacy Policy</button>
+            <button onClick={() => setActiveModal('privacy')} className="hover:text-[#0F7A6B] transition-premium">Privacy Policy</button>
             <span>·</span>
-            <button onClick={() => setActiveModal('terms')} className="hover:text-[#F7941D] transition-premium">Terms & Conditions</button>
+            <button onClick={() => setActiveModal('terms')} className="hover:text-[#0F7A6B] transition-premium">Terms & Conditions</button>
             <span>·</span>
-            <button onClick={() => setCurrentView('admin')} className="hover:text-[#F7941D] transition-premium">Admin Panel</button>
+            <button onClick={() => setCurrentView('admin')} className="hover:text-[#0F7A6B] transition-premium">Admin Panel</button>
           </div>
           <p className="text-[10px] text-gray-400 mt-2 font-medium">
             © {new Date().getFullYear()} {storeSettings?.storeName || "RK Peedika"}. All Rights Reserved. {storeSettings?.gstNumber && `| GSTIN: ${storeSettings.gstNumber}`}
@@ -577,8 +586,8 @@ function AppContent() {
             exit={{ opacity: 0, y: 50 }}
             className={`fixed left-1/2 -translate-x-1/2 z-[110] px-4 py-3 bg-white border-l-4 rounded-md shadow-md text-sm font-bold flex items-center gap-2 md:left-auto md:translate-x-0 md:right-8 ${
               activeToast.type === 'error' ? 'border-red-500 text-red-700' :
-              activeToast.type === 'warning' ? 'border-[#F7941D] text-charcoal' :
-              'border-[#F7941D] text-charcoal'
+              activeToast.type === 'warning' ? 'border-[#0F7A6B] text-charcoal' :
+              'border-[#0F7A6B] text-charcoal'
             }`}
             style={{
               bottom: 'calc(var(--bottom-nav-height, 60px) + 12px)',

@@ -10,12 +10,12 @@ import {
 } from 'lucide-react';
 
 const iconMap = {
-  ShieldCheck: <ShieldCheck className="h-6 w-6 stroke-[1.5] text-[#F7941D]" />,
-  Banknote: <Banknote className="h-6 w-6 stroke-[1.5] text-[#F7941D]" />,
-  Truck: <Truck className="h-6 w-6 stroke-[1.5] text-[#F7941D]" />,
-  RotateCcw: <RotateCcw className="h-6 w-6 stroke-[1.5] text-[#F7941D]" />,
-  CheckSquare: <CheckSquare className="h-6 w-6 stroke-[1.5] text-[#F7941D]" />,
-  Headphones: <Headphones className="h-6 w-6 stroke-[1.5] text-[#F7941D]" />
+  ShieldCheck: <ShieldCheck className="h-6 w-6 stroke-[1.5] text-[#0F7A6B]" />,
+  Banknote: <Banknote className="h-6 w-6 stroke-[1.5] text-[#0F7A6B]" />,
+  Truck: <Truck className="h-6 w-6 stroke-[1.5] text-[#0F7A6B]" />,
+  RotateCcw: <RotateCcw className="h-6 w-6 stroke-[1.5] text-[#0F7A6B]" />,
+  CheckSquare: <CheckSquare className="h-6 w-6 stroke-[1.5] text-[#0F7A6B]" />,
+  Headphones: <Headphones className="h-6 w-6 stroke-[1.5] text-[#0F7A6B]" />
 };
 
 export default function TrustStrip() {
@@ -51,7 +51,7 @@ export default function TrustStrip() {
 
   const renderCardContent = (item) => (
     <div className="flex flex-col items-center text-center p-3 rounded-premium border border-gray-50 bg-white shadow-sm hover:shadow-premium transition-premium h-full">
-      <div className="mb-2.5 rounded-full bg-orange-50/50 p-2.5 flex items-center justify-center">
+      <div className="mb-2.5 rounded-full bg-teal-50/50 p-2.5 flex items-center justify-center">
         {iconMap[item.iconName] || iconMap['CheckSquare']}
       </div>
       <h4 className="text-xs font-bold text-charcoal tracking-tight">{item.title}</h4>
@@ -64,7 +64,7 @@ export default function TrustStrip() {
       <div className="mx-auto max-w-7xl px-4 md:px-8">
         {loading ? (
           <div className="flex justify-center items-center h-32">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#F7941D]"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0F7A6B]"></div>
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 md:gap-8">

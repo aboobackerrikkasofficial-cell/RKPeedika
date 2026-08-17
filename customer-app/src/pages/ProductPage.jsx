@@ -1,5 +1,7 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { AppContext } from '../context/AppContext';
+import apiClient from '../api/client';
+import getImageUrl from '../utils/imageUrl';
 import { 
   Star, 
   ShoppingCart, 
@@ -36,11 +38,23 @@ export default function ProductPage() {
     addToCart,
     initiateQuickPurchase,
     wishlist,
-    toggleWishlist
+    toggleWishlist,
+    storeSettings,
+    userPincode,
+    pincodeDatabase
   } = useContext(AppContext);
 
   // Retrieve current product details
   const product = products.find(p => p.id === selectedProductId) || products[0];
+
+  // Normalize product images through getImageUrl so relative paths resolve to backend
+  const productImages = React.useMemo(() => {
+    if (!product) return [];
+    const raw = Array.isArray(product.images)
+      ? product.images
+      : (typeof product.images === 'string' ? (() => { try { return JSON.parse(product.images); } catch { return []; } })() : []);
+    return raw.filter(Boolean).map(getImageUrl);
+  }, [product]);
 
   // Gallery state
   const [activeImgIndex, setActiveImgIndex] = useState(0);
@@ -56,6 +70,21 @@ export default function ProductPage() {
 
   // Payment pricing selection state
   const [paymentOption, setPaymentOption] = useState('online'); // 'cod' | 'online'
+
+  useEffect(() => {
+    if (product) {
+      if (product.prepaidAvailable === false && product.codAvailable !== false) {
+        setPaymentOption('cod');
+      } else {
+        setPaymentOption('online');
+      }
+    }
+  }, [product]);
+
+  // Review upload states
+  const [reviewImages, setReviewImages] = useState([]);
+  const [uploadingReviewImages, setUploadingReviewImages] = useState(false);
+  const [uploadError, setUploadError] = useState("");
 
   // Dynamic variants state
   const [selectedVariants, setSelectedVariants] = useState({});
@@ -221,7 +250,7 @@ export default function ProductPage() {
         rating: Number(reviewForm.rating),
         comment: reviewForm.comment,
         title: reviewForm.title,
-        images: "[]"
+        images: reviewImages
       });
 
       const data = res.data;
@@ -232,6 +261,7 @@ export default function ProductPage() {
           title: "",
           comment: ""
         });
+        setReviewImages([]);
         // Reload reviews list
         setTimeout(() => {
           setIsReviewModalOpen(false);
@@ -247,6 +277,44 @@ export default function ProductPage() {
     setIsSubmittingReview(false);
   };
 
+  const handleReviewImageUpload = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+
+    setUploadingReviewImages(true);
+    setUploadError("");
+
+    try {
+      const formData = new FormData();
+      files.forEach((file) => {
+        formData.append('images', file);
+      });
+
+      const res = await apiClient.post('/uploads/review-images', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      if (res.data && res.data.success) {
+        const uploadedUrls = res.data.images.map((img) => img.url);
+        setReviewImages((prev) => [...prev, ...uploadedUrls]);
+      } else {
+        setUploadError("Image upload failed. Please try again.");
+      }
+    } catch (err) {
+      console.error("Failed to upload review images:", err);
+      setUploadError("Upload failed. Size exceeded or invalid format.");
+    } finally {
+      setUploadingReviewImages(false);
+      e.target.value = '';
+    }
+  };
+
+  const removeReviewImage = (indexToRemove) => {
+    setReviewImages((prev) => prev.filter((_, idx) => idx !== indexToRemove));
+  };
+
   // Magnify zoom effect on desktop image
   const handleMouseMove = (e) => {
     const { left, top, width, height } = e.target.getBoundingClientRect();
@@ -254,7 +322,7 @@ export default function ProductPage() {
     const y = ((e.pageY - top - window.scrollY) / height) * 100;
     setZoomStyle({
       display: 'block',
-      backgroundImage: `url(${product.images[activeImgIndex]})`,
+      backgroundImage: `url(${productImages[activeImgIndex]})`,
       backgroundPosition: `${x}% ${y}%`
     });
   };
@@ -265,11 +333,11 @@ export default function ProductPage() {
 
   // Image slider handlers
   const handlePrevImg = () => {
-    setActiveImgIndex(prev => (prev === 0 ? product.images.length - 1 : prev - 1));
+    setActiveImgIndex(prev => (prev === 0 ? productImages.length - 1 : prev - 1));
   };
 
   const handleNextImg = () => {
-    setActiveImgIndex(prev => (prev === product.images.length - 1 ? 0 : prev + 1));
+    setActiveImgIndex(prev => (prev === productImages.length - 1 ? 0 : prev + 1));
   };
 
   // Touch handlers for mobile swipe and pinch-to-zoom
@@ -328,7 +396,7 @@ export default function ProductPage() {
         </p>
         <button
           onClick={() => setCurrentView('home')}
-          className="rounded-xl bg-[#F7941D] px-6 py-3 text-sm font-bold text-white hover:bg-[#E07D10] transition-colors"
+          className="rounded-xl bg-[#0F7A6B] px-6 py-3 text-sm font-bold text-white hover:bg-[#0A5A4F] transition-colors"
         >
           Continue Shopping
         </button>
@@ -348,7 +416,7 @@ export default function ProductPage() {
         </p>
         <button
           onClick={() => setCurrentView('home')}
-          className="rounded-xl bg-[#F7941D] px-6 py-3 text-sm font-bold text-white hover:bg-[#E07D10] transition-colors"
+          className="rounded-xl bg-[#0F7A6B] px-6 py-3 text-sm font-bold text-white hover:bg-[#0A5A4F] transition-colors"
         >
           Continue Shopping
         </button>
@@ -393,6 +461,16 @@ export default function ProductPage() {
   const savings = Math.max(0, codPrice - onlinePrice);
   const activePrice = paymentOption === 'cod' ? codPrice : onlinePrice;
 
+  // Delivery date calculations
+  const pincodeData = pincodeDatabase?.[userPincode] || { days: 3 };
+  const deliveryDays = Number(product?.estimatedDeliveryDays) || pincodeData.days || 3;
+  const deliveryDateObj = new Date(Date.now() + deliveryDays * 24 * 60 * 60 * 1000);
+  const formattedDeliveryDate = deliveryDateObj.toLocaleDateString('en-IN', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  });
+
   // Dynamic related products generator (Same category, similar price, exclude current product, limit 8-12)
   const relatedProducts = products
     .filter(p => p.id !== product.id && p.categoryId === product.categoryId)
@@ -436,7 +514,7 @@ export default function ProductPage() {
               onTouchEnd={handleTouchEnd}
             >
               <img 
-                src={product.images[activeImgIndex]} 
+                src={productImages[activeImgIndex]} 
                 alt={product.name} 
                 className="w-full h-full object-contain transition-all duration-300 bg-white"
                 style={{ transform: `scale(${scale})` }}
@@ -453,17 +531,17 @@ export default function ProductPage() {
             </div>
 
             {/* Desktop Navigation Arrows */}
-            {product.images.length > 1 && (
+            {productImages.length > 1 && (
               <>
                 <button 
                   onClick={handlePrevImg}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 hover:bg-white text-charcoal hover:text-[#F7941D] transition-premium shadow hidden md:flex items-center justify-center"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 hover:bg-white text-charcoal hover:text-[#0F7A6B] transition-premium shadow hidden md:flex items-center justify-center"
                 >
                   <ChevronLeft className="h-5 w-5" />
                 </button>
                 <button 
                   onClick={handleNextImg}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 hover:bg-white text-charcoal hover:text-[#F7941D] transition-premium shadow hidden md:flex items-center justify-center"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/80 hover:bg-white text-charcoal hover:text-[#0F7A6B] transition-premium shadow hidden md:flex items-center justify-center"
                 >
                   <ChevronRight className="h-5 w-5" />
                 </button>
@@ -472,16 +550,16 @@ export default function ProductPage() {
           </div>
 
           {/* Sub-thumbnails selection strip */}
-          {product.images.length > 1 && (
+          {productImages.length > 1 && (
             <div className="flex gap-3 justify-center">
-              {product.images.map((img, idx) => (
+              {productImages.map((img, idx) => (
                 <button
                   key={idx}
                   onClick={() => {
                     setActiveImgIndex(idx);
                   }}
                   className={`w-16 h-16 rounded-premium border-2 overflow-hidden bg-gray-50 transition-premium ${
-                    activeImgIndex === idx ? 'border-[#F7941D]' : 'border-gray-200 hover:border-gray-300'
+                    activeImgIndex === idx ? 'border-[#0F7A6B]' : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
                   <img src={img} alt="Product view" className="w-full h-full object-contain bg-white" />
@@ -509,7 +587,7 @@ export default function ProductPage() {
         {/* RIGHT COLUMN: Product Details, Actions & Reviews */}
         <div className="space-y-6">
           <div>
-            <span className="rounded bg-orange-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-[#F7941D]">
+            <span className="rounded bg-teal-50 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider text-[#0F7A6B]">
               {product.category?.name || product.category || 'General Marketplace'}
             </span>
             
@@ -523,7 +601,7 @@ export default function ProductPage() {
 
             {/* Star ratings summary */}
             <div className="flex items-center space-x-1.5 mt-3 flex-wrap">
-              <div className="flex items-center text-amber-400">
+              <div className="flex items-center text-[#F5A623]">
                 <Star className="h-4.5 w-4.5 fill-current" />
               </div>
               <span className="text-sm font-black text-charcoal">{reviewSummary.averageRating || product.rating}</span>
@@ -537,76 +615,70 @@ export default function ProductPage() {
                 </>
               )}
             </div>
+
+            {/* Trust Badges Row — Above the Fold (Indian Shoppers Trust Signals) */}
+            <div className="grid grid-cols-3 gap-2 py-3.5 border-y border-[#EDEDED] mt-4 text-[10px] font-bold text-gray-500 bg-[#FAFAFA] rounded-xl px-2.5 shadow-sm">
+              <div className="flex flex-col items-center justify-center text-center gap-1">
+                <span className="text-[16px]">🚚</span>
+                <span className="text-charcoal leading-tight">Delivers by</span>
+                <span className="text-[#0F7A6B] font-extrabold">{formattedDeliveryDate}</span>
+              </div>
+              <div className="flex flex-col items-center justify-center text-center gap-1 border-x border-[#EDEDED]">
+                <span className="text-[16px]">💵</span>
+                <span className="text-charcoal leading-tight">COD Available</span>
+                <span className="text-[#2FA84F] font-extrabold">Pay on doorstep</span>
+              </div>
+              <div className="flex flex-col items-center justify-center text-center gap-1">
+                <span className="text-[16px]">🔄</span>
+                <span className="text-charcoal leading-tight">7 Days Return</span>
+                <span className="text-[#3E7BFA] font-extrabold">Exchange Only</span>
+              </div>
+            </div>
           </div>
 
-          {/* Pricing Box - Dynamic with COD and Online Payment Selectors */}
-          <div className="rounded-premium bg-gray-50 p-5 border border-gray-100 space-y-4">
-            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Select Payment Option</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              
-              {/* Online Payment Option Card */}
-              <div 
-                onClick={() => setPaymentOption('online')}
-                className={`cursor-pointer rounded-premium border p-4 transition-premium flex flex-col justify-between ${
-                  paymentOption === 'online' ? 'border-[#F7941D] bg-orange-50/10' : 'border-gray-200 hover:border-gray-300 bg-white'
-                }`}
-              >
-                <div>
-                  <p className="text-xs font-bold text-charcoal">Online Payment (UPI/Card)</p>
-                  <p className="text-xs text-gray-400 mt-1">Pay online securely</p>
-                </div>
-                <div className="mt-3 flex items-baseline space-x-1.5">
-                  <span className="text-xl font-black text-charcoal">₹{onlinePrice.toLocaleString('en-IN')}</span>
-                  {product.originalPrice && (
-                    <span className="text-xs text-gray-400 line-through">₹{product.originalPrice.toLocaleString('en-IN')}</span>
-                  )}
-                </div>
-                {savings > 0 && (
-                  <span className="mt-2 text-[9px] font-bold text-emerald-600 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded self-start">
-                    Save ₹{savings} with Online Payment
-                  </span>
-                )}
-              </div>
-
-              {/* COD Payment Option Card */}
-              {product.codAvailable !== false && (
-                <div 
-                  onClick={() => setPaymentOption('cod')}
-                  className={`cursor-pointer rounded-premium border p-4 transition-premium flex flex-col justify-between ${
-                    paymentOption === 'cod' ? 'border-[#F7941D] bg-orange-50/10' : 'border-gray-200 hover:border-gray-300 bg-white'
-                  }`}
-                >
+          {/* Pricing Box - Simple Static Pricing Display */}
+          <div className="rounded-2xl bg-gray-50 p-5 border border-gray-100 space-y-4">
+            <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Pricing Details</h4>
+            
+            <div className="space-y-3">
+              {product.prepaidAvailable !== false && (
+                <div className="flex items-center justify-between border-b border-gray-200/60 pb-3">
                   <div>
-                    <p className="text-xs font-bold text-charcoal">Cash on Delivery (COD)</p>
-                    <p className="text-xs text-gray-400 mt-1">Pay on delivery at doorstep</p>
+                    <p className="text-base font-bold text-gray-800">Pay Online (UPI / Card)</p>
+                    <p className="text-xs text-emerald-600 font-bold mt-0.5">🔒 Safe &amp; Secure Payment</p>
                   </div>
-                  <div className="mt-3 flex items-baseline space-x-1.5">
-                    <span className="text-xl font-black text-charcoal">₹{codPrice.toLocaleString('en-IN')}</span>
+                  <div className="text-right">
+                    <p className="text-2xl font-black text-[#0F7A6B]">₹{onlinePrice.toLocaleString('en-IN')}</p>
                     {product.originalPrice && (
-                      <span className="text-xs text-gray-400 line-through">₹{product.originalPrice.toLocaleString('en-IN')}</span>
+                      <p className="text-xs text-gray-400 line-through font-semibold">MRP: ₹{product.originalPrice.toLocaleString('en-IN')}</p>
                     )}
                   </div>
-                  <span className="mt-2 text-[9px] font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded self-start">
-                    Standard COD Price
-                  </span>
                 </div>
               )}
 
-            </div>
-
-            <div className="text-[10px] text-gray-400 font-semibold mt-1">
-              Price inclusive of all taxes. GST receipt generated on checkout.
-            </div>
-
-            {/* Dynamic discount notice */}
-            {paymentOption === 'online' && savings > 0 && (
-              <div className="flex items-start gap-2 bg-[#FFFBEB] rounded-premium p-3 border border-amber-200 text-xs text-amber-900 leading-relaxed font-semibold">
-                <Gift className="h-5 w-5 text-[#F7941D] shrink-0" />
-                <div>
-                  Extra savings of ₹{savings} applied automatically for online UPI/Card payment!
+              {product.codAvailable !== false && (
+                <div className="flex items-center justify-between pt-1">
+                  <div>
+                    <p className="text-base font-bold text-gray-800">Cash on Delivery (COD)</p>
+                    <p className="text-xs text-gray-455 mt-0.5">Pay on delivery at doorstep</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xl font-black text-charcoal">₹{codPrice.toLocaleString('en-IN')}</p>
+                  </div>
                 </div>
+              )}
+            </div>
+
+            {savings > 0 && product.prepaidAvailable !== false && product.codAvailable !== false && (
+              <div className="bg-[#2FA84F]/10 rounded-xl p-3 border border-[#2FA84F]/25 text-sm text-[#2FA84F] font-bold flex items-center gap-2">
+                <Gift className="h-5 w-5 text-[#2FA84F] shrink-0" />
+                <span>Pay Online and Save ₹{savings} instantly!</span>
               </div>
             )}
+            
+            <div className="text-xs text-gray-400 font-semibold mt-1">
+              Price inclusive of all taxes. GST receipt generated on checkout.
+            </div>
           </div>
 
           {/* Dynamic Variants Selector - Only shown if variants exist */}
@@ -625,7 +697,7 @@ export default function ProductPage() {
                           onClick={() => setSelectedVariants(prev => ({ ...prev, [variantName]: option }))}
                           className={`rounded-premium border px-4 py-2 text-xs font-bold transition-premium ${
                             selectedVariants[variantName] === option
-                              ? 'border-[#F7941D] bg-orange-50 text-[#F7941D]'
+                              ? 'border-[#0F7A6B] bg-teal-50 text-[#0F7A6B]'
                               : 'border-gray-200 hover:border-gray-300 text-charcoal'
                           }`}
                         >
@@ -665,14 +737,14 @@ export default function ProductPage() {
           <div className="rounded-premium border border-gray-100 bg-white p-4 shadow-premium">
             <div className="grid grid-cols-2 gap-4 text-xs font-bold text-gray-500">
               <div className="flex items-center gap-2">
-                <RotateCcw className="h-4.5 w-4.5 text-[#F7941D] stroke-[1.5]" /> 
+                <RotateCcw className="h-4.5 w-4.5 text-[#0F7A6B] stroke-[1.5]" /> 
                 <div>
                   <p className="text-charcoal leading-tight">Easy Exchange</p>
-                  <p className="text-[10px] text-gray-400 font-medium mt-0.5">Accepted within 3 days. No Refunds • Exchange Only</p>
+                  <p className="text-[10px] text-gray-400 font-medium mt-0.5">Accepted within {storeSettings?.returnWindow || 3} days. No Refunds • Exchange Only</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <ShieldCheck className="h-4.5 w-4.5 text-[#F7941D] stroke-[1.5]" />
+                <ShieldCheck className="h-4.5 w-4.5 text-[#0F7A6B] stroke-[1.5]" />
                 <div>
                   <p className="text-charcoal leading-tight">Verified Manufacturer</p>
                   <p className="text-[10px] text-gray-400 font-medium mt-0.5">GST Invoices & Quality Checks</p>
@@ -688,6 +760,7 @@ export default function ProductPage() {
               className={`flex items-center justify-center gap-2 rounded-premium border-2 px-4 py-3.5 text-sm font-bold transition-premium ${
                 wishlist.includes(product.id) ? 'border-red-500 text-red-500 bg-red-50' : 'border-gray-200 text-gray-500 hover:border-red-500 hover:text-red-500 hover:bg-red-50/50'
               }`}
+              style={{ minHeight: 48 }}
               title={wishlist.includes(product.id) ? "Remove from Wishlist" : "Add to Wishlist"}
             >
               <Heart className="h-5 w-5" fill={wishlist.includes(product.id) ? "currentColor" : "none"} />
@@ -695,12 +768,14 @@ export default function ProductPage() {
             <button
               onClick={() => { addToCart(product, selectedVariants, quantity); window.showAlert(`${quantity}x items added to your cart!`, "Cart Updated"); }}
               className="flex-1 flex items-center justify-center gap-2 rounded-premium border-2 border-charcoal/90 px-4 py-3.5 text-sm font-bold text-charcoal hover:bg-gray-50 transition-premium"
+              style={{ minHeight: 48 }}
             >
               <ShoppingCart className="h-4.5 w-4.5" /> Add to Shopping Bag
             </button>
             <button
-              onClick={() => initiateQuickPurchase(product, selectedVariants, paymentOption)}
-              className="flex-1 rounded-premium bg-[#F7941D] px-6 py-3.5 text-sm font-black text-white hover:bg-[#E07D10] transition-premium shadow-md shadow-orange-500/10 hover:scale-[1.01]"
+              onClick={() => initiateQuickPurchase(product, selectedVariants, product.prepaidAvailable !== false ? 'online' : 'cod')}
+              className="flex-1 rounded-premium bg-[#F5A623] px-6 py-3.5 text-sm font-black text-white hover:bg-[#e09110] transition-premium shadow-md shadow-amber-500/10 hover:scale-[1.01]"
+              style={{ minHeight: 48 }}
             >
               Instant Purchase (Buy Now)
             </button>
@@ -713,7 +788,7 @@ export default function ProductPage() {
               <ul className="space-y-2 text-xs font-medium text-gray-600">
                 {highlights.map((h, idx) => (
                   <li key={idx} className="flex items-start gap-2">
-                    <span className="text-[#F7941D] text-sm shrink-0">✦</span>
+                    <span className="text-[#0F7A6B] text-sm shrink-0">✦</span>
                     <span className="leading-relaxed">{h}</span>
                   </li>
                 ))}
@@ -746,7 +821,7 @@ export default function ProductPage() {
                 <select
                   value={sortOption}
                   onChange={(e) => setSortOption(e.target.value)}
-                  className="rounded-lg border border-gray-200 px-2 py-1.5 text-xs text-charcoal bg-white outline-none focus:border-[#F7941D] font-semibold"
+                  className="rounded-lg border border-gray-200 px-2 py-1.5 text-xs text-charcoal bg-white outline-none focus:border-[#0F7A6B] font-semibold"
                 >
                   <option value="recent">Most Recent</option>
                   <option value="high_rating">Highest Rating</option>
@@ -764,7 +839,7 @@ export default function ProductPage() {
                         setReviewSuccess("");
                         setIsReviewModalOpen(true);
                       }} 
-                      className="text-xs font-bold text-white bg-[#F7941D] hover:bg-[#E07D10] px-3.5 py-1.5 rounded-premium shadow transition"
+                      className="text-xs font-bold text-white bg-[#0F7A6B] hover:bg-[#0A5A4F] px-3.5 py-1.5 rounded-premium shadow transition"
                     >
                       Write a Review
                     </button>
@@ -824,14 +899,14 @@ export default function ProductPage() {
             {reviewSummary.allImages && reviewSummary.allImages.length > 0 && (
               <div className="space-y-2.5">
                 <h5 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <ImageIcon className="h-4 w-4 text-[#F7941D]" /> Customer Uploaded Photos ({reviewSummary.allImages.length})
+                  <ImageIcon className="h-4 w-4 text-[#0F7A6B]" /> Customer Uploaded Photos ({reviewSummary.allImages.length})
                 </h5>
                 <div className="flex flex-wrap gap-2.5">
                   {reviewSummary.allImages.map((photo, index) => (
                     <div 
                       key={index}
                       onClick={() => setPreviewImage(photo.imageUrl)}
-                      className="cursor-pointer w-16 h-16 rounded-premium border border-gray-200 bg-gray-50 overflow-hidden hover:border-[#F7941D] transition-premium shadow-sm hover:scale-105"
+                      className="cursor-pointer w-16 h-16 rounded-premium border border-gray-200 bg-gray-50 overflow-hidden hover:border-[#0F7A6B] transition-premium shadow-sm hover:scale-105"
                     >
                       <img src={photo.imageUrl} alt="Review attachment" className="w-full h-full object-cover" loading="lazy" />
                     </div>
@@ -862,7 +937,7 @@ export default function ProductPage() {
                         <div className="flex items-center gap-3">
                           {/* Avatar */}
                           <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs shrink-0 uppercase ${
-                            ['bg-orange-50 text-orange-600', 'bg-indigo-50 text-indigo-600', 'bg-emerald-50 text-emerald-600', 'bg-rose-50 text-rose-600', 'bg-amber-50 text-amber-600'][
+                            ['bg-teal-50 text-[#0F7A6B]', 'bg-indigo-50 text-indigo-600', 'bg-emerald-50 text-emerald-600', 'bg-rose-50 text-rose-600', 'bg-amber-50 text-amber-600'][
                               (rev.customerName || rev.user?.name || 'A').charCodeAt(0) % 5
                             ]
                           }`}>
@@ -903,7 +978,7 @@ export default function ProductPage() {
                             <div 
                               key={idx} 
                               onClick={() => setPreviewImage(img)}
-                              className="cursor-pointer w-14 h-14 rounded-premium border border-gray-200 overflow-hidden bg-gray-50 hover:border-[#F7941D] transition-premium shadow-sm hover:scale-105"
+                              className="cursor-pointer w-14 h-14 rounded-premium border border-gray-200 overflow-hidden bg-gray-50 hover:border-[#0F7A6B] transition-premium shadow-sm hover:scale-105"
                             >
                               <img src={img} alt="Attached upload" className="w-full h-full object-cover" loading="lazy" />
                             </div>
@@ -913,7 +988,7 @@ export default function ProductPage() {
 
                       {/* Admin replies block */}
                       {rev.reply && (
-                        <div className="pl-3 border-l-2 border-[#F7941D] text-[11px] text-gray-500 bg-orange-50/20 py-2 pr-2 rounded">
+                        <div className="pl-3 border-l-2 border-[#0F7A6B] text-[11px] text-gray-500 bg-teal-50/20 py-2 pr-2 rounded">
                           <strong className="text-charcoal block mb-0.5">Seller Reply:</strong>
                           "{rev.reply}"
                         </div>
@@ -922,9 +997,11 @@ export default function ProductPage() {
                       {/* Footer Info: Verified badge & Purchase Month & Helpful vote button */}
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-gray-50 text-[10px] font-bold text-gray-400">
                         <div className="flex flex-wrap items-center gap-2">
-                          <span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded font-bold uppercase tracking-wider">
-                            ✔ Verified Purchase
-                          </span>
+                          {rev.verifiedPurchase && (
+                            <span className="text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded font-bold uppercase tracking-wider">
+                              ✔ Verified Purchase
+                            </span>
+                          )}
                           {rev.purchaseMonth && (
                             <span className="text-gray-400 font-semibold">
                               Purchased in {rev.purchaseMonth}
@@ -937,7 +1014,7 @@ export default function ProductPage() {
                           onClick={() => handleHelpfulVote(rev.id)}
                           className={`flex items-center gap-1 text-[11px] px-3 py-1 border rounded-full transition-premium ${
                             rev.voted 
-                              ? 'bg-orange-50 border-[#F7941D] text-[#F7941D]' 
+                              ? 'bg-teal-50 border-[#0F7A6B] text-[#0F7A6B]' 
                               : 'bg-white border-gray-200 hover:border-gray-300 hover:text-charcoal'
                           }`}
                         >
@@ -958,7 +1035,7 @@ export default function ProductPage() {
                 <button
                   onClick={handleViewAll}
                   disabled={isLoadingReviews}
-                  className="rounded-premium border border-[#F7941D] px-8 py-3 text-sm font-bold text-[#F7941D] hover:bg-orange-50 transition"
+                  className="rounded-premium border border-[#0F7A6B] px-8 py-3 text-sm font-bold text-[#0F7A6B] hover:bg-teal-50 transition"
                 >
                   {isLoadingReviews ? "Loading Reviews..." : `View All Reviews (${reviewSummary.totalCount})`}
                 </button>
@@ -976,7 +1053,8 @@ export default function ProductPage() {
           <h3 className="text-base font-extrabold text-charcoal uppercase tracking-wider mb-6">You May Also Like</h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6">
             {relatedProducts.map(item => {
-              const mainImg = typeof item.images === 'string' ? JSON.parse(item.images)[0] : item.images[0];
+              const rawImg = typeof item.images === 'string' ? (() => { try { return JSON.parse(item.images)[0]; } catch { return ''; } })() : (Array.isArray(item.images) ? item.images[0] : '');
+              const mainImg = getImageUrl(rawImg);
               return (
                 <div 
                   key={item.id}
@@ -987,8 +1065,8 @@ export default function ProductPage() {
                     <img src={mainImg} alt={item.name} className="w-full h-full object-cover group-hover:scale-[1.02] transition-all duration-300" />
                   </div>
                   <div className="p-3 text-xs">
-                    <h4 className="font-bold text-charcoal line-clamp-1 group-hover:text-[#F7941D]">{item.name}</h4>
-                    <p className="font-black text-[#F7941D] mt-1">₹{item.price.toLocaleString('en-IN')}</p>
+                    <h4 className="font-bold text-charcoal line-clamp-1 group-hover:text-[#0F7A6B]">{item.name}</h4>
+                    <p className="font-black text-[#0F7A6B] mt-1">₹{item.price.toLocaleString('en-IN')}</p>
                   </div>
                 </div>
               );
@@ -1012,7 +1090,7 @@ export default function ProductPage() {
         </button>
         <button 
           onClick={() => initiateQuickPurchase(product, selectedVariants, paymentOption)}
-          className="flex-1 bg-[#F7941D] py-3 rounded-premium text-xs font-bold text-white hover:bg-[#E07D10] transition-colors shadow flex items-center justify-center min-h-[44px]"
+          className="flex-1 bg-[#0F7A6B] py-3 rounded-premium text-xs font-bold text-white hover:bg-[#0A5A4F] transition-colors shadow flex items-center justify-center min-h-[44px]"
         >
           Buy Now
         </button>
@@ -1071,7 +1149,7 @@ export default function ProductPage() {
                     value={reviewForm.title}
                     onChange={e => setReviewForm(prev => ({ ...prev, title: e.target.value }))}
                     placeholder="e.g. Excellent purchase experience" 
-                    className="w-full border rounded p-2 text-xs outline-none focus:border-[#F7941D]"
+                    className="w-full border rounded p-2 text-xs outline-none focus:border-[#0F7A6B]"
                   />
                 </div>
 
@@ -1083,7 +1161,7 @@ export default function ProductPage() {
                     value={reviewForm.comment}
                     onChange={e => setReviewForm(prev => ({ ...prev, comment: e.target.value }))}
                     placeholder="What did you like or dislike about the product?" 
-                    className="w-full border rounded p-2 text-xs outline-none focus:border-[#F7941D]"
+                    className="w-full border rounded p-2 text-xs outline-none focus:border-[#0F7A6B]"
                   />
                 </div>
 
@@ -1092,16 +1170,41 @@ export default function ProductPage() {
                   <input 
                     type="file" 
                     multiple 
-                    disabled // Optional mockup placeholder logic
                     accept="image/*" 
-                    className="w-full border p-1 rounded text-[10px] opacity-60" 
+                    onChange={handleReviewImageUpload}
+                    disabled={uploadingReviewImages}
+                    className="w-full border p-1 rounded text-[10px] mb-2" 
                   />
+                  {uploadingReviewImages && (
+                    <p className="text-[10px] text-amber-500 font-bold animate-pulse">Uploading images...</p>
+                  )}
+                  {uploadError && (
+                    <div className="text-[10px] text-red-500 font-bold mt-1">
+                      {uploadError} <button type="button" className="underline text-charcoal ml-1" onClick={() => setUploadError("")}>Dismiss</button>
+                    </div>
+                  )}
+                  {reviewImages.length > 0 && (
+                    <div className="flex flex-wrap gap-2 mt-2">
+                      {reviewImages.map((url, idx) => (
+                        <div key={idx} className="relative w-12 h-12 rounded border border-gray-200 overflow-hidden bg-gray-50">
+                          <img src={url} alt="Review upload" className="w-full h-full object-cover" />
+                          <button
+                            type="button"
+                            onClick={() => removeReviewImage(idx)}
+                            className="absolute top-0.5 right-0.5 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600 transition"
+                          >
+                            <X className="h-2 w-2" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
                 <button 
                   type="submit" 
                   disabled={isSubmittingReview}
-                  className="w-full bg-[#F7941D] text-white py-2.5 rounded-premium text-xs font-bold hover:bg-[#e5891b] transition shadow disabled:opacity-50"
+                  className="w-full bg-[#0F7A6B] text-white py-2.5 rounded-premium text-xs font-bold hover:bg-[#0A5A4F] transition shadow disabled:opacity-50"
                 >
                   {isSubmittingReview ? "Submitting Review..." : "Submit Review"}
                 </button>
@@ -1134,22 +1237,19 @@ export default function ProductPage() {
           Shown on mobile only — hidden on md+
           Sits above the bottom nav (uses --bottom-nav-height offset)
       ============================================================ */}
-      <div className="sticky-purchase-bar md:hidden">
+      <div className="sticky-purchase-bar md:hidden flex items-center gap-3 bg-white border-t px-4 py-3 pb-[calc(12px+env(safe-area-inset-bottom,0px))]">
         <button
           onClick={() => {
             addToCart(product, selectedVariants, quantity);
             window.showAlert?.(`${quantity}x added to cart!`, 'Cart Updated');
           }}
-          className="flex-1 flex items-center justify-center gap-2 rounded-xl border-2 border-[#f7941d] bg-white py-3 text-sm font-bold text-[#f7941d] active:bg-orange-50"
-          style={{ minHeight: 48 }}
+          className="flex-shrink-0 h-14 w-14 rounded-xl border border-[#0F7A6B]/30 text-[#0F7A6B] flex items-center justify-center bg-teal-50/10 active:bg-teal-50/55 transition-colors cursor-pointer"
         >
-          <ShoppingCart size={18} />
-          Add to Cart
+          <ShoppingCart size={22} className="stroke-[2.2]" />
         </button>
         <button
-          onClick={() => initiateQuickPurchase(product, selectedVariants, paymentOption)}
-          className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-[#f7941d] py-3 text-sm font-black text-white shadow-sm active:bg-[#e07d10]"
-          style={{ minHeight: 48 }}
+          onClick={() => initiateQuickPurchase(product, selectedVariants, product.prepaidAvailable !== false ? 'online' : 'cod')}
+          className="flex-1 h-14 rounded-xl bg-[#F5A623] text-lg font-black text-white shadow-lg active:bg-[#e09110] transition flex items-center justify-center gap-2 cursor-pointer"
         >
           ⚡ Buy Now
         </button>

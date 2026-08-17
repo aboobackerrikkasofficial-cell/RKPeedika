@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, Outlet } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, 
@@ -367,15 +367,19 @@ export default function DashboardLayout({ children }) {
 
         {/* CONTAINER VIEWPORT FOR CHILD PAGES */}
         <div className="flex-1 overflow-y-auto no-scrollbar">
-          {React.Children.map(children, child => {
-            if (React.isValidElement(child)) {
-              return React.cloneElement(child, {
-                adminUser,
-                onProfileUpdate: (updatedUser) => setAdminUser(updatedUser)
-              });
-            }
-            return child;
-          })}
+          {React.isValidElement(children) && children.type === Outlet ? (
+            <Outlet context={{ adminUser, onProfileUpdate: (updatedUser) => setAdminUser(updatedUser) }} />
+          ) : (
+            React.Children.map(children, child => {
+              if (React.isValidElement(child)) {
+                return React.cloneElement(child, {
+                  adminUser,
+                  onProfileUpdate: (updatedUser) => setAdminUser(updatedUser)
+                });
+              }
+              return child;
+            })
+          )}
         </div>
       </div>
     </div>

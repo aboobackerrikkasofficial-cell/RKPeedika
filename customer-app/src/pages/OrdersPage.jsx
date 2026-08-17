@@ -2,6 +2,7 @@ import React, { useContext, useState } from 'react';
 import { AppContext } from '../context/AppContext';
 import { Package, Search, ChevronRight, AlertCircle, ShoppingBag } from 'lucide-react';
 import apiClient from '../api/client';
+import getImageUrl from '../utils/imageUrl';
 
 export default function OrdersPage() {
   const {
@@ -80,7 +81,7 @@ export default function OrdersPage() {
                   <div className="flex space-x-3">
                     <div className="w-16 h-16 bg-gray-50 rounded-lg overflow-hidden border border-gray-100 flex-shrink-0 flex items-center justify-center">
                       <img
-                        src={firstItemImage || '/images/coffee_maker_1.jpg'}
+                        src={getImageUrl(firstItemImage) || '/images/coffee_maker_1.jpg'}
                         alt={firstItemName}
                         className="w-full h-full object-contain"
                         onError={(e) => {
@@ -110,8 +111,8 @@ export default function OrdersPage() {
                   {/* Simple Status Tracker */}
                   <div className="pt-2 border-t border-gray-50 flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      <span className="h-2 w-2 rounded-full bg-[#F7941D]" />
-                      <span className="text-[10px] font-extrabold uppercase text-[#F7941D] tracking-wide">
+                      <span className="h-2 w-2 rounded-full bg-[#0F7A6B]" />
+                      <span className="text-[10px] font-extrabold uppercase text-[#0F7A6B] tracking-wide">
                         {order.status}
                       </span>
                     </div>
@@ -120,7 +121,7 @@ export default function OrdersPage() {
                         setTrackingOrderId(order.orderId);
                         setCurrentView('order-tracking');
                       }}
-                      className="flex items-center text-[10px] font-extrabold uppercase text-charcoal tracking-wider hover:text-[#F7941D]"
+                      className="flex items-center text-[10px] font-extrabold uppercase text-charcoal tracking-wider hover:text-[#0F7A6B]"
                     >
                       View Order <ChevronRight size={12} className="ml-0.5" />
                     </button>
@@ -155,7 +156,7 @@ export default function OrdersPage() {
                 value={searchOrderId}
                 onChange={(e) => setSearchOrderId(e.target.value)}
                 placeholder="ODR-XXXXXX"
-                className="w-full bg-gray-50 border border-gray-100 rounded-premium px-3 py-2.5 text-xs text-charcoal outline-none focus:border-[#F7941D] transition-colors"
+                className="w-full bg-gray-50 border border-gray-100 rounded-premium px-3 py-2.5 text-xs text-charcoal outline-none focus:border-[#0F7A6B] transition-colors"
                 required
               />
             </div>
@@ -170,7 +171,7 @@ export default function OrdersPage() {
                 value={searchPhone}
                 onChange={(e) => setSearchPhone(e.target.value)}
                 placeholder="10-digit phone number"
-                className="w-full bg-gray-50 border border-gray-100 rounded-premium px-3 py-2.5 text-xs text-charcoal outline-none focus:border-[#F7941D] transition-colors"
+                className="w-full bg-gray-50 border border-gray-100 rounded-premium px-3 py-2.5 text-xs text-charcoal outline-none focus:border-[#0F7A6B] transition-colors"
                 required
               />
             </div>

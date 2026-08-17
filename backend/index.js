@@ -1,3 +1,4 @@
+import './src/config/env.js';
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
@@ -27,7 +28,7 @@ import paymentRoutes from './src/routes/payment.routes.js';
 import storeRoutes from './src/routes/store.routes.js';
 import uploadRoutes from './src/routes/upload.routes.js';
 
-dotenv.config();
+// Environment variables are loaded on line 1 via env.js
 
 /*
 |--------------------------------------------------------------------------

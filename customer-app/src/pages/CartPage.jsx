@@ -1,6 +1,7 @@
 import React, { useContext } from 'react';
 import { AppContext } from '../context/AppContext';
 import { Trash2, Plus, Minus, ArrowLeft, ShoppingBag } from 'lucide-react';
+import getImageUrl from '../utils/imageUrl';
 
 export default function CartPage() {
   const {
@@ -49,7 +50,7 @@ export default function CartPage() {
         </p>
         <button
           onClick={() => setCurrentView('home')}
-          className="mt-6 px-6 py-3 bg-[#F7941D] text-white font-bold text-xs rounded-premium shadow hover:bg-[#E07D10] transition-colors min-h-[44px]"
+          className="mt-6 px-6 py-3 bg-[#0F7A6B] text-white font-bold text-xs rounded-premium shadow hover:bg-[#0A5A4F] transition-colors min-h-[44px] cursor-pointer"
         >
           Continue Shopping
         </button>
@@ -79,7 +80,7 @@ export default function CartPage() {
             <div key={item.cartItemId} className="flex space-x-3 pb-3 border-b border-gray-50 last:border-b-0 last:pb-0">
               <div className="w-20 h-20 bg-gray-50 rounded-lg overflow-hidden border border-gray-100 flex-shrink-0 flex items-center justify-center">
                 <img
-                  src={item.image || "/images/coffee_maker_1.jpg"}
+                  src={getImageUrl(item.image) || "/images/coffee_maker_1.jpg"}
                   alt={item.name}
                   className="w-full h-full object-contain"
                 />
@@ -147,7 +148,7 @@ export default function CartPage() {
             </div>
             <div className="border-t border-gray-50 pt-3 flex justify-between text-sm font-black text-charcoal">
               <span>Order Total</span>
-              <span className="text-[#F7941D]">₹{finalTotal.toLocaleString('en-IN')}</span>
+              <span className="text-[#0F7A6B]">₹{finalTotal.toLocaleString('en-IN')}</span>
             </div>
           </div>
         </div>
@@ -157,11 +158,11 @@ export default function CartPage() {
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 p-3 flex items-center justify-between shadow-[0_-4px_10px_rgba(0,0,0,0.05)] md:pb-6">
         <div>
           <p className="text-[10px] text-gray-400 font-bold uppercase tracking-wide">Total Price</p>
-          <p className="text-base font-black text-[#F7941D]">₹{finalTotal.toLocaleString('en-IN')}</p>
+          <p className="text-base font-black text-[#0F7A6B]">₹{finalTotal.toLocaleString('en-IN')}</p>
         </div>
         <button
           onClick={handleProceedToCheckout}
-          className="rounded-premium bg-[#F7941D] px-8 py-3 text-xs font-bold text-white hover:bg-[#E07D10] transition-colors shadow min-h-[44px]"
+          className="rounded-premium bg-[#0F7A6B] px-8 py-3 text-xs font-bold text-white hover:bg-[#0A5A4F] transition-colors shadow min-h-[44px] cursor-pointer"
         >
           Proceed to Checkout
         </button>

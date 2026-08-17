@@ -1,31 +1,7 @@
 import React, { useContext, useState } from 'react';
 import { AppContext } from '../context/AppContext';
 import { Heart, Star, ShoppingCart } from 'lucide-react';
-
-/*
-|--------------------------------------------------------------------------
-| IMAGE URL HELPER
-|--------------------------------------------------------------------------
-*/
-
-const API_URL =
-  import.meta.env.VITE_API_URL || 'https://rkpeedika.onrender.com/api';
-const BACKEND_URL = API_URL.replace(/\/api\/?$/, '');
-
-function getImageUrl(image) {
-  if (!image) return '';
-  const value = String(image).trim();
-  if (!value) return '';
-  if (
-    value.startsWith('http://') ||
-    value.startsWith('https://') ||
-    value.startsWith('data:')
-  ) {
-    return value;
-  }
-  const cleanPath = value.startsWith('/') ? value : `/${value}`;
-  return `${BACKEND_URL}${cleanPath}`;
-}
+import getImageUrl from '../utils/imageUrl';
 
 /*
 |--------------------------------------------------------------------------
@@ -132,7 +108,7 @@ export default function ProductCard({ product }) {
   ------------------------------------------------------------------ */
   return (
     <article
-      className="product-card"
+      className="bg-white rounded-xl border border-[#EDEDED] overflow-hidden shadow-[0_1px_4px_rgba(0,0,0,0.08)] transition-all duration-200 active:scale-[0.98] hover:shadow-md flex flex-col h-full p-2"
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
@@ -140,7 +116,7 @@ export default function ProductCard({ product }) {
           IMAGE AREA
       ============================================================ */}
       <div
-        className="product-card-image"
+        className="aspect-square w-full overflow-hidden bg-white relative rounded-lg cursor-pointer"
         onClick={handleCardClick}
         role="button"
         tabIndex={0}
@@ -152,20 +128,20 @@ export default function ProductCard({ product }) {
             src={imageUrl}
             alt={product?.name || 'Product'}
             loading="lazy"
-            decoding="async"
+            className="w-full h-full object-contain p-1 transition-transform duration-300 hover:scale-105"
             onError={handleImageError}
           />
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center bg-gray-50 text-gray-300">
-            <ShoppingCart size={32} className="mb-1" />
-            <span className="text-xs">No image</span>
+          <div className="w-full h-full flex flex-col items-center justify-center bg-[#FAFAFA] text-gray-300">
+            <ShoppingCart size={28} className="mb-1 text-gray-400" />
+            <span className="text-[10px]">No image</span>
           </div>
         )}
 
         {/* Discount badge */}
         {discount > 0 && (
           <span
-            className="absolute left-2 top-2 rounded-md bg-[#f7941d] px-1.5 py-0.5 text-[10px] font-bold text-white leading-none"
+            className="absolute left-1.5 top-1.5 rounded-full bg-[#E14B4B] px-2 py-0.5 text-[9px] font-black text-white leading-none z-10 shadow-sm"
           >
             {discount}% OFF
           </span>
@@ -179,75 +155,89 @@ export default function ProductCard({ product }) {
             e.stopPropagation();
             toggleWishlist(product.id);
           }}
-          className={`absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-white/90 shadow-sm transition-transform active:scale-90 ${
-            isLiked ? 'text-red-500' : 'text-gray-400'
+          className={`absolute right-1.5 top-1.5 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 shadow-sm border border-[#EDEDED] transition-transform active:scale-90 z-10 ${
+            isLiked ? 'text-[#E14B4B]' : 'text-gray-400'
           }`}
         >
           <Heart
-            size={14}
+            size={16}
             fill={isLiked ? 'currentColor' : 'none'}
           />
         </button>
-
-        {/* No out of stock overlay per simplified model */}
       </div>
 
       {/* ============================================================
           PRODUCT INFO
       ============================================================ */}
       <div
-        className="product-card-info cursor-pointer"
+        className="pt-2 px-1 flex-grow flex flex-col gap-1 cursor-pointer"
         onClick={handleCardClick}
         role="button"
         tabIndex={-1}
         onKeyDown={(e) => e.key === 'Enter' && handleCardClick()}
       >
+        {/* Category Label */}
+        <div className="flex">
+          <span className="bg-teal-50/70 text-[#0F7A6B] text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
+            {typeof product?.category === 'object' ? product.category?.name : product?.category || 'General'}
+          </span>
+        </div>
+
         {/* Product name */}
-        <h3
-          className="text-[12px] font-semibold text-[#222222] leading-[1.35] line-clamp-2 min-h-[32px]"
-          style={{ fontSize: 'clamp(11px, 2.8vw, 13px)' }}
-        >
+        <h3 className="text-xs font-semibold text-[#1A1A1A] leading-snug line-clamp-2 mt-1 min-h-[32px]">
           {product?.name || 'Unnamed Product'}
         </h3>
 
-        {/* Rating */}
-        {(product?.rating > 0 || product?.reviewCount > 0) && (
-          <div className="flex items-center gap-1 mt-1">
-            <Star size={11} className="text-amber-400 shrink-0" fill="currentColor" />
-            <span className="text-[11px] font-bold text-[#222222]">
-              {Number(product?.rating || 0).toFixed(1)}
-            </span>
-            {product?.reviewCount > 0 && (
-              <span className="text-[10px] text-gray-400">
-                ({product.reviewCount > 999
-                  ? `${(product.reviewCount / 1000).toFixed(1)}k`
-                  : product.reviewCount})
-              </span>
-            )}
-          </div>
-        )}
-
         {/* Price block */}
-        <div className="flex flex-wrap items-baseline gap-x-1.5 gap-y-0 mt-1.5">
-          <span className="price-current">
+        <div className="flex flex-wrap items-baseline gap-1 mt-0.5">
+          <span className="text-sm md:text-base font-black text-[#1A1A1A]">
             ₹{price.toLocaleString('en-IN')}
           </span>
           {originalPrice > price && (
             <>
-              <span className="price-mrp">
+              <span className="text-[10px] text-gray-400 line-through font-semibold">
                 ₹{originalPrice.toLocaleString('en-IN')}
               </span>
-              <span className="price-discount">
+              <span className="text-[10px] text-[#E14B4B] font-extrabold">
                 {discount}% off
               </span>
             </>
           )}
         </div>
 
+        {/* Rating */}
+        {(product?.rating > 0 || product?.reviewCount > 0) && (
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <div className="flex items-center gap-0.5 bg-[#2FA84F]/10 text-[#2FA84F] font-black px-1.5 py-0.5 rounded text-[10px]">
+              <Star size={10} className="fill-current text-[#2FA84F]" />
+              <span>{Number(product?.rating || 0).toFixed(1)}</span>
+            </div>
+            {product?.reviewCount > 0 && (
+              <span className="text-[10px] text-gray-400 font-semibold">
+                ({product.reviewCount > 999
+                  ? `${(product.reviewCount / 1000).toFixed(1)}k`
+                  : product.reviewCount.toLocaleString('en-IN')})
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Trust Badges - Crucial for Indian shoppers */}
+        <div className="flex flex-wrap gap-1 mt-1">
+          <span className="bg-[#3E7BFA]/10 text-[#3E7BFA] text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+            Free Delivery
+          </span>
+          {product?.codAvailable !== false && (
+            <span className="bg-[#2FA84F]/10 text-[#2FA84F] text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+              COD
+            </span>
+          )}
+        </div>
+
         {/* Prepaid Offer label if available */}
         {product?.enableOnlineDiscount && product?.onlinePrice && (
           <div className="mt-1.5 flex">
-            <span className="bg-emerald-50 text-emerald-700 text-[9px] font-black px-1.5 py-0.5 rounded border border-emerald-100 uppercase tracking-wide">
+            <span className="bg-teal-50 text-[#0F7A6B] text-[9px] font-extrabold px-1.5 py-0.5 rounded border border-teal-100 uppercase tracking-wide">
               ₹{product.onlinePrice} with Online Payment
             </span>
           </div>

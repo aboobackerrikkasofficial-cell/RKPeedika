@@ -1,8 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { User, Mail, Award, CheckCircle, AlertCircle } from 'lucide-react';
+import { useOutletContext } from 'react-router-dom';
 import apiClient from '../api/client';
 
-export default function Profile({ adminUser, onProfileUpdate }) {
+export default function Profile(props) {
+  const context = useOutletContext() || {};
+  const adminUser = props.adminUser || context.adminUser;
+  const onProfileUpdate = props.onProfileUpdate || context.onProfileUpdate;
+
   const [profileData, setProfileData] = useState({
     name: "",
     email: "",

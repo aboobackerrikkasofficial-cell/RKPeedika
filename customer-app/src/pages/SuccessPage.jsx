@@ -1,20 +1,20 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext } from 'react';
 import { AppContext } from '../context/AppContext';
-import { CheckCircle, Download, FileText, ArrowRight, Truck, MapPin } from 'lucide-react';
+import { CheckCircle, ArrowRight, Truck, FileText } from 'lucide-react';
+import getImageUrl from '../utils/imageUrl';
 
 export default function SuccessPage() {
   const { activeOrder, setCurrentView, setTrackingOrderId } = useContext(AppContext);
-  const [trackingStep, setTrackingStep] = useState(0);
 
   const order = activeOrder;
   
   if (!order) {
     return (
-      <div className="mx-auto max-w-2xl px-4 py-20 text-center">
+      <div className="mx-auto max-w-2xl px-4 py-20 text-center font-sans">
         <h2 className="text-2xl font-black text-charcoal tracking-tight mb-4">No order found</h2>
         <button 
           onClick={() => setCurrentView('home')}
-          className="rounded-premium bg-[#F7941D] px-8 py-3.5 text-xs font-black text-white hover:bg-[#E07D10] transition-premium shadow-md shadow-orange-500/10"
+          className="rounded-xl bg-[#0F7A6B] px-8 py-4 text-base font-black text-white hover:bg-[#0A5A4F] transition shadow-md shadow-teal-500/10"
         >
           Continue Shopping
         </button>
@@ -23,7 +23,6 @@ export default function SuccessPage() {
   }
 
   const handlePrintInvoice = () => {
-    // Open a print-friendly window with a full GST Invoice receipt layout
     const invoiceWindow = window.open("", "_blank", "width=800,height=900");
     invoiceWindow.document.write(`
       <html>
@@ -66,24 +65,19 @@ export default function SuccessPage() {
             <div class="grid-col" style="text-align: right;">
               <strong>INVOICE DETAILS:</strong><br/>
               Invoice No: RKP-${order.orderId}<br/>
-              Date of Order: ${order.date}<br/>
-              Payment Method: ${order.paymentMethod.toUpperCase()}<br/>
-              Shipping Speed: ${order.shippingMethod.toUpperCase()}
+              Date of Order: ${order.date || new Date(order.createdAt).toISOString().split('T')[0]}<br/>
+              Payment Method: ${(order.paymentMethod || 'COD').toUpperCase()}<br/>
+              Shipping Speed: ${(order.shippingMethod || 'Standard').toUpperCase()}
             </div>
           </div>
 
           <div class="grid" style="border-top: 1px dashed #000; padding-top: 15px;">
             <div class="grid-col">
               <strong>BILL TO / SHIP TO:</strong><br/>
-              ${order.address?.fullName}<br/>
+              ${order.address?.fullName || order.shippingName || 'Customer'}<br/>
               ${order.address?.houseFlatNumber || ''} ${order.address?.streetRoadName || ''}<br/>
-              ${order.address?.city}, ${order.address?.state} - ${order.address?.pincode}<br/>
-              Phone Contact: +91 ${order.address?.phone}
-            </div>
-            <div class="grid-col" style="text-align: right;">
-              <strong>GST STATE OF SUPPLY:</strong><br/>
-              State: ${order.address?.state}<br/>
-              Tax Type: Inter-State IGST / SGST breakdown included
+              ${order.address?.city || ''}, ${order.address?.state || ''} - ${order.address?.pincode || ''}<br/>
+              Phone Contact: +91 ${order.address?.phone || order.shippingPhone || ''}
             </div>
           </div>
 
@@ -99,46 +93,25 @@ export default function SuccessPage() {
               </tr>
             </thead>
             <tbody>
-              ${order.items.map(item => `
+              ${(order.items || order.orderItems || []).map(item => `
                 <tr>
                   <td>
-                    ${item.name}<br/>
+                    ${item.name || item.product?.name || 'Product'}<br/>
                     <small>Variant: ${item.size || 'Standard'} / ${item.color || 'Default'}</small>
                   </td>
                   <td>73239390</td>
                   <td>${item.quantity}</td>
-                  <td>₹${item.price.toLocaleString('en-IN')}</td>
+                  <td>₹${(item.price || 0).toLocaleString('en-IN')}</td>
                   <td>18% (Incl)</td>
-                  <td style="text-align: right;">₹${(item.price * item.quantity).toLocaleString('en-IN')}</td>
+                  <td style="text-align: right;">₹${((item.price || 0) * item.quantity).toLocaleString('en-IN')}</td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
 
-          <table class="total-table">
-            <tr>
-              <td>Subtotal:</td>
-              <td style="text-align: right;">₹${order.pricing?.subtotal.toLocaleString('en-IN')}</td>
-            </tr>
-            ${order.pricing?.discountAmount > 0 ? `
-            <tr>
-              <td>Online Discount (${order.pricing?.discountPercentage}%):</td>
-              <td style="text-align: right; color: green;">-₹${order.pricing?.discountAmount.toLocaleString('en-IN')}</td>
-            </tr>
-            ` : ''}
-            <tr>
-              <td>Shipping surcharge:</td>
-              <td style="text-align: right;">₹${order.pricing?.shipping.toLocaleString('en-IN')}</td>
-            </tr>
-            <tr style="border-top: 1px dashed #000; font-weight: bold;">
-              <td>Total Payable Value:</td>
-              <td style="text-align: right;">₹${order.pricing?.finalTotal.toLocaleString('en-IN')}</td>
-            </tr>
-          </table>
-
           <div class="footer">
             <p>This is a computer-generated tax invoice. No signature is required under section 12 of CGST Rules.</p>
-            <p>Thank you for shopping with RK Peedika. Have a wonderful day ahead!</p>
+            <p>Thank you for shopping with RK Peedika.</p>
           </div>
         </body>
       </html>
@@ -146,8 +119,12 @@ export default function SuccessPage() {
     invoiceWindow.document.close();
   };
 
+  const firstItem = order.items?.[0] || order.orderItems?.[0];
+  const firstItemName = firstItem?.name || firstItem?.productName || firstItem?.product?.name || 'Order Item';
+  const firstItemImage = firstItem?.image || firstItem?.productImage || (firstItem?.product?.images ? JSON.parse(firstItem.product.images)[0] : null);
+
   return (
-    <div className="mx-auto max-w-2xl px-4 py-12 md:py-20 text-center">
+    <div className="mx-auto max-w-2xl px-4 py-12 md:py-20 text-center font-sans">
       
       {/* Animated Success Check */}
       <div className="relative mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 mb-6">
@@ -157,105 +134,62 @@ export default function SuccessPage() {
 
       <h2 className="text-2xl font-black text-charcoal tracking-tight">Order Placed Successfully!</h2>
       
-      <p className="text-xs text-gray-400 font-semibold mt-2.5">
-        A copy of your tax receipt and order status tracking has been dispatched via SMS and WhatsApp.
+      <p className="text-sm text-gray-400 font-semibold mt-2">
+        Your order has been registered. You can track progress and download invoice below.
       </p>
 
-      {/* Order Details box */}
-      <div className="mt-8 rounded-premium bg-gray-50 border border-gray-100 p-5 text-left text-xs text-gray-500 space-y-3">
-        <div className="flex justify-between border-b border-gray-100 pb-2.5">
-          <span className="font-bold text-charcoal uppercase">Order ID Number</span>
-          <span className="font-black text-charcoal">{order.orderId}</span>
+      {/* Ordered Item block (Meesho-inspired) */}
+      <div className="mt-8 rounded-2xl border border-gray-150 bg-white p-5 shadow-sm text-left flex gap-4 items-center">
+        <div className="w-20 h-20 bg-gray-50 rounded-xl overflow-hidden border border-gray-100 flex-shrink-0 flex items-center justify-center">
+          <img
+            src={getImageUrl(firstItemImage) || '/images/coffee_maker_1.jpg'}
+            alt={firstItemName}
+            className="w-full h-full object-contain bg-white"
+            onError={(e) => {
+              e.currentTarget.src = '/images/coffee_maker_1.jpg';
+            }}
+          />
         </div>
-        {order.invoiceNumber && (
-          <div className="flex justify-between border-b border-gray-100 pb-2.5">
-            <span className="font-bold text-charcoal uppercase">Invoice Number</span>
-            <span className="font-black text-charcoal">{order.invoiceNumber}</span>
-          </div>
-        )}
-        <div className="flex justify-between border-b border-gray-100 pb-2.5">
-          <span className="font-bold text-charcoal uppercase">Order Amount</span>
-          <span className="font-black text-charcoal">₹{(order.pricing?.finalTotal || order.amount).toLocaleString('en-IN')}</span>
-        </div>
-        <div className="flex justify-between border-b border-gray-100 pb-2.5">
-          <span className="font-bold text-charcoal uppercase">Payment Method</span>
-          <span className="font-black text-charcoal">{order.paymentMethod === 'cod' ? 'Cash On Delivery' : 'Online Payment'}</span>
-        </div>
-        <div className="flex justify-between border-b border-gray-100 pb-2.5">
-          <span className="font-bold text-charcoal uppercase">Payment Status</span>
-          <span className="font-black text-charcoal">
-            <span className={`px-2 py-0.5 rounded font-bold uppercase text-[10px] ${
-              order.paymentStatus === 'paid' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'
+        <div className="flex-1 space-y-1">
+          <h4 className="text-base font-extrabold text-charcoal leading-snug line-clamp-1">{firstItemName}</h4>
+          {order.items && order.items.length > 1 && (
+            <p className="text-xs text-gray-450 font-bold">
+              + {order.items.length - 1} more items
+            </p>
+          )}
+          <div className="flex items-center gap-3 mt-2 flex-wrap">
+            <span className="text-sm font-semibold text-gray-500">Qty: {firstItem?.quantity || 1}</span>
+            <span className="text-base font-black text-[#0F7A6B]">₹{(order.pricing?.finalTotal || order.amount).toLocaleString('en-IN')}</span>
+            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${
+              order.paymentMethod === 'cod' ? 'bg-amber-50 text-amber-600 border border-amber-250' : 'bg-emerald-50 text-emerald-600 border border-emerald-250'
             }`}>
-              {order.paymentStatus === 'paid' ? 'Paid' : 'Pending'}
+              {order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Prepaid'}
             </span>
-          </span>
-        </div>
-        <div className="flex justify-between border-b border-gray-100 pb-2.5">
-          <span className="font-bold text-charcoal uppercase">Order Status</span>
-          <span className="font-black text-charcoal"><span className="bg-emerald-50 text-emerald-600 px-2 py-0.5 rounded">{order.status || 'Confirmed'}</span></span>
-        </div>
-        <div className="flex justify-between border-b border-gray-100 pb-2.5">
-          <span className="font-bold text-charcoal uppercase">Estimated Delivery</span>
-          <span className="font-black text-emerald-600">
-            {new Date(order.estimatedDelivery).toLocaleDateString('en-IN', {
-              weekday: 'long',
-              month: 'long',
-              day: 'numeric'
-            })}
-          </span>
-        </div>
-        <div className="flex justify-between">
-          <span className="font-bold text-charcoal uppercase">Shipment Address</span>
-          <span className="font-semibold text-charcoal max-w-[60%] text-right truncate">
-            {order.address?.fullName}, {order.address?.city}
-          </span>
+          </div>
         </div>
       </div>
 
-      {/* TRACKING TIMELINE SIMULATION */}
-      <div className="mt-8 rounded-premium border border-gray-100 bg-white p-6 shadow-premium text-left">
-        <h3 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-5 flex items-center gap-1.5">
-          <Truck className="h-4.5 w-4.5 text-[#F7941D]" /> Realtime Shipment Tracking
-        </h3>
-        
-        <div className="relative flex flex-col md:flex-row justify-between gap-6 md:gap-2">
-          {/* Tracking Step 1 */}
-          <div className="flex md:flex-col items-center gap-3 md:gap-2 text-center md:flex-1">
-            <div className={`rounded-full p-1.5 z-10 shrink-0 ${order.status ? 'bg-emerald-500 text-white' : 'bg-gray-200 text-gray-500'}`}>
-              <Check className="h-4.5 w-4.5" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-charcoal">Confirmed</p>
-              <p className="text-[9px] text-gray-400 font-semibold mt-0.5">{order.status ? 'Order Received' : 'Pending'}</p>
-            </div>
-          </div>
-
-          <div className="hidden md:block flex-1 border-t-2 border-dashed border-gray-200 mt-3"></div>
-
-          {/* Tracking Step 2 */}
-          <div className="flex md:flex-col items-center gap-3 md:gap-2 text-center md:flex-1">
-            <div className="rounded-full bg-orange-50 border border-orange-200 p-1.5 text-[#F7941D] z-10 shrink-0 animate-pulse">
-              <Truck className="h-4.5 w-4.5" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-[#F7941D]">In Transit</p>
-              <p className="text-[9px] text-gray-400 font-semibold mt-0.5">Departed Hub Jaipur</p>
-            </div>
-          </div>
-
-          <div className="hidden md:block flex-1 border-t-2 border-dashed border-gray-100 mt-3"></div>
-
-          {/* Tracking Step 3 */}
-          <div className="flex md:flex-col items-center gap-3 md:gap-2 text-center md:flex-1">
-            <div className="rounded-full bg-gray-50 border border-gray-200 p-1.5 text-gray-300 z-10 shrink-0">
-              <MapPin className="h-4.5 w-4.5" />
-            </div>
-            <div>
-              <p className="text-xs font-bold text-gray-400">Out for Delivery</p>
-              <p className="text-[9px] text-gray-400 font-semibold mt-0.5">Pending courier dispatch</p>
-            </div>
-          </div>
+      {/* Simple Details box */}
+      <div className="mt-6 rounded-2xl bg-gray-50 border border-gray-100 p-5 text-left text-sm text-gray-500 space-y-3">
+        <div className="flex justify-between border-b border-gray-200/60 pb-2.5">
+          <span className="font-bold text-gray-400 uppercase tracking-wider text-[10px]">Order ID</span>
+          <span className="font-black text-charcoal">#{order.orderId}</span>
+        </div>
+        <div className="flex justify-between border-b border-gray-200/60 pb-2.5">
+          <span className="font-bold text-gray-400 uppercase tracking-wider text-[10px]">Estimated Delivery</span>
+          <span className="font-bold text-emerald-600">
+            {order.estimatedDelivery ? new Date(order.estimatedDelivery).toLocaleDateString('en-IN', {
+              weekday: 'long',
+              month: 'long',
+              day: 'numeric'
+            }) : '3-4 Business Days'}
+          </span>
+        </div>
+        <div className="flex justify-between">
+          <span className="font-bold text-gray-400 uppercase tracking-wider text-[10px]">Delivery to</span>
+          <span className="font-semibold text-charcoal max-w-[70%] text-right truncate">
+            {order.address?.fullName || order.shippingName}, {order.address?.city}
+          </span>
         </div>
       </div>
 
@@ -263,35 +197,29 @@ export default function SuccessPage() {
       <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center">
         <button 
           onClick={handlePrintInvoice}
-          className="rounded-premium border border-gray-200 px-6 py-3.5 text-xs font-bold text-charcoal hover:border-[#F7941D] hover:bg-orange-50/50 flex items-center justify-center gap-2 transition-premium"
+          className="rounded-xl border border-gray-200 px-6 py-4 text-base font-bold text-charcoal hover:border-[#0F7A6B] hover:bg-teal-50/50 flex items-center justify-center gap-2 transition-all"
+          style={{ minHeight: 48 }}
         >
-          <FileText className="h-4.5 w-4.5 text-[#F7941D]" /> Print GST Invoice
+          <FileText className="h-5 w-5 text-[#0F7A6B]" /> Print Invoice
         </button>
 
         <button 
           onClick={() => { setTrackingOrderId(order.orderId); setCurrentView('order-tracking'); }}
-          className="rounded-premium border border-gray-200 px-6 py-3.5 text-xs font-bold text-charcoal hover:border-[#F7941D] hover:bg-orange-50/50 flex items-center justify-center gap-2 transition-premium"
+          className="rounded-xl border border-gray-200 px-6 py-4 text-base font-bold text-charcoal hover:border-[#0F7A6B] hover:bg-teal-50/50 flex items-center justify-center gap-2 transition-all"
+          style={{ minHeight: 48 }}
         >
-          <Truck className="h-4.5 w-4.5 text-[#F7941D]" /> Track Order
+          <Truck className="h-5 w-5 text-[#0F7A6B]" /> Track Order
         </button>
 
         <button 
           onClick={() => setCurrentView('home')}
-          className="rounded-premium bg-[#F7941D] px-8 py-3.5 text-xs font-black text-white hover:bg-[#E07D10] flex items-center justify-center gap-2 transition-premium shadow-md shadow-orange-500/10"
+          className="rounded-xl bg-[#0F7A6B] px-8 py-4 text-base font-black text-white hover:bg-[#0A5A4F] flex items-center justify-center gap-2 transition-all shadow-md shadow-teal-500/10"
+          style={{ minHeight: 48 }}
         >
-          Continue Shopping <ArrowRight className="h-4 w-4" />
+          Continue Shopping <ArrowRight className="h-5 w-5" />
         </button>
       </div>
 
     </div>
-  );
-}
-
-// Small helper Check icon to avoid import errors
-function Check({ className }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"></path>
-    </svg>
   );
 }

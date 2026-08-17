@@ -3,6 +3,7 @@ import { DEFAULT_PRODUCTS } from '../constants/products';
 import { DEFAULT_ADDRESSES } from '../constants/addresses';
 import { PINCODE_DATABASE } from '../constants/pincodes';
 import apiClient from '../api/client';
+import getImageUrl from '../utils/imageUrl';
 
 // Safe JSON parse that never throws
 const safeJsonParse = (value, fallback) => {
@@ -54,6 +55,8 @@ export const AppProvider = ({ children }) => {
     whatsappNumber: "+91 9188072646",
     announcementBar: "✨ Special Savings on Online Payments",
     onlineDiscount: 12,
+    returnWindow: 3,
+    returnPolicy: "Return or exchange requests must be submitted within 3 days of delivery. Products must be unused and in original condition. Image upload is mandatory. Only exchanges are available.",
     footerContent: "Your trusted Indian marketplace for everyday essentials, kitchen products, cleaning supplies, and more. Quality products delivered to your door."
   });
 
@@ -132,7 +135,7 @@ export const AppProvider = ({ children }) => {
           price: item.product.price,
           originalPrice: item.product.originalPrice,
           discount: item.product.discount,
-          image: safeJsonParse(item.product.images, [])[0] || null,
+          image: getImageUrl(safeJsonParse(item.product.images, [])[0]) || null,
           seller: item.product.seller,
           size: item.size,
           color: item.color,
@@ -140,7 +143,9 @@ export const AppProvider = ({ children }) => {
           codPrice: item.product.codPrice,
           onlinePrice: item.product.onlinePrice,
           enableOnlineDiscount: item.product.enableOnlineDiscount,
-          onlineDiscount: item.product.onlineDiscount
+          onlineDiscount: item.product.onlineDiscount,
+          codAvailable: item.product.codAvailable,
+          prepaidAvailable: item.product.prepaidAvailable
         }));
         setCart(formattedCart);
       }
@@ -652,7 +657,7 @@ export const AppProvider = ({ children }) => {
           price: product.price,
           originalPrice: product.originalPrice,
           discount: product.discount,
-          image: product.images[0] || (Array.isArray(product.images) ? product.images[0] : JSON.parse(product.images || '[]')[0]),
+          image: getImageUrl(product.images[0] || (Array.isArray(product.images) ? product.images[0] : JSON.parse(product.images || '[]')[0])),
           seller: product.seller,
           size: selectedSize,
           color: selectedColor,
@@ -660,7 +665,9 @@ export const AppProvider = ({ children }) => {
           codPrice: product.codPrice,
           onlinePrice: product.onlinePrice,
           enableOnlineDiscount: product.enableOnlineDiscount,
-          onlineDiscount: product.onlineDiscount
+          onlineDiscount: product.onlineDiscount,
+          codAvailable: product.codAvailable,
+          prepaidAvailable: product.prepaidAvailable
         }];
       }
     });
@@ -825,7 +832,7 @@ export const AppProvider = ({ children }) => {
       price: product.price,
       originalPrice: product.originalPrice,
       discount: product.discount,
-      image: product.images && (product.images[0] || (Array.isArray(product.images) ? product.images[0] : JSON.parse(product.images || '[]')[0])),
+      image: getImageUrl(product.images && (product.images[0] || (Array.isArray(product.images) ? product.images[0] : JSON.parse(product.images || '[]')[0]))),
       seller: product.seller,
       size: selectedSize,
       color: selectedColor,
@@ -833,7 +840,9 @@ export const AppProvider = ({ children }) => {
       codPrice: product.codPrice,
       onlinePrice: product.onlinePrice,
       enableOnlineDiscount: product.enableOnlineDiscount,
-      onlineDiscount: product.onlineDiscount
+      onlineDiscount: product.onlineDiscount,
+      codAvailable: product.codAvailable,
+      prepaidAvailable: product.prepaidAvailable
     };
     
     setSelectedPaymentMethod(paymentOption === 'cod' ? 'cod' : 'upi');
@@ -968,7 +977,7 @@ export const AppProvider = ({ children }) => {
             contact: userProfile?.phone ? (userProfile.phone.startsWith('+91') ? userProfile.phone : '+91' + userProfile.phone) : ""
           },
           theme: {
-            color: "#F7941D"
+            color: "#0F7A6B"
           },
           modal: {
             ondismiss: function () {

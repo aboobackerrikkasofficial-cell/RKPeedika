@@ -206,7 +206,7 @@ export default function OrderTrackingPage() {
       {!order ? (
         <div className="mx-auto max-w-md bg-white rounded-premium border border-gray-100 p-6 shadow-premium">
           <h2 className="text-lg font-black text-charcoal mb-2 flex items-center gap-2">
-            <Search className="h-5 w-5 text-[#F7941D]" /> Track Your Order
+            <Search className="h-5 w-5 text-[#0F7A6B]" /> Track Your Order
           </h2>
           <p className="text-xs text-gray-400 font-semibold mb-6">
             Enter your Order ID and mobile number to see real-time shipment updates.
@@ -228,7 +228,7 @@ export default function OrderTrackingPage() {
                 value={searchOrderId}
                 onChange={e => setSearchOrderId(e.target.value)}
                 placeholder="e.g. 10001 or ID"
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-xs text-charcoal outline-none focus:border-[#F7941D]"
+                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-xs text-charcoal outline-none focus:border-[#0F7A6B]"
               />
             </div>
 
@@ -240,14 +240,14 @@ export default function OrderTrackingPage() {
                 value={searchPhone}
                 onChange={e => setSearchPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
                 placeholder="10-digit mobile number"
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-xs text-charcoal outline-none focus:border-[#F7941D]"
+                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-xs text-charcoal outline-none focus:border-[#0F7A6B]"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-xl bg-[#F7941D] py-3 text-xs font-bold text-white shadow hover:bg-[#E07D10] disabled:opacity-50 min-h-[44px]"
+              className="w-full rounded-xl bg-[#0F7A6B] py-3 text-xs font-bold text-white shadow hover:bg-[#0A5A4F] disabled:opacity-50 min-h-[44px]"
             >
               {loading ? 'Searching...' : 'Track Shipment'}
             </button>
@@ -265,7 +265,7 @@ export default function OrderTrackingPage() {
             </button>
             <button 
               onClick={handlePrintInvoice}
-              className="flex items-center gap-1.5 text-xs font-bold text-[#F7941D] hover:underline"
+              className="flex items-center gap-1.5 text-xs font-bold text-[#0F7A6B] hover:underline"
             >
               <FileText className="h-4 w-4" /> Print Receipt
             </button>
@@ -294,7 +294,7 @@ export default function OrderTrackingPage() {
                         <div className="flex md:flex-col items-center gap-3 md:gap-2 text-center md:flex-1 relative z-10">
                           <div className={`rounded-full p-1.5 shrink-0 transition-all ${
                             isCompleted ? 'bg-emerald-500 text-white' : 
-                            isCurrent ? 'bg-orange-50 border border-orange-200 text-[#F7941D] animate-pulse' : 
+                            isCurrent ? 'bg-teal-50 border border-teal-200 text-[#0F7A6B] animate-pulse' : 
                             'bg-gray-50 border border-gray-200 text-gray-300'
                           }`}>
                             <Icon className="h-4.5 w-4.5" />
@@ -302,7 +302,7 @@ export default function OrderTrackingPage() {
                           <div>
                             <p className={`text-xs font-bold ${
                               isCompleted ? 'text-charcoal' : 
-                              isCurrent ? 'text-[#F7941D]' : 
+                              isCurrent ? 'text-[#0F7A6B]' : 
                               'text-gray-400'
                             }`}>
                               {step.label}
@@ -324,13 +324,13 @@ export default function OrderTrackingPage() {
                   <h4 className="text-xs font-extrabold text-charcoal uppercase tracking-wider mb-5 flex items-center gap-1.5">
                     📦 Real-time Shipment Logs ({order.courier || 'RK Delivery'})
                   </h4>
-                  <div className="relative pl-6 border-l-2 border-orange-100/70 ml-2 space-y-6">
+                  <div className="relative pl-6 border-l-2 border-teal-100/70 ml-2 space-y-6">
                     {(order.trackingEvents && order.trackingEvents.length > 0) ? (
                       order.trackingEvents.map((evt, idx) => {
                         return (
                           <div key={evt.id || idx} className="relative">
                             <div className={`absolute -left-[31px] top-0.5 h-3 w-3 rounded-full border-2 bg-white ${
-                              idx === 0 ? 'border-[#F7941D] bg-[#F7941D]/10' : 'border-gray-300'
+                              idx === 0 ? 'border-[#0F7A6B] bg-[#0F7A6B]/10' : 'border-gray-300'
                             }`}></div>
                             <div className="space-y-0.5">
                               <span className="text-[11px] font-black text-charcoal block">

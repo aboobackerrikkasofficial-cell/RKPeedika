@@ -844,14 +844,12 @@ export default function CustomerDashboard() {
               </div>
 
               <div className="space-y-1.5">
-                <h4 className="text-xs font-bold text-charcoal">5. Exchange & Return Policy</h4>
+                <h4 className="text-xs font-bold text-charcoal">5. Exchange Policy</h4>
                 <ul className="list-disc pl-5 space-y-1">
-                  <li>Exchange requests must be raised within 3 days of delivery through your account dashboard or WhatsApp support.</li>
-                  <li>Products must be unused, unworn, and in original packaging with all tags intact.</li>
-                  <li>Photo evidence of the product condition is mandatory for all exchange/return requests.</li>
-                  <li><strong>Exchanges only — no refunds</strong>, unless the delivered item is wrong or damaged and a replacement is unavailable.</li>
-                  <li>Hygiene products, custom/personalized orders, and items without original packaging are non-exchangeable.</li>
-                  <li>Damaged or defective products must be reported within 24 hours of delivery with photographic proof.</li>
+                  <li>Exchange is available <strong>only</strong> if the product is damaged, the wrong product is delivered, there is a quantity issue, or the product is defected.</li>
+                  <li>To apply for an exchange, you must share a video of the product showing the damage. The product and the problem must be fully visible in the video.</li>
+                  <li>Please share the video via WhatsApp to our support number: <strong>9188072646</strong>.</li>
+                  <li><strong>Exchanges only — no refunds</strong>. Exchange requests must be raised within 3 days of delivery.</li>
                 </ul>
               </div>
 

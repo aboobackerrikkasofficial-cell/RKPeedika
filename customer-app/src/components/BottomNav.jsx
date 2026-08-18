@@ -68,7 +68,7 @@ export default function BottomNav() {
             key={tab.id}
             id={`bottom-nav-${tab.id}`}
             onClick={tab.action}
-            className={`bottom-nav-item${isActive ? ' active' : ''} ${tab.isCenter ? 'relative' : ''}`}
+            className={`bottom-nav-item${isActive ? ' active' : ''} ${tab.isCenter ? 'relative' : ''} ${tab.id === 'orders' ? 'border border-white rounded-lg p-1 mx-1 bg-white/5' : ''}`}
             aria-label={tab.label}
             aria-current={isActive ? 'page' : undefined}
           >

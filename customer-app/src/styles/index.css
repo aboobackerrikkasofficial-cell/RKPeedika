@@ -208,8 +208,8 @@ img {
 
 .product-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
   width: 100%;
 }
 
@@ -489,7 +489,7 @@ img {
 
 .product-card {
   background: #ffffff;
-  border-radius: var(--radius-card);
+  border-radius: 0;
   overflow: hidden;
   border: 1px solid #f3f4f6;
   box-shadow: var(--shadow-card);

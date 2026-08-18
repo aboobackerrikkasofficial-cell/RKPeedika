@@ -178,7 +178,7 @@ export default function HomePage() {
   }, [products, searchQuery, selectedCategory]);
 
   return (
-    <div className="w-full min-w-0 overflow-x-hidden bg-[#FAFAFA] page-content-mobile pb-6 pt-1 px-2">
+    <div className="w-full min-w-0 overflow-x-hidden bg-[#FAFAFA] page-content-mobile pb-6 pt-1">
 
       {/* Category Scroller Chips */}
       <CategoryList />

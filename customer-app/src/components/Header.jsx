@@ -90,12 +90,12 @@ export default function Header() {
 
   return (
     <>
-      {/* Announcement Bar */}
-      {storeSettings?.announcementBar && (
-        <div className="w-full bg-[#071320] px-4 py-1.5 text-center text-[10px] font-extrabold text-white tracking-wide uppercase">
-          {storeSettings.announcementBar}
+      {/* Announcement Bar (Marquee) */}
+      <div className="w-full bg-[#071320] py-1.5 text-[10px] font-extrabold text-white tracking-wide uppercase overflow-hidden whitespace-nowrap">
+        <div className="inline-block animate-[marquee_10s_linear_infinite]">
+          EASY EXCHANGE WITHIN 5 DAYS &nbsp; • &nbsp; COD AVAILABLE ALL OVER INDIA &nbsp; • &nbsp; EASY EXCHANGE WITHIN 5 DAYS &nbsp; • &nbsp; COD AVAILABLE ALL OVER INDIA &nbsp; • &nbsp; EASY EXCHANGE WITHIN 5 DAYS &nbsp; • &nbsp; COD AVAILABLE ALL OVER INDIA
         </div>
-      )}
+      </div>
 
       {/* Header */}
       <header className="sticky top-0 z-40 w-full bg-[#0B1B2B] border-b border-[#071320] shadow-sm font-sans">
@@ -143,7 +143,6 @@ export default function Header() {
             />
             <div className="flex items-center gap-2 text-gray-400">
               <Mic size={16} className="cursor-pointer hover:text-[#0B1B2B] transition-colors" />
-              <Camera size={16} className="cursor-pointer hover:text-[#0B1B2B] transition-colors" />
             </div>
             {searchQuery && (
               <button
@@ -231,7 +230,6 @@ export default function Header() {
             </span>
             <div className="flex items-center gap-2 text-gray-400">
               <Mic size={18} />
-              <Camera size={18} />
             </div>
             {searchQuery && (
               <X

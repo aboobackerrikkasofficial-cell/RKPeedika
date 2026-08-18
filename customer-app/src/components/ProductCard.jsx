@@ -50,6 +50,8 @@ export default function ProductCard({ product }) {
     : 0;
     
   const displayDiscount = calculatedDiscount > 0 ? calculatedDiscount : stableRandom;
+  
+  const displayOriginal = rawOriginal > onlinePrice ? rawOriginal : Math.round(onlinePrice / (1 - (displayDiscount / 100)));
 
   /* ------------------------------------------------------------------
      DELIVERY DATE

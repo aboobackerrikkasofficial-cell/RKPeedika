@@ -40,9 +40,17 @@ export default function ProductCard({ product }) {
   const onlinePrice = Number(product?.onlinePrice || basePrice);
   const rawOriginal = Number(product?.originalPrice || 0);
   
-  const displayDiscount = rawOriginal > onlinePrice 
+  // Stable random discount if none exists
+  const stableRandom = product?.id 
+    ? (String(product.id).split('').reduce((a, b) => a + b.charCodeAt(0), 0) % 25) + 6 
+    : 10;
+    
+  const calculatedDiscount = rawOriginal > onlinePrice 
     ? Math.round(((rawOriginal - onlinePrice) / rawOriginal) * 100)
     : 0;
+    
+  const displayDiscount = calculatedDiscount > 0 ? calculatedDiscount : stableRandom;
+  const displayOriginal = rawOriginal > onlinePrice ? rawOriginal : Math.round(onlinePrice / (1 - (displayDiscount / 100)));
 
   /* ------------------------------------------------------------------
      DELIVERY DATE
@@ -174,17 +182,14 @@ export default function ProductCard({ product }) {
                 <span className="text-lg md:text-xl font-black text-[#1A1A1A]">
                   ₹{onlinePrice.toLocaleString('en-IN')}
                 </span>
-                {rawOriginal > onlinePrice && (
-                  <>
-                    <span className="text-xs text-gray-400 line-through font-bold">
-                      ₹{rawOriginal.toLocaleString('en-IN')}
-                    </span>
-                    <span className="text-xs text-[#1F9D55] font-extrabold bg-[#1F9D55]/10 px-1.5 py-0.5 rounded">
-                      {displayDiscount}% OFF
-                    </span>
-                  </>
-                )}
+                <span className="text-xs text-gray-400 line-through font-bold">
+                  ₹{displayOriginal.toLocaleString('en-IN')}
+                </span>
+                <span className="text-xs text-[#1F9D55] font-extrabold bg-[#1F9D55]/10 px-1.5 py-0.5 rounded">
+                  {displayDiscount}% OFF
+                </span>
               </div>
+              <span className="text-[10px] text-gray-500 font-bold tracking-wide uppercase">UPI / Online Price</span>
             </div>
             {/* Wishlist button moved here */}
             <button

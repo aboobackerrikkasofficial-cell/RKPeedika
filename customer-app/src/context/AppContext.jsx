@@ -932,7 +932,7 @@ export const AppProvider = ({ children }) => {
                 } catch (e) {}
 
                 const newOrder = {
-                  orderId: dbOrder.id,
+                  orderId: dbOrder.orderId || dbOrder.id,
                   date: new Date(dbOrder.createdAt).toISOString().split('T')[0],
                   items: fetchedItems,
                   address,
@@ -1027,7 +1027,7 @@ export const AppProvider = ({ children }) => {
         }
 
         const newOrder = {
-          orderId: dbOrder.id,
+          orderId: dbOrder.orderId || dbOrder.id,
           date: new Date(dbOrder.createdAt).toISOString().split('T')[0],
           items: fetchedItems,
           address,

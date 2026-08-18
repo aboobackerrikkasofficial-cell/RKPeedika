@@ -88,12 +88,17 @@ export default function CheckoutPage() {
   };
 
   // Calculate pricing breakdown
-  const subtotal = checkoutItems.reduce((acc, item) => {
-    const itemPrice = selectedPaymentMethod === 'cod'
-      ? (item.codPrice !== null && item.codPrice !== undefined ? item.codPrice : item.price)
-      : (item.onlinePrice !== null && item.onlinePrice !== undefined ? item.onlinePrice : item.price);
-    return acc + (itemPrice * item.quantity);
+  const onlineSubtotal = checkoutItems.reduce((acc, item) => {
+    const p = item.onlinePrice !== null && item.onlinePrice !== undefined ? item.onlinePrice : item.price;
+    return acc + (p * item.quantity);
   }, 0);
+
+  const codSubtotal = checkoutItems.reduce((acc, item) => {
+    const p = item.codPrice !== null && item.codPrice !== undefined ? item.codPrice : item.price;
+    return acc + (p * item.quantity);
+  }, 0);
+
+  const subtotal = selectedPaymentMethod === 'cod' ? codSubtotal : onlineSubtotal;
 
   const originalSubtotal = checkoutItems.reduce((acc, item) => {
     const origPrice = item.originalPrice !== null && item.originalPrice !== undefined ? item.originalPrice : item.price;
@@ -102,11 +107,17 @@ export default function CheckoutPage() {
   
   const shippingCharge = selectedShippingMethod === "express" ? 150 : 0;
   const isOnline = selectedPaymentMethod !== "cod";
-  const isCouponValid = couponConfig.enabled && new Date(couponConfig.expiry) > new Date() && subtotal >= couponConfig.minPurchase;
+  const isCouponValid = couponConfig.enabled && new Date(couponConfig.expiry) > new Date() && onlineSubtotal >= couponConfig.minPurchase;
   const activeDiscountPct = (isOnline && isCouponValid) ? couponConfig.discountPct : 0;
-  const onlineDiscount = Math.round(subtotal * (activeDiscountPct / 100));
-  const totalSavings = (originalSubtotal - subtotal) + onlineDiscount;
-  const finalPrice = subtotal + shippingCharge - onlineDiscount;
+  const onlineDiscount = isOnline ? Math.round(onlineSubtotal * (activeDiscountPct / 100)) : 0;
+  
+  const onlineFinalPrice = onlineSubtotal + shippingCharge - (isCouponValid ? Math.round(onlineSubtotal * (couponConfig.discountPct / 100)) : 0);
+  const codFinalPrice = codSubtotal + shippingCharge;
+  const finalPrice = selectedPaymentMethod === 'cod' ? codFinalPrice : onlineFinalPrice;
+  
+  // Total Savings should only calculate if there's actual savings. 
+  const baseSavings = Math.max(0, originalSubtotal - subtotal);
+  const totalSavings = baseSavings + onlineDiscount;
 
   const handleCompletePayment = async () => {
     if (orderProcessing) return;
@@ -338,7 +349,7 @@ export default function CheckoutPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className="text-lg font-black text-[#0B1B2B]">₹{finalPrice.toLocaleString('en-IN')}</span>
+                    <span className="text-lg font-black text-[#0B1B2B]">₹{onlineFinalPrice.toLocaleString('en-IN')}</span>
                   </div>
                 </div>
               )}
@@ -362,13 +373,7 @@ export default function CheckoutPage() {
                   </div>
                   <div className="text-right">
                     <span className="text-base font-black text-charcoal">
-                      ₹{(() => {
-                        const codSubtotal = checkoutItems.reduce((acc, item) => {
-                          const itemPrice = item.codPrice !== null && item.codPrice !== undefined ? item.codPrice : item.price;
-                          return acc + (itemPrice * item.quantity);
-                        }, 0);
-                        return (codSubtotal + shippingCharge).toLocaleString('en-IN');
-                      })()}
+                      ₹{codFinalPrice.toLocaleString('en-IN')}
                     </span>
                   </div>
                 </div>

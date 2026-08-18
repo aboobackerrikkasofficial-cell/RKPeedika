@@ -215,7 +215,16 @@ export const createOrder = async (req, res, next) => {
     const totalDiscount = discount + paymentDiscount;
     const finalAmount = Math.max(0, subtotal - totalDiscount);
 
-    const userFacingOrderId = `ODR-${Math.floor(100000 + Math.random() * 900000)}`;
+    let orderPrefix = "ODR";
+    if (orderItemsData.length > 0 && orderItemsData[0].productName) {
+      orderPrefix = orderItemsData[0].productName
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase())
+        .join('')
+        .replace(/[^A-Z]/g, '');
+      if (orderPrefix.length === 0) orderPrefix = "ODR";
+    }
+    const userFacingOrderId = `${orderPrefix}${Math.floor(1000 + Math.random() * 9000)}`;
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const invoiceNumber = `INV-${dateStr}-${Math.floor(100000 + Math.random() * 900000)}`;
 

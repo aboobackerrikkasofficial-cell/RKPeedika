@@ -1,10 +1,24 @@
-import React, { useContext } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../context/AppContext';
 import { CheckCircle, ArrowRight, Truck, FileText } from 'lucide-react';
 import getImageUrl from '../utils/imageUrl';
 
 export default function SuccessPage() {
   const { activeOrder, setCurrentView, setTrackingOrderId } = useContext(AppContext);
+  const [showConfetti, setShowConfetti] = useState(false);
+
+  useEffect(() => {
+    // Play success sound
+    try {
+      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3'); // A nice success chime
+      audio.volume = 0.5;
+      audio.play().catch(e => console.log('Audio play blocked by browser', e));
+    } catch (e) {}
+
+    setShowConfetti(true);
+    const timer = setTimeout(() => setShowConfetti(false), 3000);
+    return () => clearTimeout(timer);
+  }, []);
 
   const order = activeOrder;
   
@@ -125,10 +139,20 @@ export default function SuccessPage() {
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-12 md:py-20 text-center font-sans">
+      <style>{`
+        @keyframes popIn {
+          0% { transform: scale(0.3); opacity: 0; }
+          50% { transform: scale(1.2); opacity: 1; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop-in {
+          animation: popIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+      `}</style>
       
       {/* Animated Success Check */}
-      <div className="relative mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-[#1F9D55]/10 text-[#1F9D55] mb-6">
-        <CheckCircle className="h-12 w-12" />
+      <div className={`relative mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-[#1F9D55]/10 text-[#1F9D55] mb-6 ${showConfetti ? 'animate-pop-in' : ''}`}>
+        <CheckCircle className="h-14 w-14" />
         <div className="absolute inset-0 rounded-full border-2 border-emerald-500/20 animate-ping"></div>
       </div>
 

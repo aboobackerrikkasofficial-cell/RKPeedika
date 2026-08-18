@@ -36,12 +36,21 @@ export default function ProductCard({ product }) {
   /* ------------------------------------------------------------------
      PRICE CALCULATIONS
   ------------------------------------------------------------------ */
-  const price = Number(product?.price || 0);
-  const originalPrice = Number(product?.originalPrice || 0);
-  const discount =
-    originalPrice > price && price > 0
-      ? Math.round(((originalPrice - price) / originalPrice) * 100)
-      : 0;
+  const basePrice = Number(product?.price || 0);
+  const onlinePrice = Number(product?.onlinePrice || basePrice);
+  const rawOriginal = Number(product?.originalPrice || 0);
+  
+  // Stable random discount if none exists
+  const stableRandom = product?.id 
+    ? (String(product.id).split('').reduce((a, b) => a + b.charCodeAt(0), 0) % 25) + 6 
+    : 10;
+    
+  const calculatedDiscount = rawOriginal > onlinePrice 
+    ? Math.round(((rawOriginal - onlinePrice) / rawOriginal) * 100)
+    : 0;
+    
+  const displayDiscount = calculatedDiscount > 0 ? calculatedDiscount : stableRandom;
+  const displayOriginal = rawOriginal > onlinePrice ? rawOriginal : Math.round(onlinePrice / (1 - (displayDiscount / 100)));
 
   /* ------------------------------------------------------------------
      DELIVERY DATE
@@ -103,7 +112,7 @@ export default function ProductCard({ product }) {
     setImageFailed(false);
   };
 
-  const hasOffer = (product?.enableOnlineDiscount && product?.onlinePrice) || discount > 0;
+  const hasOffer = (product?.enableOnlineDiscount && product?.onlinePrice) || displayDiscount > 0;
 
   /* ------------------------------------------------------------------
      RENDER
@@ -118,7 +127,7 @@ export default function ProductCard({ product }) {
           IMAGE AREA (Full-bleed, rounded top corners only)
       ============================================================ */}
       <div
-        className="w-full h-[180px] sm:h-[200px] md:h-[220px] overflow-hidden bg-gray-50 relative rounded-t-xl cursor-pointer shrink-0"
+        className="w-full h-[260px] sm:h-[280px] md:h-[300px] overflow-hidden bg-gray-50 relative rounded-t-xl cursor-pointer shrink-0"
         onClick={handleCardClick}
         role="button"
         tabIndex={0}
@@ -161,27 +170,26 @@ export default function ProductCard({ product }) {
         </div>
 
         {/* Product name */}
-        <h3 className="text-xs font-semibold text-[#1A1A1A] leading-snug line-clamp-2 mt-1 min-h-[32px]">
+        <h3 className="text-sm font-bold text-[#1A1A1A] leading-snug line-clamp-2 mt-1 min-h-[32px]">
           {product?.name || 'Unnamed Product'}
         </h3>
 
         {/* Price Block & Wishlist */}
-        <div className="flex flex-col gap-0.5 mt-0.5">
-          <div className="flex justify-between items-center w-full">
-            <div className="flex flex-wrap items-baseline gap-1.5">
-              <span className="text-sm md:text-base font-black text-[#1A1A1A]">
-                ₹{price.toLocaleString('en-IN')}
-              </span>
-              {originalPrice > price && (
-                <>
-                  <span className="text-[10px] text-gray-400 line-through font-semibold">
-                    ₹{originalPrice.toLocaleString('en-IN')}
-                  </span>
-                  <span className="text-[11px] text-[#1F9D55] font-extrabold">
-                    {discount}% off
-                  </span>
-                </>
-              )}
+        <div className="flex flex-col gap-1 mt-1 w-full">
+          <div className="flex justify-between items-start w-full">
+            <div className="flex flex-col gap-0.5">
+              <div className="flex flex-wrap items-baseline gap-2">
+                <span className="text-lg md:text-xl font-black text-[#1A1A1A]">
+                  ₹{onlinePrice.toLocaleString('en-IN')}
+                </span>
+                <span className="text-xs text-gray-400 line-through font-bold">
+                  ₹{displayOriginal.toLocaleString('en-IN')}
+                </span>
+                <span className="text-xs text-[#1F9D55] font-extrabold bg-[#1F9D55]/10 px-1.5 py-0.5 rounded">
+                  {displayDiscount}% OFF
+                </span>
+              </div>
+              <span className="text-[10px] text-gray-500 font-bold tracking-wide uppercase">UPI / Online Price</span>
             </div>
             {/* Wishlist button moved here */}
             <button
@@ -227,25 +235,16 @@ export default function ProductCard({ product }) {
         )}
 
         {/* Trust Badges - Crucial for Indian shoppers */}
-        <div className="flex flex-wrap gap-1 mt-1">
-          <span className="bg-[#3E7BFA]/10 text-[#3E7BFA] text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+        <div className="flex flex-wrap gap-1 mt-2">
+          <span className="bg-[#3E7BFA]/10 text-[#3E7BFA] text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
             Free Delivery
           </span>
           {product?.codAvailable !== false && (
-            <span className="bg-[#1F9D55]/10 text-[#1F9D55] text-[9px] font-black px-1.5 py-0.5 rounded-full uppercase tracking-wider">
+            <span className="bg-[#1F9D55]/10 text-[#1F9D55] text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider">
               COD
             </span>
           )}
         </div>
-
-        {/* Prepaid Offer label if available */}
-        {product?.enableOnlineDiscount && product?.onlinePrice && (
-          <div className="mt-1.5 flex">
-            <span className="bg-[#0B1B2B]/10 text-[#0B1B2B] text-[9px] font-extrabold px-1.5 py-0.5 rounded border border-[#0B1B2B]/15 uppercase tracking-wide">
-              ₹{product.onlinePrice} with Online Payment
-            </span>
-          </div>
-        )}
       </div>
     </article>
   );

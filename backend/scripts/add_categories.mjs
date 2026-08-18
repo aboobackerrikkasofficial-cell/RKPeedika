@@ -16,6 +16,15 @@ async function main() {
     });
     console.log('Added/Updated category:', cat.name);
   }
+
+  // Update all products in the database to ensure COD and prepaid are available
+  const updateResult = await prisma.product.updateMany({
+    data: {
+      codAvailable: true,
+      prepaidAvailable: true
+    }
+  });
+  console.log(`Updated ${updateResult.count} products to enable COD and Prepaid.`);
 }
 
 main().catch(e => { console.error(e); process.exit(1); }).finally(async () => { await prisma.$disconnect(); });

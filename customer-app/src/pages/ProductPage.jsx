@@ -424,7 +424,7 @@ export default function ProductPage() {
     );
   }
 
-  // Parse specifications and highlights
+  // Parse specifications and highlights safely
   let specifications = {};
   let highlights = [];
   let variants = {};
@@ -433,24 +433,33 @@ export default function ProductPage() {
     specifications = typeof product.specifications === 'string'
       ? JSON.parse(product.specifications || '{}')
       : product.specifications || {};
+    if (typeof specifications !== 'object' || specifications === null || Array.isArray(specifications)) {
+      specifications = {};
+    }
   } catch (e) {
-    specifications = product.specifications || {};
+    specifications = {};
   }
 
   try {
     highlights = typeof product.highlights === 'string'
       ? JSON.parse(product.highlights || '[]')
       : product.highlights || [];
+    if (!Array.isArray(highlights)) {
+      highlights = typeof product.highlights === 'string' && product.highlights.trim() ? [product.highlights] : [];
+    }
   } catch (e) {
-    highlights = product.highlights || [];
+    highlights = typeof product.highlights === 'string' && product.highlights.trim() ? [product.highlights] : [];
   }
 
   try {
     variants = typeof product.variants === 'string'
       ? JSON.parse(product.variants || '{}')
       : product.variants || {};
+    if (typeof variants !== 'object' || variants === null || Array.isArray(variants)) {
+      variants = {};
+    }
   } catch (e) {
-    variants = product.variants || {};
+    variants = {};
   }
 
   const hasVariants = variants && Object.keys(variants).length > 0 && Object.values(variants).some(arr => Array.isArray(arr) && arr.length > 0);

@@ -181,16 +181,12 @@ export default function ProductCard({ product }) {
                 <span className="text-lg md:text-xl font-black text-[#1A1A1A]">
                   ₹{onlinePrice.toLocaleString('en-IN')}
                 </span>
-                {rawOriginal > onlinePrice && (
-                  <>
-                    <span className="text-xs text-gray-400 line-through font-bold">
-                      ₹{rawOriginal.toLocaleString('en-IN')}
-                    </span>
-                    <span className="text-xs text-[#1F9D55] font-extrabold bg-[#1F9D55]/10 px-1.5 py-0.5 rounded">
-                      {calculatedDiscount}% OFF
-                    </span>
-                  </>
-                )}
+                <span className="text-xs text-gray-400 line-through font-bold">
+                  ₹{displayOriginal.toLocaleString('en-IN')}
+                </span>
+                <span className="text-xs text-[#1F9D55] font-extrabold bg-[#1F9D55]/10 px-1.5 py-0.5 rounded">
+                  {displayDiscount}% OFF
+                </span>
               </div>
             </div>
             {/* Wishlist button moved here */}

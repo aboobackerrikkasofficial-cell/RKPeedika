@@ -30,6 +30,7 @@ export default function CheckoutPage() {
 
   const [isAddingAddress, setIsAddingAddress] = useState(addresses.length === 0);
   const [toast, setToast] = useState(null);
+  const [checkoutStep, setCheckoutStep] = useState(1);
 
   useEffect(() => {
     // If user address book gets updated and has items, disable add-address inline screen

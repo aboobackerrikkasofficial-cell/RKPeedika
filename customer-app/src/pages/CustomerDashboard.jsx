@@ -654,7 +654,7 @@ export default function CustomerDashboard() {
                 <p className="whitespace-pre-line text-xs">{storeSettings.returnPolicy}</p>
               ) : (
                 <>
-                  <p>At RK Peedika, we strive to ensure a smooth and satisfying shopping experience. Since we focus on quality products at affordable prices, our return and exchange policy is designed to be fair and transparent.</p>
+                  <p>At RK Peedika, we strive to ensure a smooth and satisfying shopping experience. Since we focus on quality products at affordable prices, our exchange policy is designed to be fair and transparent.</p>
 
                   <div className="space-y-1.5">
                     <h4 className="font-bold text-charcoal">1. Exchange Policy (No Refunds)</h4>
@@ -683,7 +683,7 @@ export default function CustomerDashboard() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <h4 className="font-bold text-charcoal">4. Non-Returnable / Non-Exchangeable Items</h4>
+                    <h4 className="font-bold text-charcoal">4. Non-Exchangeable Items</h4>
                     <p>The following categories are strictly non-returnable and non-exchangeable due to hygiene and customization reasons:</p>
                     <ul className="list-disc pl-5 space-y-1">
                       <li>Personal care, cosmetics, and hygiene products</li>
@@ -941,9 +941,9 @@ export default function CustomerDashboard() {
       </button>
 
       <div className="flex flex-col md:flex-row gap-8">
-        {/* Mobile Navigation Pills */}
-        <div className="md:hidden overflow-x-auto scrollbar-hide -mx-4 px-4 pb-4 mb-2">
-          <div className="flex space-x-2 w-max">
+        {/* Mobile Navigation Grid */}
+        <div className="md:hidden mb-6">
+          <div className="grid grid-cols-2 gap-2">
             {menuItems.map(item => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -955,13 +955,13 @@ export default function CustomerDashboard() {
                     setSuccessMsg("");
                     setErrorMsg("");
                   }}
-                  className={`flex items-center space-x-2 px-4 py-2.5 rounded-full text-xs font-bold transition-all shadow-sm ${
+                  className={`flex flex-col items-center justify-center space-y-1.5 p-3 rounded-xl text-xs font-bold transition-all shadow-sm ${
                     isActive 
                       ? 'bg-[#0B1B2B] text-white border border-[#0B1B2B]' 
                       : 'bg-white border border-gray-200 text-charcoal hover:bg-gray-50'
                   }`}
                 >
-                  <Icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-500'}`} />
+                  <Icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-gray-500'}`} />
                   <span>{item.label}</span>
                 </button>
               );

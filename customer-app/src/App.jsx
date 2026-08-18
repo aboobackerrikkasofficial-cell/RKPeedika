@@ -311,14 +311,14 @@ function AppContent() {
       case 'returns':
         return (
           <div className="space-y-4 text-sm text-gray-600">
-            <h2 className="text-xl font-bold text-charcoal">Returns & Exchange Policy</h2>
+            <h2 className="text-xl font-bold text-charcoal">Exchange Policy (5 Days)</h2>
             <div className="space-y-4 text-xs text-gray-600 leading-relaxed max-h-[40vh] overflow-y-auto pr-2 border-b pb-4">
               <p className="text-[10px] text-gray-400">Last Updated: August 2026</p>
               {storeSettings?.returnPolicy ? (
                 <p className="whitespace-pre-line text-xs">{storeSettings.returnPolicy}</p>
               ) : (
                 <>
-                  <p>At RK Peedika, we strive to ensure a smooth and satisfying shopping experience. Since we focus on quality products at affordable prices, our return and exchange policy is designed to be fair and transparent.</p>
+                  <p>At RK Peedika, we strive to ensure a smooth and satisfying shopping experience. Since we focus on quality products at affordable prices, our exchange policy is designed to be fair and transparent.</p>
 
                   <div className="space-y-1.5">
                     <h4 className="font-bold text-charcoal text-xs">1. Exchange Policy (No Refunds)</h4>
@@ -347,7 +347,7 @@ function AppContent() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <h4 className="font-bold text-charcoal text-xs">4. Non-Returnable / Non-Exchangeable Items</h4>
+                    <h4 className="font-bold text-charcoal text-xs">4. Non-Exchangeable Items</h4>
                     <p>The following categories are strictly non-returnable and non-exchangeable due to hygiene and customization reasons:</p>
                     <ul className="list-disc pl-5 space-y-1">
                       <li>Personal care, cosmetics, and hygiene products</li>
@@ -448,8 +448,8 @@ function AppContent() {
                 <p className="text-gray-500 mt-1">Standard shipping takes 3-5 business days. Express shipping options take 1-2 business days depending on location.</p>
               </div>
               <div>
-                <h4 className="font-bold text-charcoal">3. What is the return/exchange policy?</h4>
-                <p className="text-gray-500 mt-1">We offer a {storeSettings?.returnWindow || 3}-day exchange policy for unused items in original packaging. Photo evidence is required for damaged items.</p>
+                <h4 className="font-bold text-charcoal">3. What is the exchange policy?</h4>
+                <p className="text-gray-500 mt-1">We offer a 5-day exchange policy for unused items in original packaging. Video evidence of the damaged, defective, or wrong item is strictly required via WhatsApp at +91 9188072646.</p>
               </div>
               <div>
                 <h4 className="font-bold text-charcoal">4. Can I cancel my order?</h4>

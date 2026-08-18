@@ -667,7 +667,7 @@ export default function ProductPage() {
               </div>
               <div className="flex flex-col items-center justify-center text-center gap-1">
                 <span className="text-[16px]">🔄</span>
-                <span className="text-charcoal leading-tight">7 Days Return</span>
+                <span className="text-charcoal leading-tight">5 Days Exchange</span>
                 <span className="text-[#3E7BFA] font-extrabold">Exchange Only</span>
               </div>
             </div>
@@ -773,11 +773,12 @@ export default function ProductPage() {
           {/* Re-aligned Trust Information Strip (Pincode Check removed) */}
           <div className="rounded-premium border border-gray-100 bg-white p-4 shadow-premium">
             <div className="grid grid-cols-2 gap-4 text-xs font-bold text-gray-500">
-              <div className="flex items-center gap-2">
-                <RotateCcw className="h-4.5 w-4.5 text-[#0B1B2B] stroke-[1.5]" /> 
+              <div className="flex items-start gap-3">
+                <div className="bg-orange-50 p-1.5 rounded text-orange-500 mt-0.5"><RefreshCcw className="h-4 w-4" /></div>
                 <div>
-                  <p className="text-charcoal leading-tight">Easy Exchange</p>
-                  <p className="text-[10px] text-gray-400 font-medium mt-0.5">Accepted within {storeSettings?.returnWindow || 3} days. No Refunds • Exchange Only</p>
+                  <h5 className="text-xs font-bold text-charcoal">Exchange Policy</h5>
+                  <p className="text-[10px] text-gray-400 font-medium mt-0.5">5 Days Exchange Only • No Refunds</p>
+                  <p className="text-[10px] text-gray-400 font-medium mt-0.5">Share video of damage/defect to WhatsApp +91 9188072646</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">

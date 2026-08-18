@@ -9,6 +9,7 @@ export default function AdminPanel() {
     setCouponConfig, 
     products, 
     addProductFromAdmin, 
+    addCategoryFromAdmin,
     orderHistory,
     setCurrentView,
     categories
@@ -26,6 +27,12 @@ export default function AdminPanel() {
     originalPrice: "",
     category: categories[0]?.name || "Kitchen & Dining",
     seller: "",
+    image: ""
+  });
+
+  const [newCategory, setNewCategory] = useState({
+    name: "",
+    description: "",
     image: ""
   });
 
@@ -224,6 +231,22 @@ export default function AdminPanel() {
       originalPrice: "",
       category: categories[0]?.name || "Kitchen & Dining",
       seller: "",
+      image: ""
+    });
+    setTimeout(() => setSuccessMsg(""), 3000);
+  };
+
+  const handleAddCategorySubmit = (e) => {
+    e.preventDefault();
+    if (!newCategory.name) {
+      window.showAlert("Please fill in the category name.", "Validation Error");
+      return;
+    }
+    addCategoryFromAdmin(newCategory);
+    setSuccessMsg("Category added to store!");
+    setNewCategory({
+      name: "",
+      description: "",
       image: ""
     });
     setTimeout(() => setSuccessMsg(""), 3000);
@@ -438,17 +461,14 @@ export default function AdminPanel() {
             </div>
 
             <div className="md:col-span-2">
-              <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1.5">Product Image (URL / Mock Name)</label>
-              <select 
+              <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1.5">Product Image URL</label>
+              <input 
+                type="text"
+                placeholder="e.g. /images/product.jpg or https://..."
                 value={newProduct.image}
                 onChange={(e) => setNewProduct({...newProduct, image: e.target.value})}
-                className="w-full rounded-premium border border-gray-200 px-3.5 py-2 text-sm text-charcoal bg-white outline-none focus:border-[#0B1B2B]"
-              >
-                <option value="/images/coffee_maker_1.jpg">Use Brass Filter Coffee Asset</option>
-                <option value="/images/ayurvedic_1.jpg">Use Ayurvedic Serum Asset</option>
-                <option value="/images/spice_box_1.jpg">Use Wooden Spice Box Asset</option>
-                <option value="/images/silk_stole_1.jpg">Use Silk Stole Asset</option>
-              </select>
+                className="w-full rounded-premium border border-gray-200 px-3.5 py-2 text-sm text-charcoal outline-none focus:border-[#0B1B2B]"
+              />
             </div>
 
             <div className="md:col-span-2 mt-2">
@@ -460,6 +480,58 @@ export default function AdminPanel() {
               </button>
             </div>
           </form>
+
+          {/* ADD CATEGORY FORM */}
+          <div className="mt-8 pt-8 border-t border-gray-100">
+            <h3 className="text-sm font-extrabold text-charcoal uppercase tracking-wider mb-4 flex items-center gap-2">
+              <PlusCircle className="h-4.5 w-4.5 text-[#0B1B2B]" /> Add New Category
+            </h3>
+            
+            <form onSubmit={handleAddCategorySubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1.5">Category Name *</label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="e.g. Traditional Wear"
+                  value={newCategory.name}
+                  onChange={(e) => setNewCategory({...newCategory, name: e.target.value})}
+                  className="w-full rounded-premium border border-gray-200 px-3.5 py-2 text-sm text-charcoal outline-none focus:border-[#0B1B2B]"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1.5">Description</label>
+                <input 
+                  type="text" 
+                  placeholder="Short category description..."
+                  value={newCategory.description}
+                  onChange={(e) => setNewCategory({...newCategory, description: e.target.value})}
+                  className="w-full rounded-premium border border-gray-200 px-3.5 py-2 text-sm text-charcoal outline-none focus:border-[#0B1B2B]"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1.5">Category Image URL</label>
+                <input 
+                  type="text"
+                  placeholder="e.g. /images/category.jpg or https://..."
+                  value={newCategory.image}
+                  onChange={(e) => setNewCategory({...newCategory, image: e.target.value})}
+                  className="w-full rounded-premium border border-gray-200 px-3.5 py-2 text-sm text-charcoal outline-none focus:border-[#0B1B2B]"
+                />
+              </div>
+
+              <div className="md:col-span-2 mt-2">
+                <button 
+                  type="submit"
+                  className="w-full rounded-premium bg-[#0B1B2B] py-3 text-xs font-bold text-white hover:bg-[#071320] transition-premium shadow-sm"
+                >
+                  Publish Category
+                </button>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
 

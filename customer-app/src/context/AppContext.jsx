@@ -1098,6 +1098,23 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const addCategoryFromAdmin = async (newCat) => {
+    try {
+      await apiClient.post('/categories', {
+        name: newCat.name,
+        slug: newCat.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        image: newCat.image || "/images/category_kitchen.jpg",
+        description: newCat.description || ""
+      });
+      const catRes = await apiClient.get('/categories');
+      if (catRes.data) {
+        setCategories(catRes.data);
+      }
+    } catch (err) {
+      console.error("Failed to add category via AdminPanel", err);
+    }
+  };
+
   return (
     <AppContext.Provider value={{
       // View router
@@ -1111,6 +1128,7 @@ export const AppProvider = ({ children }) => {
       products,
       setProducts,
       addProductFromAdmin,
+      addCategoryFromAdmin,
 
       // Cart/Wishlist
       cart,

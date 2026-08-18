@@ -308,10 +308,7 @@ export default function ProductsPage() {
       {/* ============================================================
           STICKY TOP FILTER BAR (mobile-first)
       ============================================================ */}
-      <div
-        className="sticky bg-white border-b border-gray-100 px-3 py-2.5"
-        style={{ top: '143px', zIndex: 30 }}
-      >
+      <div className="relative bg-white border-b border-gray-100 px-3 py-2.5 z-30">
         {/* Category title + count */}
         <div className="flex items-center justify-between mb-2">
           <div>

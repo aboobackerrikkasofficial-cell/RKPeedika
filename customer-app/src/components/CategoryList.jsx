@@ -88,19 +88,7 @@ export default function CategoryList() {
       <div className="absolute inset-0 bg-white/45 pointer-events-none" />
 
       <div className="relative z-10">
-        {/* Section header */}
-        <div className="flex items-center justify-between px-3 pt-3 pb-1 md:px-6">
-          <h2 className="text-[14px] font-extrabold text-[#222222] tracking-tight">Shop by Category</h2>
-          <button
-            onClick={() => {
-              setSelectedCategory('All');
-              setCurrentView('products');
-            }}
-            className="text-[12px] font-bold text-[#0B1B2B]"
-          >
-            View All
-          </button>
-        </div>
+
 
         {/* Horizontal scroll chip row */}
         <div className="category-scroller">

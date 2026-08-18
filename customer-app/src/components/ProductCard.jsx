@@ -140,7 +140,23 @@ export default function ProductCard({ product }) {
           </div>
         )}
 
-
+        {/* Wishlist button */}
+        <button
+          type="button"
+          aria-label={isLiked ? 'Remove from wishlist' : 'Add to wishlist'}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleWishlist(product.id);
+          }}
+          className={`absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 shadow-sm border border-[#EDEDED] transition-transform active:scale-90 z-10 ${
+            isLiked ? 'text-[#F5A623]' : 'text-gray-400'
+          }`}
+        >
+          <Heart
+            size={16}
+            fill={isLiked ? 'currentColor' : 'none'}
+          />
+        </button>
       </div>
 
       {/* ============================================================
@@ -165,44 +181,29 @@ export default function ProductCard({ product }) {
           {product?.name || 'Unnamed Product'}
         </h3>
 
-        {/* Price and Cart Block */}
-        <div className="flex items-center justify-between mt-0.5">
-          <div className="flex flex-col gap-0.5 max-w-[80%]">
-            <div className="flex flex-wrap items-baseline gap-1.5">
-              <span className="text-sm md:text-base font-black text-[#1A1A1A]">
-                ₹{price.toLocaleString('en-IN')}
-              </span>
-              {originalPrice > price && (
-                <>
-                  <span className="text-[10px] text-gray-400 line-through font-semibold">
-                    ₹{originalPrice.toLocaleString('en-IN')}
-                  </span>
-                  <span className="text-[11px] text-[#1F9D55] font-extrabold">
-                    {discount}% off
-                  </span>
-                </>
-              )}
-            </div>
-            {/* Offer Applied Badge */}
-            {hasOffer && (
-              <span className="bg-[#1F9D55]/10 text-[#1F9D55] text-[9.5px] font-black px-1.5 py-0.5 rounded flex items-center gap-1 w-fit">
-                🏷️ 1 offer applied for you
-              </span>
+        {/* Price Block */}
+        <div className="flex flex-col gap-0.5 mt-0.5">
+          <div className="flex flex-wrap items-baseline gap-1.5">
+            <span className="text-sm md:text-base font-black text-[#1A1A1A]">
+              ₹{price.toLocaleString('en-IN')}
+            </span>
+            {originalPrice > price && (
+              <>
+                <span className="text-[10px] text-gray-400 line-through font-semibold">
+                  ₹{originalPrice.toLocaleString('en-IN')}
+                </span>
+                <span className="text-[11px] text-[#1F9D55] font-extrabold">
+                  {discount}% off
+                </span>
+              </>
             )}
           </div>
-          
-          {/* Cart Button */}
-          <button
-            type="button"
-            aria-label="Add to cart"
-            onClick={(e) => {
-              e.stopPropagation();
-              addToCart(product, 1);
-            }}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#0B1B2B] shadow-sm border border-[#EDEDED] transition-transform active:scale-90 hover:bg-[#F5A623] hover:text-white hover:border-[#F5A623] shrink-0 ml-1"
-          >
-            <ShoppingCart size={15} />
-          </button>
+          {/* Offer Applied Badge */}
+          {hasOffer && (
+            <span className="bg-[#1F9D55]/10 text-[#1F9D55] text-[9.5px] font-black px-1.5 py-0.5 rounded flex items-center gap-1 w-fit mt-0.5">
+              🏷️ 1 offer applied for you
+            </span>
+          )}
         </div>
 
         {/* Rating */}

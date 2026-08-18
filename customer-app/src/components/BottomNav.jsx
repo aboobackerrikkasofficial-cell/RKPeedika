@@ -1,6 +1,6 @@
 import React, { useContext } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Home, Grid2x2, Heart, ShoppingCart, User } from 'lucide-react';
+import { Home, Grid2x2, Package, ShoppingCart, User } from 'lucide-react';
 
 export default function BottomNav() {
   const {
@@ -29,20 +29,20 @@ export default function BottomNav() {
       activeViews: ['categories'],
     },
     {
+      id: 'orders',
+      label: 'Orders',
+      icon: Package,
+      action: () => setCurrentView('orders'),
+      activeViews: ['orders'],
+      isCenter: true,
+    },
+    {
       id: 'cart',
       label: 'Cart',
       icon: ShoppingCart,
       badge: cartCount,
       action: () => setCurrentView('cart'),
       activeViews: ['cart'],
-    },
-    {
-      id: 'wishlist',
-      label: 'Wishlist',
-      icon: Heart,
-      badge: wishlistCount,
-      action: () => setCurrentView('wishlist'),
-      activeViews: ['wishlist'],
     },
     {
       id: 'profile',
@@ -69,27 +69,38 @@ export default function BottomNav() {
             key={tab.id}
             id={`bottom-nav-${tab.id}`}
             onClick={tab.action}
-            className={`bottom-nav-item${isActive ? ' active' : ''}`}
+            className={`bottom-nav-item${isActive ? ' active' : ''} ${tab.isCenter ? 'relative' : ''}`}
             aria-label={tab.label}
             aria-current={isActive ? 'page' : undefined}
           >
-            <span className="relative flex items-center justify-center">
-              <Icon
-                size={22}
-                strokeWidth={isActive ? 2.2 : 1.8}
-                fill={isActive ? (tab.id === 'wishlist' || tab.id === 'home' || tab.id === 'profile' ? 'currentColor' : 'none') : 'none'}
-              />
-              {/* Cart / Wishlist badge */}
-              {tab.badge > 0 && (
-                <span
-                  className="absolute -top-1.5 -right-2.5 flex items-center justify-center rounded-full bg-[#F5A623] text-white font-extrabold leading-none shadow-sm animate-bounce"
-                  style={{ minWidth: 16, height: 16, fontSize: 9, padding: '0 3px' }}
-                >
-                  {tab.badge > 9 ? '9+' : tab.badge}
+            {tab.isCenter ? (
+              <div className="flex flex-col items-center relative -top-4">
+                <span className="flex h-[56px] w-[56px] items-center justify-center rounded-full bg-[#0B1B2B] text-[#F5A623] shadow-[0_4px_12px_rgba(11,27,43,0.3)] border-4 border-white transition-transform active:scale-95 z-20">
+                  <Icon size={26} strokeWidth={2} fill={isActive ? 'currentColor' : 'none'} />
                 </span>
-              )}
-            </span>
-            <span className="bottom-nav-item-label">{tab.label}</span>
+                <span className="bottom-nav-item-label mt-0.5 text-[#0B1B2B] font-bold">{tab.label}</span>
+              </div>
+            ) : (
+              <>
+                <span className="relative flex items-center justify-center">
+                  <Icon
+                    size={22}
+                    strokeWidth={isActive ? 2.2 : 1.8}
+                    fill={isActive ? 'currentColor' : 'none'}
+                  />
+                  {/* Cart badge */}
+                  {tab.badge > 0 && (
+                    <span
+                      className="absolute -top-1.5 -right-2.5 flex items-center justify-center rounded-full bg-[#F5A623] text-white font-extrabold leading-none shadow-sm animate-bounce"
+                      style={{ minWidth: 16, height: 16, fontSize: 9, padding: '0 3px' }}
+                    >
+                      {tab.badge > 9 ? '9+' : tab.badge}
+                    </span>
+                  )}
+                </span>
+                <span className="bottom-nav-item-label">{tab.label}</span>
+              </>
+            )}
           </button>
         );
       })}

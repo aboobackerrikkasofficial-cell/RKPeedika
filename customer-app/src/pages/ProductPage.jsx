@@ -811,10 +811,10 @@ export default function ProductPage() {
             </button>
             <button
               onClick={() => initiateQuickPurchase(product, selectedVariants, product.prepaidAvailable !== false ? 'online' : 'cod')}
-              className="flex-1 rounded-premium bg-[#F5A623] px-6 py-3.5 text-sm font-black text-white hover:bg-[#e09110] transition-premium shadow-md shadow-amber-500/10 hover:scale-[1.01]"
+              className="flex-1 rounded-premium bg-[#0B1B2B] px-6 py-3.5 text-sm font-black text-white hover:bg-[#071320] transition-premium shadow-md shadow-[#0B1B2B]/10 hover:scale-[1.01]"
               style={{ minHeight: 48 }}
             >
-              Instant Purchase (Buy Now)
+              Buy Now
             </button>
           </div>
 
@@ -1286,9 +1286,9 @@ export default function ProductPage() {
         </button>
         <button
           onClick={() => initiateQuickPurchase(product, selectedVariants, product.prepaidAvailable !== false ? 'online' : 'cod')}
-          className="flex-1 h-14 rounded-xl bg-[#F5A623] text-lg font-black text-white shadow-lg active:bg-[#e09110] transition flex items-center justify-center gap-2 cursor-pointer"
+          className="flex-1 h-14 rounded-xl bg-[#0B1B2B] text-base font-black text-white shadow-lg active:bg-[#071320] transition flex items-center justify-center gap-2 cursor-pointer uppercase tracking-wide"
         >
-          ⚡ Buy Now
+          Buy Now
         </button>
       </div>
 

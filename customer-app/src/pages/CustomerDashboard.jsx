@@ -941,42 +941,69 @@ export default function CustomerDashboard() {
       </button>
 
       <div className="flex flex-col md:flex-row gap-8">
-        {/* Sidebar */}
-        <div className="w-full md:w-64 shrink-0">
-          <div className="bg-white border border-gray-100 rounded-premium shadow-sm flex md:block overflow-x-auto whitespace-nowrap scrollbar-hide md:overflow-hidden">
+        {/* Mobile Navigation Pills */}
+        <div className="md:hidden overflow-x-auto scrollbar-hide -mx-4 px-4 pb-4 mb-2">
+          <div className="flex space-x-2 w-max">
+            {menuItems.map(item => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => {
+                    setActiveTab(item.id);
+                    setSuccessMsg("");
+                    setErrorMsg("");
+                  }}
+                  className={`flex items-center space-x-2 px-4 py-2.5 rounded-full text-xs font-bold transition-all shadow-sm ${
+                    isActive 
+                      ? 'bg-[#0B1B2B] text-white border border-[#0B1B2B]' 
+                      : 'bg-white border border-gray-200 text-charcoal hover:bg-gray-50'
+                  }`}
+                >
+                  <Icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-500'}`} />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Desktop Sidebar */}
+        <div className="hidden md:block w-64 shrink-0">
+          <div className="bg-white border border-gray-100 rounded-premium shadow-sm overflow-hidden">
             {['Account', 'Orders', 'Support'].map(group => (
-              <div key={group} className="inline-block md:block border-r md:border-r-0 md:border-b border-gray-50 last:border-0 align-top">
+              <div key={group} className="border-b border-gray-50 last:border-0">
                 <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider px-4 py-3 bg-gray-50/50">
                   {group}
                 </h4>
-                <div className="py-2 flex md:block">
+                <div className="py-2">
                   {menuItems.filter(item => item.group === group).map(item => {
                     const Icon = item.icon;
                     const isActive = activeTab === item.id;
                     return (
-                      <div key={item.id} className="inline-block md:block w-auto md:w-full">
-                        <button
-                          onClick={() => {
-                            setActiveTab(item.id);
-                            setSuccessMsg("");
-                            setErrorMsg("");
-                          }}
-                          className={`w-full flex justify-between items-center px-4 py-3 min-h-[44px] transition-premium ${
-                            isActive ? 'text-[#0B1B2B] bg-[#0B1B2B]/10/50 font-bold border-b-2 md:border-b-0 md:border-l-2 border-[#0B1B2B]' : 'text-gray-600 hover:bg-gray-50 hover:text-charcoal border-b-2 md:border-b-0 md:border-l-2 border-transparent'
-                          }`}
-                        >
-                          <div className="flex items-center space-x-3 text-sm">
-                            <Icon className={`h-4 w-4 ${isActive ? 'text-[#0B1B2B]' : 'text-gray-400'}`} />
-                            <span>{item.label}</span>
-                          </div>
-                        </button>
-                      </div>
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          setActiveTab(item.id);
+                          setSuccessMsg("");
+                          setErrorMsg("");
+                        }}
+                        className={`w-full flex justify-between items-center px-4 py-3 min-h-[44px] transition-premium ${
+                          isActive ? 'text-[#0B1B2B] bg-[#0B1B2B]/5 font-bold border-l-2 border-[#0B1B2B]' : 'text-gray-600 hover:bg-gray-50 hover:text-charcoal border-l-2 border-transparent'
+                        }`}
+                      >
+                        <div className="flex items-center space-x-3 text-sm">
+                          <Icon className={`h-4 w-4 ${isActive ? 'text-[#0B1B2B]' : 'text-gray-400'}`} />
+                          <span>{item.label}</span>
+                        </div>
+                      </button>
                     );
                   })}
                 </div>
               </div>
             ))}
-            <div className="p-4 border-l md:border-l-0 md:border-t border-gray-100 inline-block md:block align-top h-full flex items-center">
+            <div className="p-4 border-t border-gray-100">
               <button 
                 onClick={() => logoutUser()}
                 className="w-full flex items-center justify-center space-x-2 text-sm font-bold text-red-500 hover:bg-red-50 py-2 px-4 rounded-premium transition-premium"

@@ -468,9 +468,32 @@ export default function ProductPage() {
   const codPrice = Number(product.codPrice || product.price || 0);
   const onlinePrice = Number(product.onlinePrice || product.price || 0);
   const originalPrice = Number(product.originalPrice || 0);
+  
+  // Stable random discount if none exists
+  const stableRandom = product?.id 
+    ? (String(product.id).split('').reduce((a, b) => a + b.charCodeAt(0), 0) % 25) + 6 
+    : 10;
+    
+  const calculatedDiscount = originalPrice > onlinePrice 
+    ? Math.round(((originalPrice - onlinePrice) / originalPrice) * 100)
+    : 0;
+    
+  const displayDiscount = calculatedDiscount > 0 ? calculatedDiscount : stableRandom;
+
+  const displayOriginal = originalPrice > onlinePrice 
+    ? originalPrice 
+    : (() => {
+        const rawCalc = Math.round(onlinePrice / (1 - (displayDiscount / 100)));
+        const remainder = rawCalc % 50;
+        const cleanPrice = remainder === 0 ? rawCalc - 1 : rawCalc + (50 - remainder) - 1;
+        return cleanPrice;
+      })();
+
+  const finalDiscount = Math.round(((displayOriginal - onlinePrice) / displayOriginal) * 100);
+
   const savings = Math.max(0, codPrice - onlinePrice);
   const activePrice = paymentOption === 'cod' ? codPrice : onlinePrice;
-  const hasOffer = (product?.enableOnlineDiscount && Number(product?.onlinePrice || 0) > 0) || (originalPrice > Number(product?.price || 0));
+  const hasOffer = (product?.enableOnlineDiscount && Number(product?.onlinePrice || 0) > 0) || (displayOriginal > Number(product?.price || 0));
 
   // Delivery date calculations
   const pincodeData = pincodeDatabase?.[userPincode] || { days: 3 };
@@ -632,13 +655,13 @@ export default function ProductPage() {
               <span className="text-3xl md:text-4xl font-black text-charcoal tracking-tight">
                 ₹{onlinePrice.toLocaleString('en-IN')}
               </span>
-              {originalPrice > onlinePrice && (
+              {displayOriginal > onlinePrice && (
                 <>
                   <span className="text-base text-gray-400 line-through font-semibold">
-                    MRP: ₹{originalPrice.toLocaleString('en-IN')}
+                    MRP: ₹{displayOriginal.toLocaleString('en-IN')}
                   </span>
                   <span className="text-xs text-[#E14B4B] font-extrabold bg-[#E14B4B]/10 px-2.5 py-1 rounded-full">
-                    {Math.round(((originalPrice - onlinePrice) / originalPrice) * 100)}% OFF
+                    {finalDiscount}% OFF
                   </span>
                 </>
               )}

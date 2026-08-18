@@ -51,7 +51,16 @@ export default function ProductCard({ product }) {
     
   const displayDiscount = calculatedDiscount > 0 ? calculatedDiscount : stableRandom;
   
-  const displayOriginal = rawOriginal > onlinePrice ? rawOriginal : Math.round(onlinePrice / (1 - (displayDiscount / 100)));
+  const displayOriginal = rawOriginal > onlinePrice 
+    ? rawOriginal 
+    : (() => {
+        const rawCalc = Math.round(onlinePrice / (1 - (displayDiscount / 100)));
+        const remainder = rawCalc % 50;
+        const cleanPrice = remainder === 0 ? rawCalc - 1 : rawCalc + (50 - remainder) - 1;
+        return cleanPrice;
+      })();
+
+  const finalDiscount = Math.round(((displayOriginal - onlinePrice) / displayOriginal) * 100);
 
   /* ------------------------------------------------------------------
      DELIVERY DATE
@@ -187,7 +196,7 @@ export default function ProductCard({ product }) {
                   ₹{displayOriginal.toLocaleString('en-IN')}
                 </span>
                 <span className="text-xs text-[#1F9D55] font-extrabold bg-[#1F9D55]/10 px-1.5 py-0.5 rounded">
-                  {displayDiscount}% OFF
+                  {finalDiscount}% OFF
                 </span>
               </div>
             </div>
@@ -199,12 +208,12 @@ export default function ProductCard({ product }) {
                 e.stopPropagation();
                 toggleWishlist(product.id);
               }}
-              className={`flex h-7 w-7 items-center justify-center rounded-full bg-gray-50 border border-[#EDEDED] transition-transform active:scale-90 flex-shrink-0 ml-1 ${
+              className={`flex h-8 w-8 items-center justify-center rounded-full bg-gray-50 border border-[#EDEDED] transition-transform active:scale-90 flex-shrink-0 ml-1 ${
                 isLiked ? 'text-[#F5A623]' : 'text-gray-400'
               }`}
             >
               <Heart
-                size={14}
+                size={17}
                 fill={isLiked ? 'currentColor' : 'none'}
               />
             </button>

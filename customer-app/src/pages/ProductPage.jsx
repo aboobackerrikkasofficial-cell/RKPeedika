@@ -456,11 +456,12 @@ export default function ProductPage() {
   const hasVariants = variants && Object.keys(variants).length > 0 && Object.values(variants).some(arr => Array.isArray(arr) && arr.length > 0);
 
   // Pricing calculations
-  const codPrice = product.codPrice || product.price;
-  const onlinePrice = product.onlinePrice || product.price;
+  const codPrice = Number(product.codPrice || product.price || 0);
+  const onlinePrice = Number(product.onlinePrice || product.price || 0);
+  const originalPrice = Number(product.originalPrice || 0);
   const savings = Math.max(0, codPrice - onlinePrice);
   const activePrice = paymentOption === 'cod' ? codPrice : onlinePrice;
-  const hasOffer = (product?.enableOnlineDiscount && product?.onlinePrice) || (product?.originalPrice > product?.price);
+  const hasOffer = (product?.enableOnlineDiscount && Number(product?.onlinePrice || 0) > 0) || (originalPrice > Number(product?.price || 0));
 
   // Delivery date calculations
   const pincodeData = pincodeDatabase?.[userPincode] || { days: 3 };
@@ -622,36 +623,17 @@ export default function ProductPage() {
               <span className="text-3xl md:text-4xl font-black text-charcoal tracking-tight">
                 ₹{onlinePrice.toLocaleString('en-IN')}
               </span>
-              {product.originalPrice > onlinePrice && (
+              {originalPrice > onlinePrice && (
                 <>
                   <span className="text-base text-gray-400 line-through font-semibold">
-                    MRP: ₹{product.originalPrice.toLocaleString('en-IN')}
+                    MRP: ₹{originalPrice.toLocaleString('en-IN')}
                   </span>
                   <span className="text-xs text-[#E14B4B] font-extrabold bg-[#E14B4B]/10 px-2.5 py-1 rounded-full">
-                    {Math.round(((product.originalPrice - onlinePrice) / product.originalPrice) * 100)}% OFF
+                    {Math.round(((originalPrice - onlinePrice) / originalPrice) * 100)}% OFF
                   </span>
                 </>
               )}
             </div>
-
-            {/* UPI Offer Applied Banner */}
-            {hasOffer && (
-              <div className="mt-3 bg-[#1F9D55]/10 border border-[#1F9D55]/20 rounded-xl p-3 flex items-center justify-between text-xs text-[#1F9D55] font-bold shadow-sm">
-                <div className="flex items-center gap-2">
-                  <span className="text-lg">🏷️</span>
-                  <div>
-                    <p className="font-extrabold text-[#1F9D55]">1 UPI offer applied for you</p>
-                    <p className="text-[10px] text-gray-500 font-medium mt-0.5">Pay Online to get extra savings instantly</p>
-                  </div>
-                </div>
-                <button
-                  onClick={() => window.showAlert?.("Get an extra instant discount by paying online via UPI or Cards at checkout. No promo code needed!", "Prepaid UPI Discount")}
-                  className="text-[10px] underline uppercase tracking-wider font-extrabold hover:text-[#178546] shrink-0 ml-2 cursor-pointer focus:outline-none"
-                >
-                  View details
-                </button>
-              </div>
-            )}
 
             {/* Trust Badges Row — Above the Fold (Indian Shoppers Trust Signals) */}
             <div className="grid grid-cols-3 gap-2 py-3.5 border-y border-[#EDEDED] mt-4 text-[10px] font-bold text-gray-500 bg-[#FAFAFA] rounded-xl px-2.5 shadow-sm">
@@ -670,51 +652,6 @@ export default function ProductPage() {
                 <span className="text-charcoal leading-tight">5 Days Exchange</span>
                 <span className="text-[#3E7BFA] font-extrabold">Exchange Only</span>
               </div>
-            </div>
-          </div>
-
-          {/* Pricing Box - Simple Static Pricing Display */}
-          <div className="rounded-2xl bg-gray-50 p-5 border border-gray-100 space-y-4">
-            <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider">Pricing Details</h4>
-            
-            <div className="space-y-3">
-              {product.prepaidAvailable !== false && (
-                <div className="flex items-center justify-between border-b border-gray-200/60 pb-3">
-                  <div>
-                    <p className="text-base font-bold text-gray-800">Pay Online (UPI / Card)</p>
-                    <p className="text-xs text-[#1F9D55] font-bold mt-0.5">🔒 Safe &amp; Secure Payment</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-2xl font-black text-[#0B1B2B]">₹{onlinePrice.toLocaleString('en-IN')}</p>
-                    {product.originalPrice && (
-                      <p className="text-xs text-gray-400 line-through font-semibold">MRP: ₹{product.originalPrice.toLocaleString('en-IN')}</p>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {product.codAvailable !== false && (
-                <div className="flex items-center justify-between pt-1">
-                  <div>
-                    <p className="text-base font-bold text-gray-800">Cash on Delivery (COD)</p>
-                    <p className="text-xs text-gray-455 mt-0.5">Pay on delivery at doorstep</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-xl font-black text-charcoal">₹{codPrice.toLocaleString('en-IN')}</p>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {savings > 0 && product.prepaidAvailable !== false && product.codAvailable !== false && (
-              <div className="bg-[#1F9D55]/10 rounded-xl p-3 border border-[#1F9D55]/25 text-sm text-[#1F9D55] font-bold flex items-center gap-2">
-                <Gift className="h-5 w-5 text-[#1F9D55] shrink-0" />
-                <span>Pay Online and Save ₹{savings} instantly!</span>
-              </div>
-            )}
-            
-            <div className="text-xs text-gray-400 font-semibold mt-1">
-              Price inclusive of all taxes. GST receipt generated on checkout.
             </div>
           </div>
 
@@ -1104,7 +1041,7 @@ export default function ProductPage() {
                   </div>
                   <div className="p-3 text-xs">
                     <h4 className="font-bold text-charcoal line-clamp-1 group-hover:text-[#0B1B2B]">{item.name}</h4>
-                    <p className="font-black text-[#0B1B2B] mt-1">₹{item.price.toLocaleString('en-IN')}</p>
+                    <p className="font-black text-[#0B1B2B] mt-1">₹{Number(item.price || 0).toLocaleString('en-IN')}</p>
                   </div>
                 </div>
               );

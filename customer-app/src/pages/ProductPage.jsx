@@ -937,7 +937,9 @@ export default function ProductPage() {
 
                         {/* Date */}
                         <span className="text-[10px] font-bold text-gray-400 whitespace-nowrap">
-                          {new Date(rev.createdAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })}
+                          {rev.createdAt && !isNaN(new Date(rev.createdAt).getTime())
+                            ? new Date(rev.createdAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
+                            : 'Date unavailable'}
                         </span>
                       </div>
 

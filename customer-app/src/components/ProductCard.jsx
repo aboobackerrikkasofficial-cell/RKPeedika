@@ -40,9 +40,16 @@ export default function ProductCard({ product }) {
   const onlinePrice = Number(product?.onlinePrice || basePrice);
   const rawOriginal = Number(product?.originalPrice || 0);
   
+  // Stable random discount if none exists
+  const stableRandom = product?.id 
+    ? (String(product.id).split('').reduce((a, b) => a + b.charCodeAt(0), 0) % 25) + 6 
+    : 10;
+    
   const calculatedDiscount = rawOriginal > onlinePrice 
     ? Math.round(((rawOriginal - onlinePrice) / rawOriginal) * 100)
     : 0;
+    
+  const displayDiscount = calculatedDiscount > 0 ? calculatedDiscount : stableRandom;
 
   /* ------------------------------------------------------------------
      DELIVERY DATE
@@ -104,7 +111,7 @@ export default function ProductCard({ product }) {
     setImageFailed(false);
   };
 
-  const hasOffer = (product?.enableOnlineDiscount && product?.onlinePrice) || calculatedDiscount > 0;
+  const hasOffer = (product?.enableOnlineDiscount && product?.onlinePrice) || displayDiscount > 0;
 
   /* ------------------------------------------------------------------
      RENDER

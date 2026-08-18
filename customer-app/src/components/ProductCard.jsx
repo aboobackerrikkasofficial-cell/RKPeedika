@@ -40,17 +40,9 @@ export default function ProductCard({ product }) {
   const onlinePrice = Number(product?.onlinePrice || basePrice);
   const rawOriginal = Number(product?.originalPrice || 0);
   
-  // Stable random discount if none exists
-  const stableRandom = product?.id 
-    ? (String(product.id).split('').reduce((a, b) => a + b.charCodeAt(0), 0) % 25) + 6 
-    : 10;
-    
-  const calculatedDiscount = rawOriginal > onlinePrice 
+  const displayDiscount = rawOriginal > onlinePrice 
     ? Math.round(((rawOriginal - onlinePrice) / rawOriginal) * 100)
     : 0;
-    
-  const displayDiscount = calculatedDiscount > 0 ? calculatedDiscount : stableRandom;
-  const displayOriginal = rawOriginal > onlinePrice ? rawOriginal : Math.round(onlinePrice / (1 - (displayDiscount / 100)));
 
   /* ------------------------------------------------------------------
      DELIVERY DATE

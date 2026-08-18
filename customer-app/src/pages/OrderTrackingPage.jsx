@@ -1,10 +1,10 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../context/AppContext';
-import { ArrowLeft, Check, Truck, MapPin, Package, RefreshCcw, CheckCircle, Search, AlertCircle, FileText } from 'lucide-react';
+import { ArrowLeft, Check, Truck, MapPin, Package, RefreshCcw, CheckCircle, Search, AlertCircle, FileText, ChevronRight, MessageCircle } from 'lucide-react';
 import apiClient from '../api/client';
 
 export default function OrderTrackingPage() {
-  const { trackingOrderId, setTrackingOrderId, setCurrentView, showToast } = useContext(AppContext);
+  const { trackingOrderId, setTrackingOrderId, setCurrentView, showToast, orderHistory } = useContext(AppContext);
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -16,11 +16,18 @@ export default function OrderTrackingPage() {
   useEffect(() => {
     if (trackingOrderId) {
       setSearchOrderId(trackingOrderId);
-      fetchOrderAuthenticated(trackingOrderId);
+      
+      const existing = orderHistory?.find(o => o.orderId === trackingOrderId);
+      if (existing) {
+        setOrder(existing);
+        setLoading(false);
+      } else {
+        fetchOrderAuthenticated(trackingOrderId);
+      }
     } else {
       setLoading(false);
     }
-  }, [trackingOrderId]);
+  }, [trackingOrderId, orderHistory]);
 
   // Attempt authenticated fetch (for logged in customers)
   const fetchOrderAuthenticated = async (id) => {
@@ -254,156 +261,114 @@ export default function OrderTrackingPage() {
           </form>
         </div>
       ) : (
-        // TIMELINE AND SHIPPED LOGS CONTAINER
-        <div>
-          <div className="flex items-center justify-between mb-6">
+      ) : (
+        // MEESHO STYLE TRACKING UI
+        <div className="bg-gray-50/50 -mx-4 md:-mx-8 -mt-8 pb-10 min-h-screen">
+          {/* Header */}
+          <div className="bg-white flex items-center justify-between px-4 py-4 border-b border-gray-100 shadow-sm sticky top-0 z-10">
             <button 
               onClick={handleTrackAnother}
-              className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-gray-500 hover:text-charcoal"
+              className="flex items-center space-x-3 text-sm font-bold text-charcoal hover:bg-gray-50 px-2 py-1 rounded"
             >
-              <ArrowLeft className="h-4 w-4" /> <span>Track Another Order</span>
+              <ArrowLeft className="h-5 w-5" /> <span>ORDER DETAILS</span>
             </button>
-            <button 
-              onClick={handlePrintInvoice}
-              className="flex items-center gap-1.5 text-xs font-bold text-[#0B1B2B] hover:underline"
-            >
-              <FileText className="h-4 w-4" /> Print Receipt
-            </button>
+            <a href="https://wa.me/919188072646" target="_blank" rel="noreferrer" className="flex items-center space-x-1.5 text-sm font-bold text-[#b0076a] hover:bg-pink-50 px-2 py-1 rounded">
+              <MessageCircle className="h-5 w-5" />
+              <span>HELP</span>
+            </a>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            
-            {/* Status Timeline */}
-            <div className="md:col-span-2 space-y-6">
-              <div className="rounded-premium border border-gray-100 bg-white p-6 shadow-premium">
-                <h3 className="text-sm font-extrabold text-charcoal uppercase tracking-wider mb-5 border-b border-gray-50 pb-3 flex items-center justify-between">
-                  <span>Order Status: #{order.orderId || order.id}</span>
-                  <span className="bg-[#1F9D55]/10 text-[#1F9D55] px-2 py-0.5 rounded text-[10px] font-bold uppercase">
-                    {order.status || 'Confirmed'}
-                  </span>
-                </h3>
+          <div className="max-w-2xl mx-auto">
+            {/* Product Card */}
+            <div className="bg-white p-4 flex gap-4 mt-2 shadow-[0_1px_3px_rgba(0,0,0,0.05)] cursor-pointer active:bg-gray-50 transition">
+              <div className="w-[72px] h-[72px] bg-white border border-gray-200 p-0.5 rounded shrink-0 overflow-hidden">
+                <img 
+                  src={(order.items && order.items[0]?.image) || "https://res.cloudinary.com/akg9ozdu/image/upload/v1723700000/rkpeedika_products/default_prod.jpg"} 
+                  alt="Product" 
+                  className="w-full h-full object-cover rounded-sm"
+                />
+              </div>
+              <div className="flex-1">
+                <div className="flex justify-between items-start">
+                  <h3 className="text-sm font-bold text-charcoal tracking-tight">Order #{order.orderId || order.id}</h3>
+                  <ChevronRight className="h-5 w-5 text-gray-400" />
+                </div>
+                <p className="text-xs text-gray-500 mt-1 line-clamp-1 font-medium">
+                  {(order.items && order.items[0]?.name) || "RK Peedika Product"}
+                </p>
+                <p className="text-[11px] text-gray-400 mt-1 font-medium">
+                  Free Size • {order.paymentMethod === 'cod' ? 'COD' : 'Prepaid'}
+                </p>
+                <p className="text-[11px] text-gray-500 mt-1 font-medium">All issue easy returns</p>
+              </div>
+            </div>
 
-                <div className="relative flex flex-col md:flex-row justify-between gap-6 md:gap-2 mt-8">
+            {/* Tracking Timeline */}
+            <div className="bg-white px-4 py-5 mt-2 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+              <div className="flex items-start gap-3 mb-8">
+                <div className="bg-orange-100 p-1.5 rounded relative mt-0.5">
+                  <div className="absolute -top-1 -left-1 bg-[#1F9D55] rounded-full p-0.5">
+                    <ArrowLeft className="h-2.5 w-2.5 text-white rotate-180" strokeWidth={3} />
+                  </div>
+                  <Truck className="h-6 w-6 text-orange-500 fill-orange-500" strokeWidth={1} />
+                </div>
+                <div>
+                  <h4 className="text-[15px] font-bold text-charcoal">{order.status || 'Confirmed'}</h4>
+                  <p className="text-xs text-gray-500 font-medium">Delivery by {new Date(new Date().setDate(new Date().getDate() + 5)).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short'})}</p>
+                </div>
+              </div>
+
+              <div className="relative mt-8 px-2 pb-6">
+                {/* Horizontal Line Background */}
+                <div className="absolute top-[11px] left-8 right-8 h-[3px] bg-gray-200"></div>
+                {/* Horizontal Line Progress */}
+                <div className="absolute top-[11px] left-8 h-[3px] bg-[#1F9D55] transition-all duration-500" style={{ width: `${(activeIndex / (statuses.length - 1)) * 100}%` }}></div>
+                
+                <div className="relative flex justify-between z-10">
                   {statuses.map((step, index) => {
-                    const isCompleted = index < activeIndex;
-                    const isCurrent = index === activeIndex;
-                    const Icon = step.icon;
-                    
+                    const isCompleted = index <= activeIndex;
                     return (
-                      <React.Fragment key={step.id}>
-                        <div className="flex md:flex-col items-center gap-3 md:gap-2 text-center md:flex-1 relative z-10">
-                          <div className={`rounded-full p-1.5 shrink-0 transition-all ${
-                            isCompleted ? 'bg-[#1F9D55]/100 text-white' : 
-                            isCurrent ? 'bg-[#0B1B2B]/10 border border-teal-200 text-[#0B1B2B] animate-pulse' : 
-                            'bg-gray-50 border border-gray-200 text-gray-300'
-                          }`}>
-                            <Icon className="h-4.5 w-4.5" />
-                          </div>
-                          <div>
-                            <p className={`text-xs font-bold ${
-                              isCompleted ? 'text-charcoal' : 
-                              isCurrent ? 'text-[#0B1B2B]' : 
-                              'text-gray-400'
-                            }`}>
-                              {step.label}
-                            </p>
-                          </div>
+                      <div key={step.id} className="flex flex-col items-center flex-1">
+                        <div className={`w-[22px] h-[22px] rounded-full flex items-center justify-center border-[3px] border-white ring-2 ${
+                          isCompleted ? 'bg-[#1F9D55] ring-[#1F9D55] text-white' : 'bg-gray-200 ring-gray-200 text-transparent'
+                        }`}>
+                          <Check className="h-3 w-3" strokeWidth={4} />
                         </div>
-                        {index < statuses.length - 1 && (
-                          <div className={`hidden md:block flex-1 border-t-2 border-dashed mt-3 ${
-                            index < activeIndex ? 'border-emerald-200' : 'border-gray-100'
-                          }`}></div>
-                        )}
-                      </React.Fragment>
+                        <span className={`text-[11px] font-bold mt-2 text-center leading-tight w-full ${isCompleted ? 'text-charcoal' : 'text-gray-500'}`}>{step.label}</span>
+                        <span className="text-[10px] text-gray-400 mt-0.5">{isCompleted ? new Date().toLocaleDateString('en-GB', {day:'numeric', month:'short'}) : ''}</span>
+                      </div>
                     );
                   })}
                 </div>
+              </div>
 
-                {/* Real-time Tracking Events Logs */}
-                <div className="mt-8 border-t border-gray-50 pt-6">
-                  <h4 className="text-xs font-extrabold text-charcoal uppercase tracking-wider mb-5 flex items-center gap-1.5">
-                    📦 Real-time Shipment Logs ({order.courier || 'RK Delivery'})
-                  </h4>
-                  <div className="relative pl-6 border-l-2 border-[#0B1B2B]/15/70 ml-2 space-y-6">
-                    {(order.trackingEvents && order.trackingEvents.length > 0) ? (
-                      order.trackingEvents.map((evt, idx) => {
-                        return (
-                          <div key={evt.id || idx} className="relative">
-                            <div className={`absolute -left-[31px] top-0.5 h-3 w-3 rounded-full border-2 bg-white ${
-                              idx === 0 ? 'border-[#0B1B2B] bg-[#0B1B2B]/10' : 'border-gray-300'
-                            }`}></div>
-                            <div className="space-y-0.5">
-                              <span className="text-[11px] font-black text-charcoal block">
-                                {evt.status || 'Update'}
-                              </span>
-                              <span className="text-[10px] font-bold text-gray-400 block">
-                                {new Date(evt.eventDate || evt.createdAt).toLocaleDateString('en-IN', {
-                                  day: 'numeric',
-                                  month: 'short',
-                                  year: 'numeric'
-                                })}
-                              </span>
-                              {evt.message && (
-                                <p className="text-[11px] text-gray-500 font-medium mt-0.5">
-                                  {evt.message}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <div className="text-gray-400 font-bold text-xs py-2">
-                        Awaiting shipping provider logs... Order is confirmed and processing at the hub.
-                      </div>
-                    )}
-                  </div>
-                </div>
+              <div className="border-t border-gray-100 pt-4 flex justify-between items-center px-1">
+                <span className="text-xs font-medium text-gray-500">Order confirmed, cancel unavailable.</span>
+                <button className="text-xs font-bold text-[#b0076a]">KNOW MORE</button>
               </div>
             </div>
 
-            {/* Sidebar Details summary */}
-            <div className="space-y-6">
-              <div className="rounded-premium border border-gray-100 bg-white p-6 shadow-premium">
-                <h3 className="text-sm font-extrabold text-charcoal uppercase tracking-wider mb-4 border-b border-gray-50 pb-3">
-                  Summary Details
-                </h3>
-                
-                <div className="space-y-4 max-h-[280px] overflow-y-auto pr-1 no-scrollbar mb-6">
-                  {(order.items || order.orderItems || []).map((item, idx) => (
-                    <div key={idx} className="flex gap-3 text-xs">
-                      <div className="flex-1 space-y-0.5">
-                        <h4 className="font-bold text-charcoal line-clamp-1">{item.name || item.product?.name || `Product ID: ${item.productId}`}</h4>
-                        <p className="text-[10px] text-gray-400 font-bold">Qty: {item.quantity}</p>
-                        <div className="text-right">
-                          <span className="font-bold text-charcoal">₹{((item.price || 0) * (item.quantity || 1)).toLocaleString('en-IN')}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+            {/* Delivery Address */}
+            {order.address && (
+              <div className="bg-white p-5 mt-2 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+                <h4 className="text-sm font-bold text-charcoal mb-3 flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-[#4a90e2]" fill="currentColor" stroke="white" />
+                  Delivery Address
+                </h4>
+                <div className="text-[13px] text-gray-600 space-y-1 pl-1">
+                  <p className="font-medium text-charcoal">{order.address.fullName}</p>
+                  <p>{order.address.street || ''}</p>
+                  <p>{order.address.city}, {order.address.state}, {order.address.pincode}</p>
+                  <p className="mt-2 font-medium">{order.address.phone}</p>
                 </div>
 
-                <div className="border-t border-gray-50 pt-4 space-y-2.5 text-xs">
-                  <div className="flex justify-between text-gray-500 font-medium">
-                    <span>Payment Method</span>
-                    <span className="text-charcoal font-bold uppercase">{order.paymentMethod || 'N/A'}</span>
-                  </div>
-                  <div className="flex justify-between text-gray-500 font-medium">
-                    <span>Total Amount</span>
-                    <span className="text-charcoal font-bold">₹{(order.amount || 0).toLocaleString('en-IN')}</span>
-                  </div>
+                <div className="border-t border-gray-100 pt-4 mt-5 flex justify-between items-center pl-1">
+                  <span className="text-xs font-medium text-gray-500">Address change unavailable!</span>
+                  <button className="text-xs font-bold text-[#b0076a]">KNOW MORE</button>
                 </div>
-                
-                {order.address && (
-                   <div className="border-t border-gray-50 pt-4 mt-4 text-xs space-y-1">
-                     <p className="font-bold text-charcoal uppercase mb-1">Shipping Address</p>
-                     <p className="text-gray-500 font-semibold">{order.address.fullName}</p>
-                     <p className="text-gray-500">{order.address.city}, {order.address.state} - {order.address.pincode}</p>
-                   </div>
-                )}
               </div>
-            </div>
-
+            )}
+            
           </div>
         </div>
       )}

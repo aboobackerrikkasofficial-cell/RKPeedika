@@ -73,7 +73,7 @@ function BannerCarousel() {
   }, []);
 
   return (
-    <div className="relative w-full h-36 md:h-52 rounded-2xl overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-[#EDEDED] mt-2">
+    <div className="relative w-full h-28 md:h-44 rounded-2xl overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.05)] border border-[#EDEDED] mt-2">
       <div 
         className="flex transition-transform duration-500 ease-out h-full"
         style={{ transform: `translateX(-${currentSlide * 100}%)` }}
@@ -124,18 +124,18 @@ function BannerCarousel() {
 
 function HomeTrustStrip() {
   return (
-    <div className="grid grid-cols-3 gap-2 mt-3 bg-white rounded-xl border border-[#EDEDED] p-3 shadow-[0_1px_3px_rgba(0,0,0,0.04)] text-center">
-      <div className="flex flex-col items-center gap-1">
-        <Truck className="h-4.5 w-4.5 text-[#0B1B2B]" />
-        <span className="text-[9px] font-black text-charcoal uppercase">Free Delivery</span>
+    <div className="grid grid-cols-3 gap-1 mt-2 bg-white rounded-xl border border-[#EDEDED] p-2 shadow-[0_1px_3px_rgba(0,0,0,0.04)] text-center">
+      <div className="flex flex-row items-center justify-center gap-1">
+        <Truck className="h-4 w-4 text-[#0B1B2B]" />
+        <span className="text-[8px] font-black text-charcoal uppercase text-left leading-tight">Free Delivery</span>
       </div>
-      <div className="flex flex-col items-center gap-1 border-x border-[#EDEDED]">
-        <Gift className="h-4.5 w-4.5 text-[#F5A623]" />
-        <span className="text-[9px] font-black text-charcoal uppercase">Doorstep COD</span>
+      <div className="flex flex-row items-center justify-center gap-1 border-x border-[#EDEDED]">
+        <Gift className="h-4 w-4 text-[#F5A623]" />
+        <span className="text-[8px] font-black text-charcoal uppercase text-left leading-tight">Doorstep COD</span>
       </div>
-      <div className="flex flex-col items-center gap-1">
-        <ShieldCheck className="h-4.5 w-4.5 text-[#0B1B2B]" />
-        <span className="text-[9px] font-black text-charcoal uppercase">7-Day Exchange</span>
+      <div className="flex flex-row items-center justify-center gap-1">
+        <ShieldCheck className="h-4 w-4 text-[#0B1B2B]" />
+        <span className="text-[8px] font-black text-charcoal uppercase text-left leading-tight">7-Day Exchange</span>
       </div>
     </div>
   );

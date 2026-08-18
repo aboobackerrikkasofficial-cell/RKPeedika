@@ -34,7 +34,6 @@ export default function BottomNav() {
       icon: Package,
       action: () => setCurrentView('orders'),
       activeViews: ['orders'],
-      isCenter: true,
     },
     {
       id: 'cart',
@@ -73,15 +72,6 @@ export default function BottomNav() {
             aria-label={tab.label}
             aria-current={isActive ? 'page' : undefined}
           >
-            {tab.isCenter ? (
-              <div className="flex flex-col items-center relative -top-2">
-                <span className="flex h-[48px] w-[48px] items-center justify-center rounded-full bg-[#0B1B2B] text-[#F5A623] shadow-[0_3px_8px_rgba(11,27,43,0.2)] border-[3px] border-white transition-transform active:scale-95 z-20">
-                  <Icon size={22} strokeWidth={2} fill={isActive ? 'currentColor' : 'none'} />
-                </span>
-                <span className="text-[9px] mt-[2px] text-[#0B1B2B] font-bold leading-none">{tab.label}</span>
-              </div>
-            ) : (
-              <>
                 <span className="relative flex items-center justify-center">
                   <Icon
                     size={22}
@@ -99,8 +89,6 @@ export default function BottomNav() {
                   )}
                 </span>
                 <span className="bottom-nav-item-label">{tab.label}</span>
-              </>
-            )}
           </button>
         );
       })}

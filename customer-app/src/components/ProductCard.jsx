@@ -140,23 +140,7 @@ export default function ProductCard({ product }) {
           </div>
         )}
 
-        {/* Wishlist button */}
-        <button
-          type="button"
-          aria-label={isLiked ? 'Remove from wishlist' : 'Add to wishlist'}
-          onClick={(e) => {
-            e.stopPropagation();
-            toggleWishlist(product.id);
-          }}
-          className={`absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-white/95 shadow-sm border border-[#EDEDED] transition-transform active:scale-90 z-10 ${
-            isLiked ? 'text-[#F5A623]' : 'text-gray-400'
-          }`}
-        >
-          <Heart
-            size={16}
-            fill={isLiked ? 'currentColor' : 'none'}
-          />
-        </button>
+
       </div>
 
       {/* ============================================================
@@ -181,22 +165,41 @@ export default function ProductCard({ product }) {
           {product?.name || 'Unnamed Product'}
         </h3>
 
-        {/* Price Block */}
+        {/* Price Block & Wishlist */}
         <div className="flex flex-col gap-0.5 mt-0.5">
-          <div className="flex flex-wrap items-baseline gap-1.5">
-            <span className="text-sm md:text-base font-black text-[#1A1A1A]">
-              ₹{price.toLocaleString('en-IN')}
-            </span>
-            {originalPrice > price && (
-              <>
-                <span className="text-[10px] text-gray-400 line-through font-semibold">
-                  ₹{originalPrice.toLocaleString('en-IN')}
-                </span>
-                <span className="text-[11px] text-[#1F9D55] font-extrabold">
-                  {discount}% off
-                </span>
-              </>
-            )}
+          <div className="flex justify-between items-center w-full">
+            <div className="flex flex-wrap items-baseline gap-1.5">
+              <span className="text-sm md:text-base font-black text-[#1A1A1A]">
+                ₹{price.toLocaleString('en-IN')}
+              </span>
+              {originalPrice > price && (
+                <>
+                  <span className="text-[10px] text-gray-400 line-through font-semibold">
+                    ₹{originalPrice.toLocaleString('en-IN')}
+                  </span>
+                  <span className="text-[11px] text-[#1F9D55] font-extrabold">
+                    {discount}% off
+                  </span>
+                </>
+              )}
+            </div>
+            {/* Wishlist button moved here */}
+            <button
+              type="button"
+              aria-label={isLiked ? 'Remove from wishlist' : 'Add to wishlist'}
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleWishlist(product.id);
+              }}
+              className={`flex h-7 w-7 items-center justify-center rounded-full bg-gray-50 border border-[#EDEDED] transition-transform active:scale-90 flex-shrink-0 ml-1 ${
+                isLiked ? 'text-[#F5A623]' : 'text-gray-400'
+              }`}
+            >
+              <Heart
+                size={14}
+                fill={isLiked ? 'currentColor' : 'none'}
+              />
+            </button>
           </div>
           {/* Offer Applied Badge */}
           {hasOffer && (

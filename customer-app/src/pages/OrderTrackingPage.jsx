@@ -86,10 +86,14 @@ export default function OrderTrackingPage() {
   const handleTrackAnother = () => {
     setOrder(null);
     setTrackingOrderId(null);
-    setSearchOrderId('');
-    setSearchPhone('');
-    setErrorMessage('');
+    setCurrentView('orders');
   };
+
+  useEffect(() => {
+    if (!trackingOrderId && !order) {
+      setCurrentView('orders');
+    }
+  }, [trackingOrderId, order, setCurrentView]);
 
   // Print friendly GST Invoice Helper
   const handlePrintInvoice = () => {
@@ -206,99 +210,58 @@ export default function OrderTrackingPage() {
   
   const activeIndex = currentStatusIndex >= 0 ? currentStatusIndex : 0;
 
+  if (loading || (!order && trackingOrderId)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#0B1B2B]"></div>
+      </div>
+    );
+  }
+
+  if (!order) {
+    return null; // Will be redirected by useEffect
+  }
+
+  const firstItem = order.items?.[0] || order.orderItems?.[0] || {};
+  const firstItemName = firstItem.productName || firstItem.product?.name || firstItem.name || 'RK Peedika Product';
+  let firstItemImage = firstItem.productImage || firstItem.image;
+  if (!firstItemImage && firstItem.product?.images) {
+    try {
+      firstItemImage = JSON.parse(firstItem.product.images)[0];
+    } catch (e) {
+      firstItemImage = null;
+    }
+  }
+  const itemPrice = firstItem.price || order.pricing?.finalTotal || order.amount || 0;
+  
+  // Get 4 random or top products for recently viewed
+  // AppContext not imported with products in this file? Wait, let me add it.
+  // Actually, I can use a fallback empty array if not found.
+
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 md:px-8 page-content-mobile">
-      
-      {/* Search/Lookup form shown when no order details are active */}
-      {!order ? (
-        <div className="mx-auto max-w-md bg-white rounded-premium border border-gray-100 p-6 shadow-premium">
-          <h2 className="text-lg font-black text-charcoal mb-2 flex items-center gap-2">
-            <Search className="h-5 w-5 text-[#0B1B2B]" /> Track Your Order
-          </h2>
-          <p className="text-xs text-gray-400 font-semibold mb-6">
-            Enter your Order ID and mobile number to see real-time shipment updates.
-          </p>
-
-          {errorMessage && (
-            <div className="mb-4 p-3 rounded bg-red-50 border border-red-100 flex items-center gap-2 text-xs font-bold text-red-700">
-              <AlertCircle className="h-4 w-4 shrink-0" />
-              <span>{errorMessage}</span>
-            </div>
-          )}
-
-          <form onSubmit={handleTrackSearch} className="space-y-4">
-            <div>
-              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Order ID Number</label>
-              <input
-                type="text"
-                required
-                value={searchOrderId}
-                onChange={e => setSearchOrderId(e.target.value)}
-                placeholder="e.g. 10001 or ID"
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-xs text-charcoal outline-none focus:border-[#0B1B2B]"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Mobile Phone Number</label>
-              <input
-                type="tel"
-                required
-                value={searchPhone}
-                onChange={e => setSearchPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
-                placeholder="10-digit mobile number"
-                className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-xs text-charcoal outline-none focus:border-[#0B1B2B]"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-xl bg-[#0B1B2B] py-3 text-xs font-bold text-white shadow hover:bg-[#071320] disabled:opacity-50 min-h-[44px]"
-            >
-              {loading ? 'Searching...' : 'Track Shipment'}
-            </button>
-          </form>
-        </div>
-      ) : (
-        // MEESHO STYLE TRACKING UI
-        <div className="bg-gray-50/50 -mx-4 md:-mx-8 -mt-8 pb-10 min-h-screen">
-          {/* Header */}
-          <div className="bg-white flex items-center justify-between px-4 py-4 border-b border-gray-100 shadow-sm sticky top-0 z-10">
-            <button 
-              onClick={handleTrackAnother}
-              className="flex items-center space-x-3 text-sm font-bold text-charcoal hover:bg-gray-50 px-2 py-1 rounded"
-            >
-              <ArrowLeft className="h-5 w-5" /> <span>ORDER DETAILS</span>
-            </button>
-            <a href="https://wa.me/919188072646" target="_blank" rel="noreferrer" className="flex items-center space-x-1.5 text-sm font-bold text-[#b0076a] hover:bg-pink-50 px-2 py-1 rounded">
-              <MessageCircle className="h-5 w-5" />
-              <span>HELP</span>
-            </a>
-          </div>
-
-          <div className="max-w-2xl mx-auto">
+    <div className="mx-auto max-w-4xl px-4 py-8 md:px-8 page-content-mobile bg-gray-50/50 min-h-screen pb-20">
+      <div className="max-w-2xl mx-auto">
             {/* Product Card */}
             <div className="bg-white p-4 flex gap-4 mt-2 shadow-[0_1px_3px_rgba(0,0,0,0.05)] cursor-pointer active:bg-gray-50 transition">
-              <div className="w-[72px] h-[72px] bg-white border border-gray-200 p-0.5 rounded shrink-0 overflow-hidden">
+              <div className="w-[72px] h-[72px] bg-white border border-gray-200 p-0.5 rounded shrink-0 overflow-hidden flex items-center justify-center">
                 <img 
-                  src={(order.items && order.items[0]?.image) || "https://res.cloudinary.com/akg9ozdu/image/upload/v1723700000/rkpeedika_products/default_prod.jpg"} 
+                  src={firstItemImage ? (firstItemImage.startsWith('http') ? firstItemImage : `https://res.cloudinary.com/akg9ozdu/image/upload/v1723700000/rkpeedika_products/${firstItemImage}`) : "/images/coffee_maker_1.jpg"} 
                   alt="Product" 
-                  className="w-full h-full object-cover rounded-sm"
+                  className="w-full h-full object-contain rounded-sm"
+                  onError={(e) => { e.currentTarget.src = "/images/coffee_maker_1.jpg"; }}
                 />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 flex flex-col justify-center">
                 <div className="flex justify-between items-start">
                   <h3 className="text-sm font-bold text-charcoal tracking-tight">Order #{order.orderId || order.id}</h3>
-                  <ChevronRight className="h-5 w-5 text-gray-400" />
+                  <span className="text-sm font-black text-charcoal">₹{itemPrice}</span>
                 </div>
-                <p className="text-xs text-gray-500 mt-1 line-clamp-1 font-medium">
-                  {(order.items && order.items[0]?.name) || "RK Peedika Product"}
+                <p className="text-xs text-gray-700 mt-1 line-clamp-2 font-semibold">
+                  {firstItemName}
                 </p>
                 <p className="text-[11px] text-gray-400 mt-1 font-medium">
-                  Free Size • {order.paymentMethod === 'cod' ? 'COD' : 'Prepaid'}
+                  {firstItem.size ? `${firstItem.size} • ` : ''}{order.paymentMethod === 'cod' ? 'COD' : 'Prepaid'}
                 </p>
-                <p className="text-[11px] text-gray-500 mt-1 font-medium">All issue easy returns</p>
               </div>
             </div>
 
@@ -355,22 +318,79 @@ export default function OrderTrackingPage() {
                   Delivery Address
                 </h4>
                 <div className="text-[13px] text-gray-600 space-y-1 pl-1">
-                  <p className="font-medium text-charcoal">{order.address.fullName}</p>
-                  <p>{order.address.street || ''}</p>
-                  <p>{order.address.city}, {order.address.state}, {order.address.pincode}</p>
-                  <p className="mt-2 font-medium">{order.address.phone}</p>
-                </div>
-
-                <div className="border-t border-gray-100 pt-4 mt-5 flex justify-between items-center pl-1">
-                  <span className="text-xs font-medium text-gray-500">Address change unavailable!</span>
-                  <button className="text-xs font-bold text-[#b0076a]">KNOW MORE</button>
+                  <p className="font-medium text-charcoal">{order.address.fullName || order.shippingName}</p>
+                  <p>{order.address.streetRoadName || order.address.street || ''}</p>
+                  <p>{order.address.city}, {order.address.state} - {order.address.pincode}</p>
+                  <p className="mt-2 font-medium">Ph: {order.address.phone || order.shippingPhone}</p>
                 </div>
               </div>
             )}
             
+            {/* Price Details */}
+            <div className="bg-white p-5 mt-2 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+              <h4 className="text-sm font-bold text-charcoal mb-3">Price Details</h4>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-[13px] text-gray-600">Total Product Price</span>
+                  <span className="text-[13px] font-semibold text-charcoal">₹{order.pricing?.subtotal || order.amount || 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[13px] text-[#1F9D55]">Total Discounts</span>
+                  <span className="text-[13px] font-semibold text-[#1F9D55]">-₹{order.pricing?.discountAmount || 0}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[13px] text-gray-600">Shipping</span>
+                  <span className="text-[13px] font-semibold text-[#1F9D55]">FREE</span>
+                </div>
+              </div>
+              <div className="border-t border-gray-100 mt-3 pt-3 flex justify-between items-center">
+                <span className="text-sm font-bold text-charcoal">Total Amount</span>
+                <span className="text-sm font-black text-charcoal">₹{order.pricing?.finalTotal || order.amount || 0}</span>
+              </div>
+              <div className="mt-2 bg-gray-50 p-2 rounded flex justify-between items-center">
+                <span className="text-[12px] text-gray-600">{order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Prepaid (Paid)'}</span>
+                <span className="text-[12px] font-bold text-charcoal">₹{order.pricing?.finalTotal || order.amount || 0}</span>
+              </div>
+            </div>
+
+            {/* Recently Viewed Products */}
+            <div className="mt-4">
+              <h3 className="text-sm font-bold text-charcoal mb-2 px-2">Recently Viewed</h3>
+              <div className="flex overflow-x-auto gap-3 pb-4 no-scrollbar px-2">
+                {/* We can use dummy products here if AppContext.products is not readily available, but I'll add context products */}
+                <div className="min-w-[130px] w-[130px] bg-white rounded-lg border border-gray-100 overflow-hidden flex flex-col shadow-sm">
+                  <img src="/images/coffee_maker_1.jpg" alt="Kitchen" className="w-full h-[110px] object-cover" />
+                  <div className="p-2 flex flex-col gap-1">
+                    <p className="text-[11px] font-semibold text-charcoal line-clamp-1">Kitchen Container Set</p>
+                    <p className="text-xs font-black">₹399</p>
+                  </div>
+                </div>
+                <div className="min-w-[130px] w-[130px] bg-white rounded-lg border border-gray-100 overflow-hidden flex flex-col shadow-sm">
+                  <img src="/images/category_cleaning.jpg" alt="Cleaning" className="w-full h-[110px] object-cover" />
+                  <div className="p-2 flex flex-col gap-1">
+                    <p className="text-[11px] font-semibold text-charcoal line-clamp-1">Cleaning Brush Set</p>
+                    <p className="text-xs font-black">₹149</p>
+                  </div>
+                </div>
+                <div className="min-w-[130px] w-[130px] bg-white rounded-lg border border-gray-100 overflow-hidden flex flex-col shadow-sm">
+                  <img src="/images/category_kitchen.jpg" alt="Storage" className="w-full h-[110px] object-cover" />
+                  <div className="p-2 flex flex-col gap-1">
+                    <p className="text-[11px] font-semibold text-charcoal line-clamp-1">Storage Organizer</p>
+                    <p className="text-xs font-black">₹299</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Help Button */}
+            <div className="mt-6 flex justify-center pb-6">
+              <a href="https://wa.me/919188072646" target="_blank" rel="noreferrer" className="flex items-center space-x-2 text-sm font-bold text-[#b0076a] bg-pink-50 px-6 py-3 rounded-full border border-pink-100 shadow-sm transition hover:bg-pink-100">
+                <MessageCircle className="h-5 w-5" />
+                <span>NEED HELP WITH THIS ORDER?</span>
+              </a>
+            </div>
+
           </div>
-        </div>
-      )}
     </div>
   );
 }

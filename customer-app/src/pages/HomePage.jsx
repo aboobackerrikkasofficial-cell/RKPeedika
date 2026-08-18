@@ -90,11 +90,11 @@ function BannerCarousel() {
             />
             {/* Content */}
             <div className="relative z-10 space-y-1 md:space-y-2 max-w-[65%]">
-              <span className="inline-block bg-white/20 text-[9px] md:text-xs font-black uppercase px-2.5 py-0.5 rounded-full tracking-wider backdrop-blur-sm">
+              <span className="inline-block bg-[#F5A623] text-white text-[10px] md:text-sm font-black uppercase px-3 py-1 rounded-full tracking-wider shadow-lg">
                 {banner.badge}
               </span>
               <h3 className="text-sm md:text-2xl font-black leading-tight drop-shadow-sm">{banner.title}</h3>
-              <p className="text-xs md:text-lg font-bold text-[#F5A623]">{banner.subtitle}</p>
+              <p className="text-xs md:text-lg font-bold text-[#F5A623] drop-shadow-sm">{banner.subtitle}</p>
             </div>
             {/* Visual element */}
             <div className="relative z-10 h-[80%] aspect-square rounded-full border-4 border-white/10 overflow-hidden shrink-0 shadow-inner bg-white/10 flex items-center justify-center p-1">
@@ -121,25 +121,6 @@ function BannerCarousel() {
 }
 
 
-
-function HomeTrustStrip() {
-  return (
-    <div className="grid grid-cols-3 gap-1 mt-2 bg-white rounded-xl border border-[#EDEDED] p-2 shadow-[0_1px_3px_rgba(0,0,0,0.04)] text-center">
-      <div className="flex flex-row items-center justify-center gap-1">
-        <Truck className="h-4 w-4 text-[#0B1B2B]" />
-        <span className="text-[8px] font-black text-charcoal uppercase text-left leading-tight">Free Delivery</span>
-      </div>
-      <div className="flex flex-row items-center justify-center gap-1 border-x border-[#EDEDED]">
-        <Gift className="h-4 w-4 text-[#F5A623]" />
-        <span className="text-[8px] font-black text-charcoal uppercase text-left leading-tight">Doorstep COD</span>
-      </div>
-      <div className="flex flex-row items-center justify-center gap-1">
-        <ShieldCheck className="h-4 w-4 text-[#0B1B2B]" />
-        <span className="text-[8px] font-black text-charcoal uppercase text-left leading-tight">7-Day Exchange</span>
-      </div>
-    </div>
-  );
-}
 
 export default function HomePage() {
   const {
@@ -204,9 +185,6 @@ export default function HomePage() {
 
       {/* Banner Carousel */}
       <BannerCarousel />
-
-      {/* Trust Highlights Strip */}
-      <HomeTrustStrip />
 
 
 

@@ -141,9 +141,7 @@ export default function Header() {
               onFocus={() => setShowSuggestions(searchQuery.trim().length > 0)}
               onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
             />
-            <div className="flex items-center gap-2 text-gray-400">
-              <Mic size={16} className="cursor-pointer hover:text-[#0B1B2B] transition-colors" />
-            </div>
+
             {searchQuery && (
               <button
                 onClick={handleClearSearch}
@@ -228,9 +226,7 @@ export default function Header() {
             <span className="flex-grow text-sm text-gray-450 truncate font-semibold">
               {searchQuery || 'Search for products...'}
             </span>
-            <div className="flex items-center gap-2 text-gray-400">
-              <Mic size={18} />
-            </div>
+
             {searchQuery && (
               <X
                 size={18}

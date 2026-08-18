@@ -77,6 +77,7 @@ export default function BottomNav() {
                     size={22}
                     strokeWidth={isActive ? 2.2 : 1.8}
                     fill={isActive ? 'currentColor' : 'none'}
+                    className={tab.id === 'orders' ? 'text-[#F5A623]' : ''}
                   />
                   {/* Cart badge */}
                   {tab.badge > 0 && (
@@ -88,7 +89,7 @@ export default function BottomNav() {
                     </span>
                   )}
                 </span>
-                <span className="bottom-nav-item-label">{tab.label}</span>
+                <span className={`bottom-nav-item-label ${tab.id === 'orders' ? 'text-[#F5A623] font-black' : ''}`}>{tab.label}</span>
           </button>
         );
       })}

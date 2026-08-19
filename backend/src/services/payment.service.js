@@ -14,7 +14,7 @@ class RazorpayAdapter extends PaymentGatewayAdapter {
     this.config = config; 
     this.instance = new Razorpay({
       key_id: process.env.RAZORPAY_KEY_ID || config.keyId,
-      key_secret: process.env.RAZORPAY_KEY_SECRET
+      key_secret: process.env.RAZORPAY_KEY_SECRET || config.keySecret
     });
   }
   

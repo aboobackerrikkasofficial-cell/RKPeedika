@@ -20,6 +20,7 @@ import { Mail, ShieldCheck, Landmark, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SessionTimeoutHandler from './components/SessionTimeoutHandler';
 import PopupDialog from './components/PopupDialog';
+import CookieConsent from './components/CookieConsent';
 
 
 // Custom Brand SVG Icons
@@ -505,6 +506,7 @@ function AppContent() {
     <div className="flex flex-col min-h-screen bg-white relative">
       <PopupDialog />
       <SessionTimeoutHandler />
+      <CookieConsent />
       
       {/* Sticky Header */}
       <Header />

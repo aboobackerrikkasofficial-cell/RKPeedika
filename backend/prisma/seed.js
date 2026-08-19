@@ -462,14 +462,16 @@ async function main() {
       displayName: 'Razorpay',
       isEnabled: true,
       environment: 'sandbox',
-      keyId: process.env.RAZORPAY_KEY_ID || ''
+      keyId: process.env.RAZORPAY_KEY_ID || '',
+      keySecret: process.env.RAZORPAY_KEY_SECRET || ''
     },
     create: {
       gatewayName: 'razorpay',
       displayName: 'Razorpay',
       isEnabled: true,
       environment: 'sandbox',
-      keyId: process.env.RAZORPAY_KEY_ID || ''
+      keyId: process.env.RAZORPAY_KEY_ID || '',
+      keySecret: process.env.RAZORPAY_KEY_SECRET || ''
     }
   });
   console.log('✔ Razorpay payment gateway config upserted.');

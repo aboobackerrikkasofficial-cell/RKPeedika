@@ -363,7 +363,7 @@ export default function CustomerDashboard() {
       setIsEditingProfile(false);
       setTimeout(() => setSuccessMsg(""), 3000);
     } else {
-      setErrorMsg("Failed to update profile details.");
+      setErrorMsg(res.message || "Failed to update profile details.");
       setTimeout(() => setErrorMsg(""), 3000);
     }
   };
@@ -540,8 +540,11 @@ export default function CustomerDashboard() {
                   <input 
                     type="text" 
                     value={profilePhone}
-                    onChange={e => setProfilePhone(e.target.value)}
-                    placeholder="+91 XXXXX XXXXX"
+                    onChange={e => {
+                      const val = e.target.value.replace(/[^0-9]/g, '');
+                      if (val.length <= 10) setProfilePhone(val);
+                    }}
+                    placeholder="Enter 10-digit mobile number"
                     className="w-full rounded-xl border border-gray-200 px-3.5 py-3 text-xs text-charcoal outline-none focus:border-[#0B1B2B]"
                   />
                 </div>

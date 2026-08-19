@@ -817,8 +817,10 @@ export const AppProvider = ({ children }) => {
       }
     } catch (err) {
       console.error("Failed to update profile", err);
+      const errMsg = err.response?.data?.error?.message || err.response?.data?.message || "Failed to update profile details.";
+      return { success: false, message: errMsg };
     }
-    return { success: false };
+    return { success: false, message: "Unknown error" };
   };
 
   // Pincode Validator

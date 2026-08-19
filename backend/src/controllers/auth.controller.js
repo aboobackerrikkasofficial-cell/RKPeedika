@@ -1287,29 +1287,20 @@ export const guestLogin = async (
 ) => {
   try {
     const guestPhone =
-      '9999999999';
+      `guest_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
 
-    let user =
-      await prisma.user.findUnique({
-        where: {
-          phone: guestPhone
+    const user =
+      await prisma.user.create({
+        data: {
+          phone: guestPhone,
+          name:
+            `Guest_${Math.floor(1000 + Math.random() * 9000)}`,
+          role:
+            'customer',
+          status:
+            'active'
         }
       });
-
-    if (!user) {
-      user =
-        await prisma.user.create({
-          data: {
-            phone: guestPhone,
-            name:
-              'Guest Customer',
-            role:
-              'customer',
-            status:
-              'active'
-          }
-        });
-    }
 
     const token =
       jwt.sign(

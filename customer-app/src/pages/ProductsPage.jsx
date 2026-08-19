@@ -77,6 +77,7 @@ function getCategoryEmoji(name) {
 export default function ProductsPage() {
   const {
     products,
+    isProductsLoading,
     categories,
     searchQuery,
     setSearchQuery,
@@ -531,7 +532,20 @@ export default function ProductsPage() {
 
         {/* PRODUCT GRID */}
         <div className="flex-1 min-w-0">
-          {filteredProducts.length === 0 ? (
+          {isProductsLoading ? (
+            <div className="product-grid">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="animate-pulse bg-white rounded-xl shadow-sm border border-[#EDEDED] overflow-hidden">
+                  <div className="h-40 bg-gray-200"></div>
+                  <div className="p-3">
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                    <div className="h-6 bg-gray-200 rounded w-1/3"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : filteredProducts.length === 0 ? (
             <div className="text-center py-16 border border-dashed border-gray-200 rounded-xl bg-white">
               <SlidersHorizontal size={36} className="mx-auto mb-3 text-gray-300" />
               <h3 className="text-sm font-bold text-[#222222]">No Products Found</h3>

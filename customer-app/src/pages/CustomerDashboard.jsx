@@ -936,7 +936,7 @@ export default function CustomerDashboard() {
       <div className="flex flex-col md:flex-row gap-8">
         {/* Mobile Navigation Row (Horizontal Scroll) */}
         <div className="md:hidden mb-4 -mx-4 px-4 overflow-x-auto no-scrollbar pb-2">
-          <div className="flex space-x-2">
+          <div className="flex space-x-2 items-center">
             {menuItems.map(item => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -959,6 +959,13 @@ export default function CustomerDashboard() {
                 </button>
               );
             })}
+            <button
+              onClick={() => logoutUser()}
+              className="flex items-center space-x-1.5 px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all shadow-sm shrink-0 bg-red-50 text-red-500 border border-red-100 hover:bg-red-100"
+            >
+              <LogOut className="h-4 w-4" />
+              <span>Logout</span>
+            </button>
           </div>
         </div>
 

@@ -125,6 +125,7 @@ function BannerCarousel() {
 export default function HomePage() {
   const {
     products,
+    isProductsLoading,
     searchQuery,
     selectedCategory,
     setCurrentView,
@@ -202,7 +203,22 @@ export default function HomePage() {
           </button>
         </div>
 
-        {filteredProducts.length === 0 ? (
+        {isProductsLoading ? (
+          <div className="mt-2">
+            <div className="product-grid">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="animate-pulse bg-white rounded-xl shadow-sm border border-[#EDEDED] overflow-hidden">
+                  <div className="h-40 bg-gray-200"></div>
+                  <div className="p-3">
+                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                    <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                    <div className="h-6 bg-gray-200 rounded w-1/3"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : filteredProducts.length === 0 ? (
           <div className="rounded-xl border border-dashed border-[#EDEDED] bg-white px-4 py-12 text-center shadow-sm">
             <ShoppingBag size={32} className="mx-auto mb-2 text-gray-300" />
             <h4 className="text-sm font-bold text-charcoal">No Products Found</h4>

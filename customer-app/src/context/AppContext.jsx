@@ -23,6 +23,7 @@ export const AppProvider = ({ children }) => {
 
   // E-commerce items
   const [products, setProducts] = useState(DEFAULT_PRODUCTS);
+  const [isProductsLoading, setIsProductsLoading] = useState(true);
   const [cart, setCart] = useState([]);
   const [quickPurchaseItem, setQuickPurchaseItem] = useState(null);
   const [wishlist, setWishlist] = useState([]);
@@ -393,6 +394,8 @@ export const AppProvider = ({ children }) => {
         }
       } catch (err) {
         console.error("Failed to load storefront assets:", err);
+      } finally {
+        setIsProductsLoading(false);
       }
     };
 
@@ -1159,6 +1162,7 @@ export const AppProvider = ({ children }) => {
       // Products list
       products,
       setProducts,
+      isProductsLoading,
       addProductFromAdmin,
       addCategoryFromAdmin,
 

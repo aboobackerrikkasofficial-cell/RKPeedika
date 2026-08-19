@@ -19,21 +19,21 @@ export default function BottomNav() {
       label: 'Home',
       icon: Home,
       action: () => setCurrentView('home'),
-      activeViews: ['home'],
+      activeViews: ['home', 'product'],
     },
     {
       id: 'categories',
       label: 'Categories',
       icon: Grid2x2,
       action: () => setCurrentView('categories'),
-      activeViews: ['categories'],
+      activeViews: ['categories', 'products'],
     },
     {
       id: 'orders',
       label: 'Orders',
       icon: Package,
       action: () => setCurrentView('orders'),
-      activeViews: ['orders'],
+      activeViews: ['orders', 'order-tracking'],
     },
     {
       id: 'cart',
@@ -41,14 +41,14 @@ export default function BottomNav() {
       icon: ShoppingCart,
       badge: cartCount,
       action: () => setCurrentView('cart'),
-      activeViews: ['cart'],
+      activeViews: ['cart', 'checkout'],
     },
     {
       id: 'profile',
       label: 'Account',
       icon: User,
       action: () => setCurrentView('profile'),
-      activeViews: ['profile'],
+      activeViews: ['profile', 'wishlist'],
     },
   ];
 

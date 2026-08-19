@@ -933,17 +933,10 @@ export default function CustomerDashboard() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 md:px-8">
-      <button 
-        onClick={() => setCurrentView('home')}
-        className="flex items-center space-x-2 text-xs font-bold uppercase tracking-wider text-gray-500 hover:text-charcoal mb-6"
-      >
-        <ArrowLeft className="h-4 w-4" /> <span>Back to Store</span>
-      </button>
-
       <div className="flex flex-col md:flex-row gap-8">
-        {/* Mobile Navigation Grid */}
-        <div className="md:hidden mb-6">
-          <div className="grid grid-cols-2 gap-2">
+        {/* Mobile Navigation Row (Horizontal Scroll) */}
+        <div className="md:hidden mb-4 -mx-4 px-4 overflow-x-auto no-scrollbar pb-2">
+          <div className="flex space-x-2">
             {menuItems.map(item => {
               const Icon = item.icon;
               const isActive = activeTab === item.id;
@@ -955,13 +948,13 @@ export default function CustomerDashboard() {
                     setSuccessMsg("");
                     setErrorMsg("");
                   }}
-                  className={`flex flex-col items-center justify-center space-y-1.5 p-3 rounded-xl text-xs font-bold transition-all shadow-sm ${
+                  className={`flex items-center space-x-1.5 px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all shadow-sm shrink-0 ${
                     isActive 
-                      ? 'bg-[#0B1B2B] text-white border border-[#0B1B2B]' 
+                      ? 'bg-[#0B1B2B] text-white' 
                       : 'bg-white border border-gray-200 text-charcoal hover:bg-gray-50'
                   }`}
                 >
-                  <Icon className={`h-5 w-5 ${isActive ? 'text-white' : 'text-gray-500'}`} />
+                  <Icon className={`h-4 w-4 ${isActive ? 'text-white' : 'text-gray-500'}`} />
                   <span>{item.label}</span>
                 </button>
               );

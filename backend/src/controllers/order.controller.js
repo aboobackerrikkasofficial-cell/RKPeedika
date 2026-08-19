@@ -687,16 +687,40 @@ export const syncOrderTracking = async (req, res, next) => {
 
 export const cancelOrder = async (req, res, next) => {
   const { id } = req.params;
+  const { phone } = req.body;
 
   try {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
     const order = await prisma.order.findFirst({
-      where: isUuid ? { id } : { orderId: id }
+      where: isUuid ? { id } : { orderId: id },
+      include: { address: true, user: true }
     });
 
     if (!order) {
       return next(new NotFoundError(`Order ID ${id} not found`));
+    }
+
+    if (req.user) {
+      if (req.user.role !== 'admin' && order.userId !== req.user.id) {
+        return res.status(403).json({ success: false, message: "Unauthorized to cancel this order." });
+      }
+    } else if (phone) {
+      const cleanPhone = phone.toString().replace(/\D/g, '');
+      const orderPhone = order.shippingPhone ? order.shippingPhone.toString().replace(/\D/g, '') : '';
+      const addressPhone = order.address?.phone ? order.address.phone.toString().replace(/\D/g, '') : '';
+      const userPhone = order.user?.phone ? order.user.phone.toString().replace(/\D/g, '') : '';
+      
+      const matchesPhone = 
+        (orderPhone && orderPhone.endsWith(cleanPhone)) || 
+        (addressPhone && addressPhone.endsWith(cleanPhone)) ||
+        (userPhone && userPhone.endsWith(cleanPhone));
+        
+      if (!matchesPhone) {
+        return res.status(403).json({ success: false, message: "Unauthorized: Mobile number does not match this order." });
+      }
+    } else {
+      return res.status(401).json({ success: false, message: "Authentication or phone number required to cancel order." });
     }
 
     const nonCancellableStates = ['shipped', 'out_for_delivery', 'delivered', 'completed', 'cancelled'];

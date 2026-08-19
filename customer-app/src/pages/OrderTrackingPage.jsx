@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../context/AppContext';
-import { ArrowLeft, Check, Truck, MapPin, Package, RefreshCcw, CheckCircle, Search, AlertCircle, FileText, ChevronRight, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Check, Truck, MapPin, Package, RefreshCcw, CheckCircle, Search, AlertCircle, FileText, ChevronRight, MessageCircle, X } from 'lucide-react';
 import apiClient from '../api/client';
 import getImageUrl from '../utils/imageUrl';
 
@@ -17,6 +17,28 @@ export default function OrderTrackingPage() {
   } = useContext(AppContext);
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isKnowMoreOpen, setIsKnowMoreOpen] = useState(false);
+
+  const handleCancelOrder = async () => {
+    const confirmCancel = await window.showConfirm("Are you sure you want to cancel this order?", "Cancel Order");
+    if (!confirmCancel) return;
+
+    try {
+      setLoading(true);
+      const res = await apiClient.put(`/orders/${order.id}/cancel`);
+      if (res.data && res.data.success) {
+        showToast("Order cancelled successfully.", "success");
+        setOrder(res.data.order);
+      } else {
+        showToast(res.data.message || "Failed to cancel order.", "error");
+      }
+    } catch (err) {
+      console.error("Cancel order error:", err);
+      showToast(err.response?.data?.message || "Failed to cancel order. Please contact support.", "error");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // Form states for guest track lookup
   const [searchOrderId, setSearchOrderId] = useState(trackingOrderId || '');
@@ -97,6 +119,34 @@ export default function OrderTrackingPage() {
     setOrder(null);
     setTrackingOrderId(null);
     setCurrentView('orders');
+  };
+
+  const [cancelling, setCancelling] = useState(false);
+
+  const handleCancelOrder = async () => {
+    if (!order) return;
+    
+    const confirmCancel = window.confirm("Are you sure you want to cancel this order? This action cannot be undone.");
+    if (!confirmCancel) return;
+
+    setCancelling(true);
+    try {
+      const res = await apiClient.put(`/orders/${order.id}/cancel`);
+      if (res.data && res.data.success) {
+        showToast('success', 'Order cancelled successfully.');
+        setOrder({
+          ...order,
+          status: 'cancelled',
+          paymentStatus: order.paymentMethod === 'cod' ? 'failed' : order.paymentStatus
+        });
+      } else {
+        showToast('error', res.data?.message || 'Failed to cancel order.');
+      }
+    } catch (err) {
+      showToast('error', err.response?.data?.message || 'Failed to cancel order. Please login and try again.');
+    } finally {
+      setCancelling(false);
+    }
   };
 
   useEffect(() => {
@@ -244,6 +294,12 @@ export default function OrderTrackingPage() {
   }
   const itemPrice = firstItem.price || order.pricing?.finalTotal || order.amount || 0;
   
+  const pricing = {
+    subtotal: Math.round((order.amount || 0) + (order.discountAmount || 0)),
+    discountAmount: Math.round(order.discountAmount || 0),
+    finalTotal: Math.round(order.amount || 0)
+  };
+  
   // Get recently viewed products
   const recentlyViewedItems = (recentlyViewed || [])
     .map(id => (products || []).find(p => p.id === id))
@@ -325,18 +381,28 @@ export default function OrderTrackingPage() {
               </div>
 
               <div className="border-t border-gray-100 pt-4 flex flex-col sm:flex-row gap-2 justify-between items-stretch sm:items-center px-1">
-                {order.trackingUrl ? (
-                  <a 
-                    href={order.trackingUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="text-xs font-bold text-[#1F9D55] hover:text-[#187c43] flex items-center justify-center gap-1.5 py-1 px-2.5 rounded bg-green-50 hover:bg-green-100 border border-green-200 transition-colors uppercase tracking-wider"
-                  >
-                    <Truck className="h-3.5 w-3.5" />
-                    Track Live on {order.courier || 'Courier'} Website
-                  </a>
+                {['shipped', 'out_for_delivery', 'delivered', 'completed', 'cancelled'].includes((order.status || '').toLowerCase()) ? (
+                  order.trackingUrl ? (
+                    <a 
+                      href={order.trackingUrl} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="text-xs font-bold text-[#1F9D55] hover:text-[#187c43] flex items-center justify-center gap-1.5 py-1 px-2.5 rounded bg-green-50 hover:bg-green-100 border border-green-200 transition-colors uppercase tracking-wider"
+                    >
+                      <Truck className="h-3.5 w-3.5" />
+                      Track Live on {order.courier || 'Courier'} Website
+                    </a>
+                  ) : (
+                    <span className="text-xs font-medium text-gray-500">Order confirmed, cancel unavailable.</span>
+                  )
                 ) : (
-                  <span className="text-xs font-medium text-gray-500">Order confirmed, cancel unavailable.</span>
+                  <button 
+                    onClick={handleCancelOrder}
+                    disabled={cancelling}
+                    className="text-xs font-black text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 border border-red-200 py-1.5 px-3 rounded text-center uppercase tracking-wider transition-colors disabled:opacity-50"
+                  >
+                    {cancelling ? 'Cancelling...' : 'Cancel Order'}
+                  </button>
                 )}
                 <button className="text-xs font-bold text-[#b0076a] hover:underline text-center sm:text-right py-1">KNOW MORE</button>
               </div>

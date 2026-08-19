@@ -68,6 +68,7 @@ const EMPTY_FORM = {
   price: '',          // MRP / base price
   codPrice: '',       // Regular / COD price
   onlinePrice: '',    // Prepaid / online price
+  onlineDiscount: '', // Online Discount (%)
   rating: '',
   reviewCount: '',
   averageRating: '',
@@ -263,6 +264,7 @@ export default function Products() {
       price: product.price ?? '',
       codPrice: product.codPrice ?? '',
       onlinePrice: product.onlinePrice ?? '',
+      onlineDiscount: product.onlineDiscount ?? '',
       rating: product.rating ?? '',
       reviewCount: product.reviewCount ?? '',
       averageRating: product.averageRating ?? '',
@@ -288,7 +290,38 @@ export default function Products() {
   }
 
   function updateField(name, value) {
-    setForm((prev) => ({ ...prev, [name]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [name]: value };
+
+      // If MRP price changes, recalculate Prepaid Price based on current discount
+      if (name === 'price') {
+        const mrp = Number(value);
+        const discount = Number(prev.onlineDiscount);
+        if (mrp > 0 && discount > 0) {
+          next.onlinePrice = String(Math.round(mrp * (1 - discount / 100)));
+        }
+      }
+
+      // If discount percentage changes, calculate Prepaid Price
+      if (name === 'onlineDiscount') {
+        const mrp = Number(prev.price);
+        const discount = Number(value);
+        if (mrp > 0 && discount >= 0 && discount <= 100) {
+          next.onlinePrice = String(Math.round(mrp * (1 - discount / 100)));
+        }
+      }
+
+      // If Prepaid Price changes, recalculate discount percentage
+      if (name === 'onlinePrice') {
+        const mrp = Number(prev.price);
+        const onlinePrice = Number(value);
+        if (mrp > 0 && onlinePrice > 0 && onlinePrice <= mrp) {
+          next.onlineDiscount = String(Math.round(((mrp - onlinePrice) / mrp) * 100));
+        }
+      }
+
+      return next;
+    });
   }
 
   // ── Image Upload ──────────────────────────────────────────────────────────────
@@ -441,6 +474,7 @@ export default function Products() {
       price: Number(form.price),
       codPrice: form.codPrice === '' || !form.codAvailable ? null : Number(form.codPrice),
       onlinePrice: form.onlinePrice === '' || !form.prepaidAvailable ? null : Number(form.onlinePrice),
+      onlineDiscount: form.onlineDiscount === '' ? null : Number(form.onlineDiscount),
       categoryId: String(form.categoryId),
       images: imageUrls,
       highlights,
@@ -1021,7 +1055,7 @@ export default function Products() {
                     {/* Pricing */}
                     <div className="border border-gray-100 bg-gray-50/30 rounded-xl p-4 space-y-4">
                       <h4 className="text-xs font-black text-gray-400 uppercase tracking-wider">Pricing</h4>
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div>
                           <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
                             MRP (Base Price) *
@@ -1043,20 +1077,19 @@ export default function Products() {
 
                         <div>
                           <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
-                            COD / Regular Price
+                            Online Discount (%)
                           </label>
                           <div className="relative">
-                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">₹</span>
                             <input
                               type="number"
-                              value={form.codPrice}
-                              disabled={!form.codAvailable}
-                              onChange={(e) => updateField('codPrice', e.target.value)}
-                              placeholder="389"
+                              value={form.onlineDiscount}
+                              onChange={(e) => updateField('onlineDiscount', e.target.value)}
+                              placeholder="12"
                               min="0"
-                              step="0.01"
-                              className="w-full rounded-xl border border-gray-200 pl-6 pr-2 py-2.5 text-xs outline-none focus:border-[#F7941D] transition-colors disabled:opacity-50 disabled:bg-gray-100"
+                              max="100"
+                              className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-xs outline-none focus:border-[#F7941D] transition-colors"
                             />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">%</span>
                           </div>
                         </div>
 
@@ -1072,6 +1105,25 @@ export default function Products() {
                               disabled={!form.prepaidAvailable}
                               onChange={(e) => updateField('onlinePrice', e.target.value)}
                               placeholder="349"
+                              min="0"
+                              step="0.01"
+                              className="w-full rounded-xl border border-gray-200 pl-6 pr-2 py-2.5 text-xs outline-none focus:border-[#F7941D] transition-colors disabled:opacity-50 disabled:bg-gray-100"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
+                            COD / Regular Price
+                          </label>
+                          <div className="relative">
+                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">₹</span>
+                            <input
+                              type="number"
+                              value={form.codPrice}
+                              disabled={!form.codAvailable}
+                              onChange={(e) => updateField('codPrice', e.target.value)}
+                              placeholder="389"
                               min="0"
                               step="0.01"
                               className="w-full rounded-xl border border-gray-200 pl-6 pr-2 py-2.5 text-xs outline-none focus:border-[#F7941D] transition-colors disabled:opacity-50 disabled:bg-gray-100"

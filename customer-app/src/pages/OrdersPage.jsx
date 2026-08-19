@@ -100,7 +100,7 @@ export default function OrdersPage() {
                         <p className="text-[10px] text-gray-400 mt-0.5">Order ID: #{order.orderId}</p>
                       </div>
                       <div className="flex items-center space-x-1.5 mt-1">
-                        <span className="text-xs font-black text-charcoal">₹{order.pricing?.finalTotal}</span>
+                        <span className="text-xs font-black text-charcoal">₹{order.pricing?.finalTotal || order.amount}</span>
                         <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">
                           · {order.paymentMethod === 'cod' ? 'COD' : 'Paid'}
                         </span>

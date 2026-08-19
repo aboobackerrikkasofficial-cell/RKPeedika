@@ -684,3 +684,56 @@ export const syncOrderTracking = async (req, res, next) => {
     next(error);
   }
 };
+
+export const cancelOrder = async (req, res, next) => {
+  const { id } = req.params;
+
+  try {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+    const order = await prisma.order.findFirst({
+      where: isUuid ? { id } : { orderId: id }
+    });
+
+    if (!order) {
+      return next(new NotFoundError(`Order ID ${id} not found`));
+    }
+
+    const nonCancellableStates = ['shipped', 'out_for_delivery', 'delivered', 'completed', 'cancelled'];
+    if (nonCancellableStates.includes(order.status.toLowerCase())) {
+      return res.status(400).json({
+        success: false,
+        message: `Order cannot be cancelled as it is already ${order.status}`
+      });
+    }
+
+    const updatedOrder = await prisma.order.update({
+      where: { id: order.id },
+      data: {
+        status: 'cancelled',
+        paymentStatus: order.paymentMethod === 'cod' ? 'failed' : order.paymentStatus
+      }
+    });
+
+    try {
+      await prisma.orderTrackingEvent.create({
+        data: {
+          orderId: order.id,
+          message: 'Order cancelled by customer.',
+          status: 'cancelled',
+          eventDate: new Date()
+        }
+      });
+    } catch (err) {
+      console.error("Failed to add cancellation tracking event:", err);
+    }
+
+    res.json({
+      success: true,
+      message: 'Order has been cancelled successfully',
+      order: updatedOrder
+    });
+  } catch (error) {
+    next(error);
+  }
+};

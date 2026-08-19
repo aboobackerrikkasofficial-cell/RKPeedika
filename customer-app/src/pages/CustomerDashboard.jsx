@@ -512,6 +512,16 @@ export default function CustomerDashboard() {
                     <p className="text-sm font-semibold text-charcoal mt-0.5">August 2026</p>
                   </div>
                 </div>
+
+                <div className="pt-2 md:hidden">
+                  <button
+                    onClick={() => logoutUser()}
+                    className="w-full flex items-center justify-center space-x-2 rounded-xl bg-red-50 text-red-500 border border-red-100 px-6 py-3 min-h-[44px] text-xs font-bold hover:bg-red-100 transition-all shadow-sm"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Logout Account</span>
+                  </button>
+                </div>
               </div>
             ) : (
               <form onSubmit={handleUpdateProfile} className="space-y-4 max-w-md bg-white border border-gray-100 p-5 rounded-premium shadow-sm">
@@ -567,6 +577,17 @@ export default function CustomerDashboard() {
                     className="flex-1 rounded-xl bg-gray-100 px-6 py-3 min-h-[44px] text-xs font-bold text-charcoal hover:bg-gray-200 transition-all"
                   >
                     Cancel
+                  </button>
+                </div>
+
+                <div className="pt-2 md:hidden">
+                  <button
+                    type="button"
+                    onClick={() => logoutUser()}
+                    className="w-full flex items-center justify-center space-x-2 rounded-xl bg-red-50 text-red-500 border border-red-100 px-6 py-3 min-h-[44px] text-xs font-bold hover:bg-red-100 transition-all shadow-sm"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span>Logout Account</span>
                   </button>
                 </div>
               </form>

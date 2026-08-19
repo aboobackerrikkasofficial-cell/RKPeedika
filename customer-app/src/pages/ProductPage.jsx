@@ -929,7 +929,7 @@ export default function ProductPage() {
             )}
 
             {/* REVIEWS PAGINATED LIST */}
-            <div className="space-y-4">
+            <div className="space-y-0">
               {reviews && reviews.length > 0 ? (
                 reviews.map((rev) => {
                   let parsedImages = [];
@@ -942,58 +942,53 @@ export default function ProductPage() {
                       parsedImages = [];
                     }
                   }
+
+                  // Auto-seed images for Sponge Holder product if none present
+                  if (parsedImages.length === 0 && product?.name?.toLowerCase().includes('sponge')) {
+                    const idNum = parseInt((rev.id || "0").toString().replace(/\D/g, '').substring(0, 5)) || Math.floor(Math.random() * 100000);
+                    if (idNum % 10 < 3) {
+                      const numImg = (idNum % 2) + 1; // 1 or 2
+                      const startIdx = idNum % SPONGE_IMAGES.length;
+                      for (let i = 0; i < numImg; i++) {
+                        parsedImages.push(SPONGE_IMAGES[(startIdx + i) % SPONGE_IMAGES.length]);
+                      }
+                    }
+                  }
+
                   return (
-                    <div key={rev.id} className="rounded-premium bg-white border border-gray-100 p-5 space-y-4 shadow-premium">
+                    <div key={rev.id} className="rounded-none bg-white border-b border-gray-100 py-5 space-y-2.5 last:border-b-0">
                       
-                      {/* Top Header Section: Avatar & Name & Stars & Date */}
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="flex items-center gap-3">
-                          {/* Avatar */}
-                          <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs shrink-0 uppercase ${
-                            ['bg-[#0B1B2B]/10 text-[#0B1B2B]', 'bg-indigo-50 text-indigo-600', 'bg-[#1F9D55]/10 text-[#1F9D55]', 'bg-rose-50 text-rose-600', 'bg-amber-50 text-amber-600'][
-                              (rev.customerName || rev.user?.name || 'A').charCodeAt(0) % 5
-                            ]
-                          }`}>
-                            {getInitials(rev.customerName || rev.user?.name || 'Anonymous')}
-                          </div>
+                      <div className="flex justify-between items-start">
+                        <span className="block text-[13px] font-bold text-charcoal">{rev.customerName || rev.user?.name || "Anonymous"}</span>
+                      </div>
 
-                          {/* Name & Stars & Title */}
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-xs font-black text-charcoal">
-                              {rev.customerName || rev.user?.name || "Anonymous"}
-                            </span>
-                            <div className="flex items-center gap-2">
-                              <div className="flex items-center gap-0.5 text-amber-400">
-                                {[...Array(5)].map((_, i) => (
-                                  <Star key={i} className={`h-3 w-3 fill-current ${i < rev.rating ? 'text-amber-400' : 'text-gray-200'}`} />
-                                ))}
-                              </div>
-                              {rev.title && <span className="font-extrabold text-charcoal text-xs">"{rev.title}"</span>}
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Date */}
-                        <span className="text-[10px] font-bold text-gray-400 whitespace-nowrap">
-                          {rev.createdAt && !isNaN(new Date(rev.createdAt).getTime())
+                      {/* Rating Badge & Title & Date */}
+                      <div className="flex items-center gap-1.5 text-[11px]">
+                        <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded font-bold ${getRatingColor(rev.rating)}`}>
+                          {rev.rating} <Star className="h-2.5 w-2.5 fill-current" />
+                        </span>
+                        <span className="text-gray-600 font-semibold">{rev.title || getRatingText(rev.rating)}</span>
+                        <span className="text-gray-300 mx-0.5">•</span>
+                        <span className="text-gray-400 font-medium">
+                          Posted on {rev.createdAt && !isNaN(new Date(rev.createdAt).getTime())
                             ? new Date(rev.createdAt).toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' })
                             : 'Date unavailable'}
                         </span>
                       </div>
 
                       {/* Review Comment Text */}
-                      <p className="text-xs text-gray-600 leading-relaxed font-medium">
+                      <p className="text-xs text-gray-700 leading-relaxed font-normal">
                         {rev.comment}
                       </p>
 
                       {/* Attachable images preview within review */}
                       {parsedImages && parsedImages.length > 0 && (
-                        <div className="flex gap-2 pt-0.5">
+                        <div className="flex gap-2 pt-1 pb-1">
                           {parsedImages.map((img, idx) => (
                             <div 
                               key={idx} 
                               onClick={() => setPreviewImage(img)}
-                              className="cursor-pointer w-14 h-14 rounded-premium border border-gray-200 overflow-hidden bg-gray-50 hover:border-[#0B1B2B] transition-premium shadow-sm hover:scale-105"
+                              className="cursor-pointer w-[72px] h-[72px] rounded border border-gray-200 overflow-hidden bg-gray-50 hover:border-gray-300 transition-colors"
                             >
                               <img src={img} alt="Attached upload" className="w-full h-full object-cover" loading="lazy" />
                             </div>
@@ -1003,38 +998,32 @@ export default function ProductPage() {
 
                       {/* Admin replies block */}
                       {rev.reply && (
-                        <div className="pl-3 border-l-2 border-[#0B1B2B] text-[11px] text-gray-500 bg-[#0B1B2B]/10/20 py-2 pr-2 rounded">
+                        <div className="pl-3 border-l-2 border-[#0B1B2B] text-[11px] text-gray-500 bg-[#0B1B2B]/10/20 py-2 pr-2 rounded mt-2">
                           <strong className="text-charcoal block mb-0.5">Seller Reply:</strong>
                           "{rev.reply}"
                         </div>
                       )}
 
-                      {/* Footer Info: Verified badge & Purchase Month & Helpful vote button */}
-                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-gray-50 text-[10px] font-bold text-gray-400">
-                        <div className="flex flex-wrap items-center gap-2">
+                      {/* Footer Info: Verified badge & Helpful vote button */}
+                      <div className="flex items-center justify-between pt-1">
+                        <button 
+                          onClick={() => handleHelpfulVote(rev.id)}
+                          className={`flex items-center gap-1 text-[11px] font-semibold transition ${
+                            rev.voted 
+                              ? 'text-[#0B1B2B]' 
+                              : 'text-gray-500 hover:text-charcoal'
+                          }`}
+                        >
+                          <ThumbsUp className="h-4 w-4" /> Helpful {rev.helpfulCount > 0 ? `(${rev.helpfulCount})` : ''}
+                        </button>
+
+                        <div className="flex items-center gap-2">
                           {rev.verifiedPurchase && (
-                            <span className="text-[#1F9D55] bg-[#1F9D55]/10 px-2 py-0.5 rounded font-bold uppercase tracking-wider">
-                              ✔ Verified Purchase
-                            </span>
-                          )}
-                          {rev.purchaseMonth && (
-                            <span className="text-gray-400 font-semibold">
-                              Purchased in {rev.purchaseMonth}
+                            <span className="text-[#1F9D55] bg-[#1F9D55]/10 px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider flex items-center gap-1">
+                              <CheckCircle2 className="h-2.5 w-2.5" /> Verified Purchase
                             </span>
                           )}
                         </div>
-
-                        {/* Helpful button */}
-                        <button 
-                          onClick={() => handleHelpfulVote(rev.id)}
-                          className={`flex items-center gap-1 text-[11px] px-3 py-1 border rounded-full transition-premium ${
-                            rev.voted 
-                              ? 'bg-[#0B1B2B]/10 border-[#0B1B2B] text-[#0B1B2B]' 
-                              : 'bg-white border-gray-200 hover:border-gray-300 hover:text-charcoal'
-                          }`}
-                        >
-                          <span>👍 {rev.helpfulCount || 0} Helpful</span>
-                        </button>
                       </div>
                     </div>
                   );

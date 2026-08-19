@@ -274,6 +274,24 @@ app.use(
   )
 );
 
+app.use(
+  '/assets',
+  (req, res, next) => {
+    res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    next();
+  },
+  express.static(
+    path.join(__dirname, 'assets'),
+    {
+      fallthrough: false,
+      etag: true,
+      maxAge: '1d',
+    }
+  )
+);
+
 /*
 |--------------------------------------------------------------------------
 | Upload status

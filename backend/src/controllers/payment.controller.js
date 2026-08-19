@@ -378,7 +378,13 @@ export const createRazorpayOrder = async (req, res, next) => {
 
     const { adapter, config } = gatewayContext;
     const rzpReceipt = order.orderId;
-    const rzpOrder = await adapter.createOrder(finalAmount, 'INR', rzpReceipt, {});
+    let rzpOrder;
+    try {
+      rzpOrder = await adapter.createOrder(finalAmount, 'INR', rzpReceipt, {});
+    } catch (createError) {
+      console.error("Razorpay createOrder failed:", createError);
+      return next(new Error(`Failed to create Razorpay order: ${createError.message || JSON.stringify(createError)}`));
+    }
 
     // Update the local order and create a payment record
     await prisma.order.update({
@@ -402,7 +408,7 @@ export const createRazorpayOrder = async (req, res, next) => {
     res.status(201).json({
       success: true,
       razorpay_order_id: rzpOrder.id,
-      razorpay_key_id: process.env.RAZORPAY_KEY_ID || config.keyId,
+      razorpay_key_id: config.keyId || process.env.RAZORPAY_KEY_ID,
       amount: rzpOrder.amount, // in paise
       currency: rzpOrder.currency,
       internal_order_id: order.id

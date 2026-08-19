@@ -13,8 +13,8 @@ class RazorpayAdapter extends PaymentGatewayAdapter {
     super(); 
     this.config = config; 
     this.instance = new Razorpay({
-      key_id: process.env.RAZORPAY_KEY_ID || config.keyId,
-      key_secret: process.env.RAZORPAY_KEY_SECRET || config.keySecret
+      key_id: config.keyId || process.env.RAZORPAY_KEY_ID,
+      key_secret: config.keySecret || process.env.RAZORPAY_KEY_SECRET
     });
   }
   
@@ -29,9 +29,9 @@ class RazorpayAdapter extends PaymentGatewayAdapter {
   }
   
   async verifySignature(body, signature) {
-    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    const keySecret = this.config.keySecret || process.env.RAZORPAY_KEY_SECRET;
     if (!keySecret) {
-      throw new Error("Razorpay secret key not configured on server.");
+      throw new Error("Razorpay secret key not configured on server or database.");
     }
     const generated = crypto
       .createHmac('sha256', keySecret)

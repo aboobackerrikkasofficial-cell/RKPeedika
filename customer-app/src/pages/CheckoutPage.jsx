@@ -425,13 +425,13 @@ export default function CheckoutPage() {
             <div className="border-t border-gray-50 pt-4 space-y-2.5 text-sm">
               <div className="flex justify-between text-gray-500 font-semibold">
                 <span>Items Price</span>
-                <span className="text-charcoal font-bold">₹{subtotal.toLocaleString('en-IN')}</span>
+                <span className="text-charcoal font-bold">₹{codSubtotal.toLocaleString('en-IN')}</span>
               </div>
 
-              {isOnline && onlineDiscount > 0 && (
+              {isOnline && (Math.max(0, codSubtotal - onlineSubtotal) + onlineDiscount) > 0 && (
                 <div className="flex justify-between text-[#1F9D55] font-bold">
                   <span className="flex items-center gap-1"><Percent className="h-4 w-4" /> Prepaid Discount</span>
-                  <span>-₹{onlineDiscount.toLocaleString('en-IN')}</span>
+                  <span>-₹{(Math.max(0, codSubtotal - onlineSubtotal) + onlineDiscount).toLocaleString('en-IN')}</span>
                 </div>
               )}
 

@@ -17,6 +17,7 @@ export default function Orders() {
   const [ordersList, setOrdersList] = useState([]);
   const [statusMsg, setStatusMsg] = useState({ type: '', text: '' });
   const [isLoading, setIsLoading] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     fetchOrders();
@@ -49,10 +50,55 @@ export default function Orders() {
       const res = await apiClient.put(`/orders/${selectedOrder.id}/tracking`, trackingForm);
       if (res.data.success) {
         showStatus('success', 'Tracking details updated.');
+        const updatedOrder = res.data.order;
+        if (updatedOrder) {
+          setSelectedOrder(updatedOrder);
+          setTrackingForm({
+            courier: updatedOrder.courier || "",
+            trackingNumber: updatedOrder.trackingNumber || "",
+            trackingUrl: updatedOrder.trackingUrl || "",
+            estimatedDeliveryDate: updatedOrder.estimatedDeliveryDate || updatedOrder.estimatedDelivery || "",
+            shippedDate: updatedOrder.shippedDate || updatedOrder.shippedAt || "",
+            internalNotes: updatedOrder.internalNotes || "",
+            customerMessage: updatedOrder.customerStatusMessage || updatedOrder.customerMessage || ""
+          });
+        }
         fetchOrders();
       }
     } catch(err) {
       showStatus('error', 'Failed to save tracking.');
+    }
+  };
+
+  const handleSyncTracking = async () => {
+    if (!selectedOrder || !selectedOrder.trackingNumber) {
+      showStatus('error', 'No tracking number configured.');
+      return;
+    }
+    setIsSyncing(true);
+    try {
+      const res = await apiClient.post(`/orders/${selectedOrder.id}/tracking/sync`);
+      if (res.data.success) {
+        showStatus('success', 'Tracking details synchronized.');
+        const updatedOrder = res.data.order;
+        if (updatedOrder) {
+          setSelectedOrder(updatedOrder);
+          setTrackingForm({
+            courier: updatedOrder.courier || "",
+            trackingNumber: updatedOrder.trackingNumber || "",
+            trackingUrl: updatedOrder.trackingUrl || "",
+            estimatedDeliveryDate: updatedOrder.estimatedDeliveryDate || updatedOrder.estimatedDelivery || "",
+            shippedDate: updatedOrder.shippedDate || updatedOrder.shippedAt || "",
+            internalNotes: updatedOrder.internalNotes || "",
+            customerMessage: updatedOrder.customerStatusMessage || updatedOrder.customerMessage || ""
+          });
+        }
+        fetchOrders();
+      }
+    } catch(err) {
+      showStatus('error', err.response?.data?.message || 'Failed to sync tracking.');
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -387,7 +433,23 @@ export default function Orders() {
                     <input type="text" value={trackingForm.customerMessage} onChange={e => setTrackingForm({...trackingForm, customerMessage: e.target.value})} className="w-full rounded border border-gray-200 px-2 py-1 text-xs outline-none focus:border-[#F7941D]" />
                   </div>
                 </div>
-                <button onClick={handleSaveTracking} className="w-full bg-[#F7941D] text-white py-1.5 rounded text-xs font-bold shadow hover:bg-[#E07D10]">Save Tracking Info</button>
+                <div className="space-y-1.5">
+                  <div className="flex gap-2">
+                    <button onClick={handleSaveTracking} className="flex-1 bg-[#F7941D] text-white py-1.5 rounded text-xs font-bold shadow hover:bg-[#E07D10]">Save Tracking Info</button>
+                    {(selectedOrder?.trackingNumber || trackingForm.trackingNumber) && (
+                      <button 
+                        onClick={handleSyncTracking} 
+                        disabled={isSyncing}
+                        className="px-3 bg-charcoal text-white py-1.5 rounded text-xs font-bold shadow hover:bg-black disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {isSyncing ? 'Syncing...' : 'Sync Courier'}
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-[9px] text-gray-400 font-medium leading-tight">
+                    Tip: Pasting a tracking URL (e.g., from SF Express or 17track) into either field will automatically parse the tracking ID and auto-detect the courier.
+                  </p>
+                </div>
               </div>
 
               {/* Add Tracking Event Form */}

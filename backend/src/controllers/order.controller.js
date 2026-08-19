@@ -1,5 +1,6 @@
 import prisma from '../config/db.js';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/appError.js';
+import { syncTracking, parseTrackingLinkOrNumber } from '../services/tracking.service.js';
 
 const augmentOrderTrackingEvents = (order) => {
   if (!order) return order;
@@ -292,7 +293,7 @@ export const getOrderByOrderIdFormatted = async (req, res, next) => {
   try {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId);
     
-    const order = await prisma.order.findFirst({
+    let order = await prisma.order.findFirst({
       where: isUuid ? { id: orderId } : { orderId },
       include: { 
         orderItems: { include: { product: true } },
@@ -309,6 +310,18 @@ export const getOrderByOrderIdFormatted = async (req, res, next) => {
       return next(new ForbiddenError("Forbidden"));
     }
 
+    // Auto sync tracking details if order is not delivered yet
+    if (order.trackingNumber && order.status !== 'delivered') {
+      try {
+        const synced = await syncTracking(order.id, false);
+        if (synced) {
+          order = synced;
+        }
+      } catch (err) {
+        console.error("Order sync error on fetch formatted:", err);
+      }
+    }
+
     res.json(augmentOrderTrackingEvents(order));
   } catch (error) {
     next(error);
@@ -321,7 +334,7 @@ export const getOrderById = async (req, res, next) => {
   try {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 
-    const order = await prisma.order.findFirst({
+    let order = await prisma.order.findFirst({
       where: isUuid ? { id } : { orderId: id },
       include: { 
         orderItems: { include: { product: true } },
@@ -333,6 +346,18 @@ export const getOrderById = async (req, res, next) => {
 
     if (!order) {
       return next(new NotFoundError(`Order ID ${id} not found`));
+    }
+
+    // Auto sync tracking details if order is not delivered yet
+    if (order.trackingNumber && order.status !== 'delivered') {
+      try {
+        const synced = await syncTracking(order.id, false);
+        if (synced) {
+          order = synced;
+        }
+      } catch (err) {
+        console.error("Order sync error on fetch by ID:", err);
+      }
     }
 
     res.json(augmentOrderTrackingEvents(order));
@@ -366,24 +391,65 @@ export const updateOrderStatus = async (req, res, next) => {
 
 export const updateOrderTracking = async (req, res, next) => {
   const { id } = req.params;
-  const { courier, trackingNumber, trackingUrl, estimatedDelivery, shippedAt, deliveredAt, internalNotes, customerStatusMessage } = req.body;
+  const { courier, trackingNumber, trackingUrl, estimatedDelivery, estimatedDeliveryDate, shippedAt, shippedDate, deliveredAt, internalNotes, customerStatusMessage, customerMessage } = req.body;
 
   try {
+    const finalEstimatedDelivery = estimatedDelivery || estimatedDeliveryDate;
+    const finalShippedAt = shippedAt || shippedDate;
+    const finalCustomerStatusMessage = customerStatusMessage || customerMessage;
+
+    // Parse pasted link or tracking number
+    let parsedCourier = courier;
+    let parsedTrackingNumber = trackingNumber;
+    let parsedTrackingUrl = trackingUrl;
+
+    if (trackingUrl) {
+      const parsed = parseTrackingLinkOrNumber(trackingUrl);
+      if (parsed.trackingNumber) {
+        parsedTrackingNumber = parsed.trackingNumber;
+        if (parsed.courier && !parsedCourier) {
+          parsedCourier = parsed.courier;
+        }
+      }
+    } else if (trackingNumber) {
+      const parsed = parseTrackingLinkOrNumber(trackingNumber);
+      if (parsed.trackingNumber) {
+        parsedTrackingNumber = parsed.trackingNumber;
+        if (parsed.courier && !parsedCourier) {
+          parsedCourier = parsed.courier;
+        }
+      }
+    }
+
     const order = await prisma.order.update({
       where: { id },
       data: { 
-        courier,
-        trackingNumber,
-        trackingUrl,
-        estimatedDelivery: estimatedDelivery ? new Date(estimatedDelivery) : undefined,
-        shippedAt: shippedAt ? new Date(shippedAt) : undefined,
+        courier: parsedCourier,
+        trackingNumber: parsedTrackingNumber,
+        trackingUrl: parsedTrackingUrl,
+        estimatedDelivery: finalEstimatedDelivery ? new Date(finalEstimatedDelivery) : undefined,
+        shippedAt: finalShippedAt ? new Date(finalShippedAt) : undefined,
         deliveredAt: deliveredAt ? new Date(deliveredAt) : undefined,
         internalNotes,
-        customerStatusMessage
+        customerStatusMessage: finalCustomerStatusMessage
       }
     });
 
-    res.json({ success: true, message: "Tracking details updated", order });
+    // Auto sync with TrackingMore in background immediately
+    if (parsedTrackingNumber) {
+      try {
+        await syncTracking(order.id, true);
+      } catch (syncErr) {
+        console.error("Auto tracking sync error:", syncErr);
+      }
+    }
+
+    const updatedOrder = await prisma.order.findUnique({
+      where: { id: order.id },
+      include: { trackingEvents: { orderBy: { eventDate: 'desc' } } }
+    });
+
+    res.json({ success: true, message: "Tracking details updated", order: augmentOrderTrackingEvents(updatedOrder) });
   } catch (error) {
     next(error);
   }
@@ -504,7 +570,7 @@ export const publicTrackOrder = async (req, res, next) => {
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(orderId);
     const cleanPhone = phone.toString().replace(/\D/g, '');
 
-    const order = await prisma.order.findFirst({
+    let order = await prisma.order.findFirst({
       where: isUuid ? { id: orderId } : { orderId },
       include: {
         orderItems: { include: { product: true } },
@@ -532,7 +598,57 @@ export const publicTrackOrder = async (req, res, next) => {
       return next(new ForbiddenError("Unauthorized: Mobile number does not match this order."));
     }
 
+    // Auto sync tracking details if order is not delivered yet
+    if (order.trackingNumber && order.status !== 'delivered') {
+      try {
+        const synced = await syncTracking(order.id, false);
+        if (synced) {
+          order = synced;
+        }
+      } catch (err) {
+        console.error("Order sync error on public track:", err);
+      }
+    }
+
     res.json(augmentOrderTrackingEvents(order));
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const syncOrderTracking = async (req, res, next) => {
+  const { id } = req.params;
+
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id }
+    });
+
+    if (!order) {
+      return next(new NotFoundError(`Order ${id} not found`));
+    }
+
+    if (!order.trackingNumber) {
+      return next(new BadRequestError("No tracking number configured for this order."));
+    }
+
+    const synced = await syncTracking(order.id, true); // force sync
+    
+    // Fetch full order to return
+    const updatedOrder = await prisma.order.findUnique({
+      where: { id: order.id },
+      include: {
+        orderItems: { include: { product: true } },
+        trackingEvents: { orderBy: { eventDate: 'desc' } },
+        payments: true
+      }
+    });
+
+    res.json({
+      success: true,
+      message: "Tracking synchronized successfully",
+      order: augmentOrderTrackingEvents(updatedOrder)
+    });
   } catch (error) {
     next(error);
   }

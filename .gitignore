@@ -52,4 +52,12 @@ test_script.js
 update_script.js
 verification_report.json
 *.log
+scratch/
+backend/fetch_shadowfax.js
+backend/shadowfax.html
+backend/inspect_shadowfax.js
+replace_policy.py
+backend/read_inline_script.js
+
+
 

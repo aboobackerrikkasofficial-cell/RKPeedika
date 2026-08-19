@@ -330,6 +330,52 @@ export default function OrderTrackingPage() {
               </div>
             </div>
 
+            {/* Detailed Tracking Events Timeline */}
+            {order.trackingEvents && order.trackingEvents.length > 0 && (
+              <div className="bg-white p-5 mt-2 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">
+                <h4 className="text-xs font-black text-charcoal uppercase tracking-wider mb-4 pb-2 border-b border-gray-50 flex items-center gap-2">
+                  <RefreshCcw className="h-3.5 w-3.5 text-orange-500" />
+                  Live Tracking Updates
+                </h4>
+                <div className="relative pl-6 border-l-2 border-gray-100 ml-3 space-y-6 py-2">
+                  {order.trackingEvents.map((evt, idx) => {
+                    const isFirst = idx === 0;
+                    return (
+                      <div key={evt.id || idx} className="relative flex flex-col gap-1">
+                        {/* Dot Indicator */}
+                        <div className={`absolute -left-[31px] top-1.5 w-[9px] h-[9px] rounded-full border-2 border-white ring-2 ${
+                          isFirst ? 'bg-orange-500 ring-orange-200' : 'bg-gray-300 ring-gray-100'
+                        }`} />
+                        
+                        <div className="flex justify-between items-start gap-4">
+                          <p className={`text-xs font-bold leading-tight ${isFirst ? 'text-charcoal' : 'text-gray-500'}`}>
+                            {evt.message}
+                          </p>
+                          <span className="text-[10px] text-gray-400 font-medium shrink-0 text-right">
+                            {new Date(evt.eventDate || evt.createdAt).toLocaleDateString('en-IN', {
+                              day: 'numeric',
+                              month: 'short',
+                            })}
+                            <br />
+                            {new Date(evt.eventDate || evt.createdAt).toLocaleTimeString('en-IN', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hour12: true
+                            })}
+                          </span>
+                        </div>
+                        <span className={`text-[10px] uppercase font-bold tracking-wider ${
+                          evt.status === 'delivered' ? 'text-[#1F9D55]' : evt.status === 'failed' ? 'text-red-500' : 'text-orange-500'
+                        }`}>
+                          {evt.status.replace(/_/g, ' ')}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Delivery Address */}
             {order.address && (
               <div className="bg-white p-5 mt-2 shadow-[0_1px_3px_rgba(0,0,0,0.05)]">

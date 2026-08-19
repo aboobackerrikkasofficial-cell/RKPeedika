@@ -68,27 +68,39 @@ export default function BottomNav() {
             key={tab.id}
             id={`bottom-nav-${tab.id}`}
             onClick={tab.action}
-            className={`bottom-nav-item${isActive ? ' active' : ''} ${tab.isCenter ? 'relative' : ''} ${tab.id === 'orders' ? 'border border-white rounded-lg p-1 mx-1 bg-white/5' : ''}`}
+            className={`bottom-nav-item${isActive ? ' active' : ''} ${tab.isCenter ? 'relative' : ''}`}
             aria-label={tab.label}
             aria-current={isActive ? 'page' : undefined}
           >
-                <span className="relative flex items-center justify-center">
+            {tab.id === 'orders' ? (
+              <span className="tiktok-btn-container">
+                <span className="tiktok-btn">
                   <Icon
-                    size={22}
+                    size={20}
                     strokeWidth={isActive ? 2.2 : 1.8}
                     fill={isActive ? 'currentColor' : 'none'}
                   />
-                  {/* Cart badge */}
-                  {tab.badge > 0 && (
-                    <span
-                      className="absolute -top-1.5 -right-2.5 flex items-center justify-center rounded-full bg-[#F5A623] text-white font-extrabold leading-none shadow-sm animate-bounce"
-                      style={{ minWidth: 16, height: 16, fontSize: 9, padding: '0 3px' }}
-                    >
-                      {tab.badge > 9 ? '9+' : tab.badge}
-                    </span>
-                  )}
                 </span>
-                <span className="bottom-nav-item-label">{tab.label}</span>
+              </span>
+            ) : (
+              <span className="relative flex items-center justify-center">
+                <Icon
+                  size={22}
+                  strokeWidth={isActive ? 2.2 : 1.8}
+                  fill={isActive ? 'currentColor' : 'none'}
+                />
+                {/* Cart badge */}
+                {tab.badge > 0 && (
+                  <span
+                    className="absolute -top-1.5 -right-2.5 flex items-center justify-center rounded-full bg-[#F5A623] text-white font-extrabold leading-none shadow-sm animate-bounce"
+                    style={{ minWidth: 16, height: 16, fontSize: 9, padding: '0 3px' }}
+                  >
+                    {tab.badge > 9 ? '9+' : tab.badge}
+                  </span>
+                )}
+              </span>
+            )}
+            <span className="bottom-nav-item-label">{tab.label}</span>
           </button>
         );
       })}

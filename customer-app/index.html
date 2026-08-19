@@ -1,23 +1,26 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/jpeg" href="/images/logo.jpg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    
-    <!-- SEO Optimization -->
-    <title>RK Peedika</title>
-    <meta name="description" content="Discover useful everyday products, trending gadgets, fashion, home essentials and more at affordable prices with secure shopping and Cash on Delivery." />
-    <meta name="keywords" content="daily essentials, useful products, home gadgets, smart shopping, online marketplace" />
-    <meta name="author" content="RK Peedika" />
-    
-    <!-- Open Graph for social trust -->
-    <meta property="og:title" content="RK Peedika" />
-    <meta property="og:description" content="Discover useful everyday products, trending gadgets, fashion, home essentials and more at affordable prices." />
-    <meta property="og:type" content="website" />
-    
-    <!-- Structured JSON-LD Schema for E-commerce Trust -->
-    <script type="application/ld+json">
+
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/jpeg" href="/images/logo.jpg" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- SEO Optimization -->
+  <title>RK Peedika</title>
+  <meta name="description"
+    content="Discover useful everyday products, trending gadgets, fashion, home essentials and more at affordable prices with secure shopping and Cash on Delivery." />
+  <meta name="keywords" content="daily essentials, useful products, home gadgets, smart shopping, online marketplace" />
+  <meta name="author" content="RK Peedika" />
+
+  <!-- Open Graph for social trust -->
+  <meta property="og:title" content="RK Peedika" />
+  <meta property="og:description"
+    content="Discover useful everyday products, trending gadgets, fashion, home essentials and more at affordable prices." />
+  <meta property="og:type" content="website" />
+
+  <!-- Structured JSON-LD Schema for E-commerce Trust -->
+  <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "Store",
@@ -37,11 +40,30 @@
         }
       }
     </script>
-    <!-- Razorpay Standard Checkout SDK -->
-    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  </head>
-  <body class="bg-white">
-    <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
-  </body>
+  <!-- Razorpay Standard Checkout SDK -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script>
+    !function (f, b, e, v, n, t, s) {
+      if (f.fbq) return; n = f.fbq = function () {
+        n.callMethod ?
+          n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+      };
+      if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
+      n.queue = []; t = b.createElement(e); t.async = !0;
+      t.src = v; s = b.getElementsByTagName(e)[0];
+      s.parentNode.insertBefore(t, s)
+    }(window, document, 'script',
+      'https://connect.facebook.net/en_US/fbevents.js');
+    fbq('init', '1721280282432550');
+    fbq('track', 'PageView');
+  </script>
+  <noscript><img height="1" width="1" style="display:none"
+      src="https://www.facebook.com/tr?id=1721280282432550&ev=PageView&noscript=1" /></noscript>
+</head>
+
+<body class="bg-white">
+  <div id="root"></div>
+  <script type="module" src="/src/main.jsx"></script>
+</body>
+
 </html>

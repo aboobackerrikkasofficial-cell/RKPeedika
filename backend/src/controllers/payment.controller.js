@@ -171,7 +171,7 @@ export const updateGatewayConfig = async (req, res, next) => {
     }
 
     const config = await prisma.paymentGatewayConfig.update({
-      where: { id },
+      where: { gatewayName: id },
       data
     });
     res.json({

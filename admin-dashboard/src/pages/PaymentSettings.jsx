@@ -20,7 +20,13 @@ export default function PaymentSettings() {
     setIsLoading(true);
     try {
       const res = await apiClient.get('/payments/gateways');
-      if (res.data) {
+      if (res.data && Array.isArray(res.data)) {
+        const configMap = {};
+        res.data.forEach(gw => {
+          configMap[gw.gatewayName] = gw;
+        });
+        setGateways(prev => ({ ...prev, ...configMap }));
+      } else if (res.data) {
         setGateways(prev => ({ ...prev, ...res.data }));
       }
     } catch (err) {

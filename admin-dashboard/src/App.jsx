@@ -12,6 +12,7 @@ import NotFound from './pages/NotFound';
 import ErrorBoundary from './pages/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
 import PopupDialog from './components/PopupDialog';
+import PaymentSettings from './pages/PaymentSettings';
 
 export default function App() {
   return (
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/categories" element={<Categories />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/settings" element={<Settings />} />
+          <Route path="/payment-settings" element={<PaymentSettings />} />
           <Route path="/profile" element={<Profile />} />
         </Route>
 

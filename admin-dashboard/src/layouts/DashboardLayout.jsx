@@ -11,7 +11,8 @@ import {
   Menu, 
   X, 
   LogOut,
-  ChevronRight
+  ChevronRight,
+  CreditCard
 } from 'lucide-react';
 import apiClient from '../api/client';
 import SessionTimeoutHandler from '../components/SessionTimeoutHandler';
@@ -45,6 +46,7 @@ export default function DashboardLayout({ children }) {
     { name: 'Products', path: '/products', icon: <Package className="h-4 w-4" /> },
     { name: 'Category', path: '/categories', icon: <FolderTree className="h-4 w-4" /> },
     { name: 'Orders', path: '/orders', icon: <ShoppingBag className="h-4 w-4" /> },
+    { name: 'Payment Config', path: '/payment-settings', icon: <CreditCard className="h-4 w-4" /> },
     { name: 'Settings', path: '/settings', icon: <Settings className="h-4 w-4" /> },
   ];
 

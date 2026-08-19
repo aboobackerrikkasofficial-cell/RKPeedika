@@ -20,7 +20,7 @@ export const AppProvider = ({ children }) => {
   const [redirectAfterLogin, setRedirectAfterLogin] = useState(null);
   const [selectedProductId, setSelectedProductId] = useState("prod-1");
   const [recentlyViewed, setRecentlyViewed] = useState([]);
-  
+
   // E-commerce items
   const [products, setProducts] = useState(DEFAULT_PRODUCTS);
   const [cart, setCart] = useState([]);
@@ -31,7 +31,7 @@ export const AppProvider = ({ children }) => {
   const [activeToast, setActiveToast] = useState(null);
   const [orderProcessing, setOrderProcessing] = useState(false);
   const [trackingOrderId, setTrackingOrderId] = useState(null);
-  
+
   // Checkout & Shipping
   const [addresses, setAddresses] = useState(DEFAULT_ADDRESSES);
   const [selectedAddressId, setSelectedAddressId] = useState("addr-1");
@@ -39,7 +39,7 @@ export const AppProvider = ({ children }) => {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("upi"); // upi | card | netbanking | wallet | cod
   const [activeOrder, setActiveOrder] = useState(null);
   const [orderHistory, setOrderHistory] = useState([]);
-  
+
   // Search & Filters
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
@@ -280,7 +280,7 @@ export const AppProvider = ({ children }) => {
       if (res.data && res.data.success) {
         setUserProfile(res.data.user);
         showToast('✓ Profile completed successfully!', 'success');
-        
+
         // Redirect after profile completion
         if (redirectAfterLogin) {
           setCurrentView(redirectAfterLogin);
@@ -288,7 +288,7 @@ export const AppProvider = ({ children }) => {
         } else {
           setCurrentView('profile');
         }
-        
+
         return { success: true };
       }
     } catch (err) {
@@ -421,7 +421,7 @@ export const AppProvider = ({ children }) => {
               localStorage.setItem('accessToken', gToken);
               localStorage.setItem('refreshToken', gRefreshToken);
               setUserProfile(gUser);
-              
+
               const tokenHeader = gToken.startsWith('Bearer ') ? gToken : `Bearer ${gToken}`;
               try {
                 const profileRes = await apiClient.get('/users/profile', { headers: { 'Authorization': tokenHeader } });
@@ -464,7 +464,7 @@ export const AppProvider = ({ children }) => {
   // Listen to multi-tab events and local logout triggers
   useEffect(() => {
     const authChannel = new BroadcastChannel('auth_channel');
-    
+
     const handleAuthBroadcast = (e) => {
       if (e.data.type === 'LOGOUT') {
         setUserProfile(null);
@@ -488,7 +488,7 @@ export const AppProvider = ({ children }) => {
     };
 
     window.addEventListener('auth-logout', handleLocalLogoutEvent);
-    
+
     // Toast event listener for Axios client integration
     const handleShowToastEvent = (e) => {
       if (e.detail) {
@@ -543,7 +543,7 @@ export const AppProvider = ({ children }) => {
       }, 150);
     };
     window.addEventListener('scroll', handleScroll);
-    
+
     // Parse URL on initial load to restore states
     const params = new URLSearchParams(window.location.search);
     const initialView = params.get('view');
@@ -612,8 +612,8 @@ export const AppProvider = ({ children }) => {
     const isCurrentlyInWishlist = wishlist.includes(productId);
 
     // Optimistic UI Update
-    setWishlist(prev => 
-      isCurrentlyInWishlist 
+    setWishlist(prev =>
+      isCurrentlyInWishlist
         ? prev.filter(id => id !== productId)
         : [...prev, productId]
     );
@@ -629,8 +629,8 @@ export const AppProvider = ({ children }) => {
     } catch (error) {
       console.error("Wishlist sync error", error);
       // Revert optimistic update
-      setWishlist(prev => 
-        isCurrentlyInWishlist 
+      setWishlist(prev =>
+        isCurrentlyInWishlist
           ? [...prev, productId]
           : prev.filter(id => id !== productId)
       );
@@ -671,7 +671,17 @@ export const AppProvider = ({ children }) => {
         }];
       }
     });
-
+    // Meta Pixel: AddToCart
+    if (window.fbq) {
+      window.fbq('track', 'AddToCart', {
+        content_ids: [product.id],
+        content_name: product.name,
+        content_type: 'product',
+        value: product.onlinePrice ?? product.price,
+        currency: 'INR',
+        contents: [{ id: product.id, quantity }]
+      });
+    }
     if (localStorage.getItem('accessToken')) {
       try {
         await apiClient.post('/users/cart', {
@@ -690,7 +700,7 @@ export const AppProvider = ({ children }) => {
   const removeFromCart = async (cartItemId) => {
     const item = cart.find(i => i.cartItemId === cartItemId);
     setCart(prev => prev.filter(i => i.cartItemId !== cartItemId));
-    
+
     if (localStorage.getItem('accessToken') && item) {
       try {
         await apiClient.delete(`/users/cart/${item.id}?size=${item.size || ''}&color=${item.color || ''}`);
@@ -706,7 +716,7 @@ export const AppProvider = ({ children }) => {
       return;
     }
     const item = cart.find(i => i.cartItemId === cartItemId);
-    setCart(prev => 
+    setCart(prev =>
       prev.map(i => i.cartItemId === cartItemId ? { ...i, quantity: newQty } : i)
     );
 
@@ -824,7 +834,7 @@ export const AppProvider = ({ children }) => {
   const initiateQuickPurchase = (product, variantDetails = {}, paymentOption = 'online') => {
     const selectedSize = variantDetails.size || product.variants?.sizes?.[0] || "";
     const selectedColor = variantDetails.color || product.variants?.colors?.[0] || "";
-    
+
     const quickItem = {
       cartItemId: `quick-${product.id}`,
       id: product.id,
@@ -844,7 +854,7 @@ export const AppProvider = ({ children }) => {
       codAvailable: product.codAvailable,
       prepaidAvailable: product.prepaidAvailable
     };
-    
+
     setSelectedPaymentMethod(paymentOption === 'cod' ? 'cod' : 'upi');
     setQuickPurchaseItem(quickItem);
     customSetCurrentView('checkout');
@@ -863,10 +873,10 @@ export const AppProvider = ({ children }) => {
     setOrderProcessing(true);
     const address = addresses.find(a => a.id === selectedAddressId) || addresses[0];
     const activeItems = quickPurchaseItem ? [quickPurchaseItem] : cart;
-    
+
     // Calculate final pricing totals
     const subtotal = activeItems.reduce((acc, item) => {
-      const itemPrice = selectedPaymentMethod === 'cod' 
+      const itemPrice = selectedPaymentMethod === 'cod'
         ? (item.codPrice !== null && item.codPrice !== undefined ? item.codPrice : item.price)
         : (item.onlinePrice !== null && item.onlinePrice !== undefined ? item.onlinePrice : item.price);
       return acc + (itemPrice * item.quantity);
@@ -877,7 +887,7 @@ export const AppProvider = ({ children }) => {
     const discountAmount = (isOnline && isCouponValid) ? Math.round(subtotal * (couponConfig.discountPct / 100)) : 0;
     const discountPercentage = (isOnline && isCouponValid) ? couponConfig.discountPct : 0;
     const finalTotal = subtotal + shipping - discountAmount;
-    
+
     const itemsPayload = activeItems.map(item => ({
       productId: item.id,
       quantity: item.quantity
@@ -929,7 +939,7 @@ export const AppProvider = ({ children }) => {
                   if (fullOrderRes.data && fullOrderRes.data.orderItems) {
                     fetchedItems = fullOrderRes.data.orderItems;
                   }
-                } catch (e) {}
+                } catch (e) { }
 
                 const newOrder = {
                   orderId: dbOrder.orderId || dbOrder.id,
@@ -960,6 +970,17 @@ export const AppProvider = ({ children }) => {
                   setCart([]);
                 }
                 showToast("Payment successful. Your order has been confirmed.", "success");
+                // Meta Pixel: Purchase (Online)
+                if (window.fbq) {
+                  window.fbq('track', 'Purchase', {
+                    value: finalTotal,
+                    currency: 'INR',
+                    content_ids: activeItems.map(item => item.id),
+                    contents: activeItems.map(item => ({ id: item.id, quantity: item.quantity })),
+                    content_type: 'product',
+                    order_id: dbOrder.orderId || dbOrder.id
+                  });
+                }
                 setCurrentView('success');
               } else {
                 showToast("Payment failed. Please try again.", "error");
@@ -1012,10 +1033,10 @@ export const AppProvider = ({ children }) => {
         couponCode: isCouponValid ? couponConfig.code : undefined,
         idempotencyKey
       });
-      
+
       if (res.data && res.data.success && res.data.order) {
         const dbOrder = res.data.order;
-        
+
         let fetchedItems = [...activeItems];
         try {
           const fullOrderRes = await apiClient.get(`/orders/${dbOrder.id}`);
@@ -1054,6 +1075,17 @@ export const AppProvider = ({ children }) => {
           setCart([]); // Clear local cart state
         }
         showToast('✓ Order Placed Successfully!', 'success');
+        // Meta Pixel: Purchase (COD)
+        if (window.fbq) {
+          window.fbq('track', 'Purchase', {
+            value: finalTotal,
+            currency: 'INR',
+            content_ids: activeItems.map(item => item.id),
+            contents: activeItems.map(item => ({ id: item.id, quantity: item.quantity })),
+            content_type: 'product',
+            order_id: dbOrder.orderId || dbOrder.id
+          });
+        }
         setCurrentView('success');
       }
     } catch (err) {
@@ -1123,7 +1155,7 @@ export const AppProvider = ({ children }) => {
       selectedProductId,
       setSelectedProductId,
       recentlyViewed,
-      
+
       // Products list
       products,
       setProducts,
@@ -1141,7 +1173,7 @@ export const AppProvider = ({ children }) => {
       updateCartQty,
       clearCart,
       initiateQuickPurchase,
-      
+
       // Checkout/Shipping
       addresses,
       selectedAddressId,
@@ -1156,7 +1188,7 @@ export const AppProvider = ({ children }) => {
       placeOrder,
       activeOrder,
       orderHistory,
-      
+
       // Location details
       userPincode,
       locationName,
@@ -1185,7 +1217,7 @@ export const AppProvider = ({ children }) => {
       updateUserProfile,
       storeSettings,
       categories,
-      
+
       // UI Utils
       activeToast,
       showToast,

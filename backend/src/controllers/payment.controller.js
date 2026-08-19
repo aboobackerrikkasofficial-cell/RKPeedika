@@ -170,9 +170,20 @@ export const updateGatewayConfig = async (req, res, next) => {
       delete data.keySecret;
     }
 
-    const config = await prisma.paymentGatewayConfig.update({
+    const cleanData = { ...data };
+    delete cleanData.id;
+    delete cleanData.createdAt;
+    delete cleanData.updatedAt;
+    delete cleanData.gatewayName;
+
+    const config = await prisma.paymentGatewayConfig.upsert({
       where: { gatewayName: id },
-      data
+      update: cleanData,
+      create: {
+        ...cleanData,
+        gatewayName: id,
+        displayName: id.charAt(0).toUpperCase() + id.slice(1)
+      }
     });
     res.json({
       success: true,

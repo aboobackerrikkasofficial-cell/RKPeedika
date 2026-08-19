@@ -4,10 +4,10 @@ import apiClient from '../api/client';
 
 export default function PaymentSettings() {
   const [gateways, setGateways] = useState({
-    razorpay: { enabled: false, env: 'sandbox', keyId: '', keySecret: '', webhookUrl: '', callbackUrl: '' },
-    cashfree: { enabled: false, env: 'sandbox', keyId: '', keySecret: '', webhookUrl: '', callbackUrl: '' },
-    phonepe: { enabled: false, env: 'sandbox', keyId: '', keySecret: '', webhookUrl: '', callbackUrl: '' },
-    stripe: { enabled: false, env: 'sandbox', keyId: '', keySecret: '', webhookUrl: '', callbackUrl: '' }
+    razorpay: { isEnabled: false, environment: 'sandbox', keyId: '', keySecret: '', webhookUrl: '', callbackUrl: '' },
+    cashfree: { isEnabled: false, environment: 'sandbox', keyId: '', keySecret: '', webhookUrl: '', callbackUrl: '' },
+    phonepe: { isEnabled: false, environment: 'sandbox', keyId: '', keySecret: '', webhookUrl: '', callbackUrl: '' },
+    stripe: { isEnabled: false, environment: 'sandbox', keyId: '', keySecret: '', webhookUrl: '', callbackUrl: '' }
   });
   const [statusMsg, setStatusMsg] = useState({ type: '', text: '' });
   const [isLoading, setIsLoading] = useState(false);
@@ -102,7 +102,7 @@ export default function PaymentSettings() {
         {Object.keys(gateways).map(key => {
           const gw = gateways[key];
           return (
-            <div key={key} className={`rounded-xl border ${gw.enabled ? 'border-[#F7941D] bg-orange-50/10' : 'border-gray-100 bg-white'} p-6 shadow-sm space-y-4`}>
+            <div key={key} className={`rounded-xl border ${gw.isEnabled ? 'border-[#F7941D] bg-orange-50/10' : 'border-gray-100 bg-white'} p-6 shadow-sm space-y-4`}>
               <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-4">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-charcoal flex items-center gap-2">
                   {gatewayNames[key]}
@@ -111,8 +111,8 @@ export default function PaymentSettings() {
                   <label className="flex items-center cursor-pointer gap-2 text-xs font-bold text-gray-600">
                     <input 
                       type="checkbox" 
-                      checked={gw.enabled}
-                      onChange={(e) => handleChange(key, 'enabled', e.target.checked)}
+                      checked={gw.isEnabled}
+                      onChange={(e) => handleChange(key, 'isEnabled', e.target.checked)}
                       className="accent-[#F7941D] w-4 h-4 cursor-pointer" 
                     />
                     Enable {gatewayNames[key]}
@@ -130,8 +130,8 @@ export default function PaymentSettings() {
                 <div>
                   <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-1.5">Environment</label>
                   <select 
-                    value={gw.env}
-                    onChange={(e) => handleChange(key, 'env', e.target.value)}
+                    value={gw.environment || 'sandbox'}
+                    onChange={(e) => handleChange(key, 'environment', e.target.value)}
                     className="w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-xs text-charcoal outline-none focus:border-[#F7941D] bg-white"
                   >
                     <option value="sandbox">Sandbox / Test</option>

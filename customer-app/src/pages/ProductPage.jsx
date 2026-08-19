@@ -17,8 +17,26 @@ import {
   X,
   ThumbsUp,
   Image as ImageIcon,
-  Heart
+  Heart,
+  CheckCircle2
 } from 'lucide-react';
+
+const SPONGE_IMAGES = [
+  'https://images.unsplash.com/photo-1584820927498-cafe8c12217c?auto=format&fit=crop&w=400&q=80',
+  'https://images.unsplash.com/photo-1596700057257-2e11855e975d?auto=format&fit=crop&w=400&q=80'
+];
+
+const getRatingColor = (rating) => {
+  if (rating >= 4) return 'bg-[#1F9D55]/10 text-[#1F9D55]';
+  if (rating === 3) return 'bg-[#F5A623]/10 text-[#F5A623]';
+  return 'bg-[#E14B4B]/10 text-[#E14B4B]';
+};
+
+const getRatingText = (rating) => {
+  if (rating >= 4) return 'Excellent';
+  if (rating === 3) return 'Good';
+  return 'Poor';
+};
 
 const getInitials = (name) => {
   if (!name) return "AN";

@@ -371,6 +371,10 @@ export const createRazorpayOrder = async (req, res, next) => {
     }
 
     // 6. Call Razorpay SDK to create the order
+    if (finalAmount < 1) {
+      return next(new BadRequestError("Amount must be at least ₹1 (100 paise) for online payments."));
+    }
+
     const gatewayContext = await getActiveGateway();
     if (!gatewayContext || gatewayContext.config.gatewayName !== 'razorpay') {
       return next(new BadRequestError("Razorpay gateway is not active or enabled"));

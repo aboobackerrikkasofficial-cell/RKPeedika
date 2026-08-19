@@ -304,7 +304,7 @@ export default function CustomerDashboard() {
                   value={loginPhone} 
                   onChange={(e) => {
                     const val = e.target.value.replace(/[^0-9]/g, '');
-                    if (val.length <= 10) setLoginPhone(val);
+                    setLoginPhone(val.slice(0, 10));
                   }} 
                   placeholder="Enter your 10-digit number" 
                   className="flex-grow px-3.5 py-3 text-sm outline-none bg-transparent text-charcoal font-semibold tracking-wide"
@@ -552,7 +552,7 @@ export default function CustomerDashboard() {
                     value={profilePhone}
                     onChange={e => {
                       const val = e.target.value.replace(/[^0-9]/g, '');
-                      if (val.length <= 10) setProfilePhone(val);
+                      setProfilePhone(val.slice(0, 10));
                     }}
                     placeholder="Enter 10-digit mobile number"
                     className="w-full rounded-xl border border-gray-200 px-3.5 py-3 text-xs text-charcoal outline-none focus:border-[#0B1B2B]"

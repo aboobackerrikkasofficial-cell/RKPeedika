@@ -324,9 +324,21 @@ export default function OrderTrackingPage() {
                 </div>
               </div>
 
-              <div className="border-t border-gray-100 pt-4 flex justify-between items-center px-1">
-                <span className="text-xs font-medium text-gray-500">Order confirmed, cancel unavailable.</span>
-                <button className="text-xs font-bold text-[#b0076a]">KNOW MORE</button>
+              <div className="border-t border-gray-100 pt-4 flex flex-col sm:flex-row gap-2 justify-between items-stretch sm:items-center px-1">
+                {order.trackingUrl ? (
+                  <a 
+                    href={order.trackingUrl} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="text-xs font-bold text-[#1F9D55] hover:text-[#187c43] flex items-center justify-center gap-1.5 py-1 px-2.5 rounded bg-green-50 hover:bg-green-100 border border-green-200 transition-colors uppercase tracking-wider"
+                  >
+                    <Truck className="h-3.5 w-3.5" />
+                    Track Live on {order.courier || 'Courier'} Website
+                  </a>
+                ) : (
+                  <span className="text-xs font-medium text-gray-500">Order confirmed, cancel unavailable.</span>
+                )}
+                <button className="text-xs font-bold text-[#b0076a] hover:underline text-center sm:text-right py-1">KNOW MORE</button>
               </div>
             </div>
 

@@ -21,7 +21,7 @@ export const parseTrackingLinkOrNumber = (input) => {
     try {
       const url = new URL(trackingNumber);
       
-      // Try to extract tracking number
+      // Try to extract tracking number from query params
       if (url.hash && url.hash.includes('nums=')) {
         const match = url.hash.match(/nums=([A-Za-z0-9]+)/);
         if (match) trackingNumber = match[1];
@@ -29,12 +29,18 @@ export const parseTrackingLinkOrNumber = (input) => {
         trackingNumber = url.searchParams.get('nums') || '';
       } else if (url.searchParams.has('trackNo')) {
         trackingNumber = url.searchParams.get('trackNo') || '';
+      } else if (url.searchParams.has('orderId')) {
+        trackingNumber = url.searchParams.get('orderId') || '';
+      } else if (url.searchParams.has('waybill')) {
+        trackingNumber = url.searchParams.get('waybill') || '';
+      } else if (url.searchParams.has('id')) {
+        trackingNumber = url.searchParams.get('id') || '';
       } else {
         // Fallback: extract last alphanumeric segment of path
         const pathSegments = url.pathname.split('/').filter(Boolean);
         if (pathSegments.length > 0) {
           const lastSegment = pathSegments[pathSegments.length - 1];
-          if (/^[A-Za-z0-9]+$/.test(lastSegment)) {
+          if (/^[A-Za-z0-9_\-]+$/.test(lastSegment)) {
             trackingNumber = lastSegment;
           }
         }
@@ -43,13 +49,25 @@ export const parseTrackingLinkOrNumber = (input) => {
       // Detect courier from hostname
       const host = url.hostname.toLowerCase();
       if (host.includes('sf-express') || host.includes('sf-international')) {
-        courier = 'sf-express';
+        courier = 'SF Express';
+      } else if (host.includes('shadowfax')) {
+        courier = 'Shadowfax';
+      } else if (host.includes('delhivery')) {
+        courier = 'Delhivery';
+      } else if (host.includes('valmo')) {
+        courier = 'Valmo';
+      } else if (host.includes('ekart')) {
+        courier = 'Ekart Logistics';
+      } else if (host.includes('xpressbees')) {
+        courier = 'Xpressbees';
+      } else if (host.includes('bluedart')) {
+        courier = 'Blue Dart';
       } else if (host.includes('dhl')) {
-        courier = 'dhl';
+        courier = 'DHL';
       } else if (host.includes('fedex')) {
-        courier = 'fedex';
+        courier = 'FedEx';
       } else if (host.includes('ups')) {
-        courier = 'ups';
+        courier = 'UPS';
       }
     } catch (e) {
       // Not a valid URL, treat as tracking number
@@ -60,11 +78,15 @@ export const parseTrackingLinkOrNumber = (input) => {
   if (!courier && trackingNumber) {
     const cleanNum = trackingNumber.toUpperCase();
     if (/^SF\d{10,15}[A-Z]*$/.test(cleanNum) || /^SF\d+$/.test(cleanNum)) {
-      courier = 'sf-express';
+      courier = 'Shadowfax'; // Shadowfax AWBs often start with SF
+    } else if (/^VL\d+$/.test(cleanNum)) {
+      courier = 'Valmo';
+    } else if (/^FMPP\d+$/.test(cleanNum)) {
+      courier = 'Ekart Logistics';
     } else if (/^\d{12}$/.test(cleanNum)) {
-      courier = 'fedex';
+      courier = 'Delhivery';
     } else if (/^1Z[A-Z0-9]{16}$/.test(cleanNum)) {
-      courier = 'ups';
+      courier = 'UPS';
     }
   }
 

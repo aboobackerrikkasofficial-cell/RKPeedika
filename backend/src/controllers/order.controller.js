@@ -63,7 +63,7 @@ const augmentOrderTrackingEvents = (order) => {
       id: `sim-transit-${order.id}`,
       orderId: order.id,
       status: 'on_the_way',
-      message: `In transit: Package is moving towards the nearest delivery hub.`,
+      message: `In transit: Package is moving towards the nearest ${order.courier || 'logistics'} delivery hub.`,
       eventDate: transitDate,
       createdAt: transitDate,
       createdBy: 'system'
@@ -78,7 +78,7 @@ const augmentOrderTrackingEvents = (order) => {
       id: `sim-out-${order.id}`,
       orderId: order.id,
       status: 'out_for_delivery',
-      message: 'Out for delivery: Package is with the delivery executive.',
+      message: `Out for delivery: Package is with the ${order.courier || 'courier'} delivery executive.`,
       eventDate: outForDeliveryDate,
       createdAt: outForDeliveryDate,
       createdBy: 'system'
@@ -92,7 +92,7 @@ const augmentOrderTrackingEvents = (order) => {
       id: `sim-deliver-${order.id}`,
       orderId: order.id,
       status: 'delivered',
-      message: 'Package delivered successfully. Thank you for shopping with RK Peedika!',
+      message: `Package delivered successfully via ${order.courier || 'our delivery partner'}. Thank you for shopping with RK Peedika!`,
       eventDate: deliveredDate,
       createdAt: deliveredDate,
       createdBy: 'system'
@@ -400,24 +400,55 @@ export const updateOrderTracking = async (req, res, next) => {
 
     // Parse pasted link or tracking number
     let parsedCourier = courier;
-    let parsedTrackingNumber = trackingNumber;
-    let parsedTrackingUrl = trackingUrl;
+    let parsedTrackingNumber = trackingNumber ? String(trackingNumber).trim() : '';
+    let parsedTrackingUrl = trackingUrl ? String(trackingUrl).trim() : '';
 
-    if (trackingUrl) {
-      const parsed = parseTrackingLinkOrNumber(trackingUrl);
+    if (parsedTrackingUrl) {
+      const parsed = parseTrackingLinkOrNumber(parsedTrackingUrl);
       if (parsed.trackingNumber) {
         parsedTrackingNumber = parsed.trackingNumber;
         if (parsed.courier && !parsedCourier) {
           parsedCourier = parsed.courier;
         }
       }
-    } else if (trackingNumber) {
-      const parsed = parseTrackingLinkOrNumber(trackingNumber);
+    } else if (parsedTrackingNumber) {
+      const parsed = parseTrackingLinkOrNumber(parsedTrackingNumber);
       if (parsed.trackingNumber) {
         parsedTrackingNumber = parsed.trackingNumber;
         if (parsed.courier && !parsedCourier) {
           parsedCourier = parsed.courier;
         }
+        // If the admin pasted a full tracking link in the trackingNumber field,
+        // extract it and set it as the trackingUrl so the link isn't lost
+        if (trackingNumber.trim().startsWith('http://') || trackingNumber.trim().startsWith('https://')) {
+          parsedTrackingUrl = trackingNumber.trim();
+        }
+      }
+    }
+
+    // Auto-generate tracking URL if empty but we have trackingNumber and courier
+    if (!parsedTrackingUrl && parsedTrackingNumber && parsedCourier) {
+      const cleanCourier = parsedCourier.toLowerCase();
+      if (cleanCourier.includes('shadowfax')) {
+        parsedTrackingUrl = `https://track.shadowfax.in/track?orderId=${parsedTrackingNumber}`;
+      } else if (cleanCourier.includes('delhivery')) {
+        parsedTrackingUrl = `https://www.delhivery.com/track/package/${parsedTrackingNumber}`;
+      } else if (cleanCourier.includes('ekart')) {
+        parsedTrackingUrl = `https://ekartlogistics.com/track/${parsedTrackingNumber}`;
+      } else if (cleanCourier.includes('valmo')) {
+        parsedTrackingUrl = 'https://www.valmo.in/';
+      } else if (cleanCourier.includes('xpressbees')) {
+        parsedTrackingUrl = `https://www.xpressbees.com/shipment/tracking?awb=${parsedTrackingNumber}`;
+      } else if (cleanCourier.includes('bluedart') || cleanCourier.includes('blue dart')) {
+        parsedTrackingUrl = 'https://www.bluedart.com/';
+      } else if (cleanCourier.includes('dhl')) {
+        parsedTrackingUrl = `https://www.dhl.com/en/express/tracking.html?AWB=${parsedTrackingNumber}`;
+      } else if (cleanCourier.includes('fedex')) {
+        parsedTrackingUrl = `https://www.fedex.com/apps/fedextrack/?tracknumbers=${parsedTrackingNumber}`;
+      } else if (cleanCourier.includes('ups')) {
+        parsedTrackingUrl = `https://www.ups.com/track?tracknum=${parsedTrackingNumber}`;
+      } else {
+        parsedTrackingUrl = `https://www.google.com/search?q=${encodeURIComponent(parsedCourier + ' tracking ' + parsedTrackingNumber)}`;
       }
     }
 

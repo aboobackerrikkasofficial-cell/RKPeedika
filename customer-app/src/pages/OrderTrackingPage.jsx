@@ -110,7 +110,8 @@ export default function OrderTrackingPage() {
 
     setCancelling(true);
     try {
-      const res = await apiClient.put(`/orders/${order.id}/cancel`, { phone: searchPhone });
+      const phoneToUse = searchPhone || order.shippingPhone || order.address?.phone;
+      const res = await apiClient.put(`/orders/${order.id}/cancel`, { phone: phoneToUse });
       if (res.data && res.data.success) {
         showToast('Order cancelled successfully.', 'success');
         setOrder({

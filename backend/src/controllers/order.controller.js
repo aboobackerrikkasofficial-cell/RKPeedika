@@ -701,11 +701,13 @@ export const cancelOrder = async (req, res, next) => {
       return next(new NotFoundError(`Order ID ${id} not found`));
     }
 
-    if (req.user) {
-      if (req.user.role !== 'admin' && order.userId !== req.user.id) {
-        return res.status(403).json({ success: false, message: "Unauthorized to cancel this order." });
-      }
-    } else if (phone) {
+    let isAuthorized = false;
+
+    if (req.user && (req.user.role === 'admin' || order.userId === req.user.id)) {
+      isAuthorized = true;
+    }
+
+    if (!isAuthorized && phone) {
       const cleanPhone = phone.toString().replace(/\D/g, '');
       const orderPhone = order.shippingPhone ? order.shippingPhone.toString().replace(/\D/g, '') : '';
       const addressPhone = order.address?.phone ? order.address.phone.toString().replace(/\D/g, '') : '';
@@ -716,11 +718,13 @@ export const cancelOrder = async (req, res, next) => {
         (addressPhone && addressPhone.endsWith(cleanPhone)) ||
         (userPhone && userPhone.endsWith(cleanPhone));
         
-      if (!matchesPhone) {
-        return res.status(403).json({ success: false, message: "Unauthorized: Mobile number does not match this order." });
+      if (matchesPhone) {
+        isAuthorized = true;
       }
-    } else {
-      return res.status(401).json({ success: false, message: "Authentication or phone number required to cancel order." });
+    }
+
+    if (!isAuthorized) {
+      return res.status(403).json({ success: false, message: "Unauthorized: Please login or provide a matching phone number to cancel this order." });
     }
 
     const nonCancellableStates = ['shipped', 'out_for_delivery', 'delivered', 'completed', 'cancelled'];

@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useMemo } from 'react';
 import { DEFAULT_PRODUCTS } from '../constants/products';
 import { DEFAULT_ADDRESSES } from '../constants/addresses';
 import { PINCODE_DATABASE } from '../constants/pincodes';
@@ -1145,8 +1145,7 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  return (
-    <AppContext.Provider value={{
+  const contextValue = useMemo(() => ({
       // View router
       currentView,
       setCurrentView: customSetCurrentView,
@@ -1224,7 +1223,16 @@ export const AppProvider = ({ children }) => {
       setOrderProcessing,
       trackingOrderId,
       setTrackingOrderId
-    }}>
+  }), [
+    currentView, selectedProductId, recentlyViewed, products, isProductsLoading,
+    cart, quickPurchaseItem, wishlist, addresses, selectedAddressId,
+    selectedShippingMethod, selectedPaymentMethod, activeOrder, orderHistory,
+    userPincode, locationName, searchQuery, selectedCategory, couponConfig,
+    userProfile, storeSettings, categories, activeToast, orderProcessing, trackingOrderId
+  ]);
+
+  return (
+    <AppContext.Provider value={contextValue}>
       {children}
     </AppContext.Provider>
   );

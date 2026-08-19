@@ -78,7 +78,7 @@ function BannerCarousel() {
         className="flex transition-transform duration-500 ease-out h-full"
         style={{ transform: `translateX(-${currentSlide * 100}%)` }}
       >
-        {BANNERS.map((banner) => (
+        {BANNERS.map((banner, idx) => (
           <div 
             key={banner.id} 
             className={`w-full h-full shrink-0 flex items-center justify-between px-6 md:px-12 text-white ${banner.bgColor} relative overflow-hidden`}
@@ -98,7 +98,14 @@ function BannerCarousel() {
             </div>
             {/* Visual element */}
             <div className="relative z-10 h-[80%] aspect-square rounded-full border-4 border-white/10 overflow-hidden shrink-0 shadow-inner bg-white/10 flex items-center justify-center p-1">
-              <img src={banner.image} alt={banner.title} className="w-full h-full object-cover rounded-full" />
+              <img 
+                src={banner.image} 
+                alt={banner.title} 
+                className="w-full h-full object-cover rounded-full" 
+                loading={idx === 0 ? "eager" : "lazy"}
+                fetchPriority={idx === 0 ? "high" : "auto"}
+                decoding="async"
+              />
             </div>
           </div>
         ))}

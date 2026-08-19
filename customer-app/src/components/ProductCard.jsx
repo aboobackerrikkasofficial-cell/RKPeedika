@@ -149,6 +149,9 @@ export default function ProductCard({ product }) {
             src={imageUrl}
             alt={product?.name || 'Product'}
             loading="lazy"
+            decoding="async"
+            width="400"
+            height="400"
             className="w-full h-full object-contain transition-transform duration-300 hover:scale-105"
             onError={handleImageError}
           />

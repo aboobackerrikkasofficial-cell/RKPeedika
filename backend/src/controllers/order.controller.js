@@ -125,20 +125,22 @@ export const createOrder = async (req, res, next) => {
   }
 
   try {
-    if (idempotencyKey) {
-      const existingOrder = await prisma.order.findUnique({ where: { idempotencyKey } });
-      if (existingOrder) {
-        return res.status(200).json({
-          success: true,
-          message: "Order already placed",
-          order: existingOrder
+    const result = await prisma.$transaction(async (tx) => {
+      if (idempotencyKey) {
+        const existingOrder = await tx.order.findUnique({ 
+          where: { idempotencyKey },
+          include: { 
+            orderItems: { include: { product: true } }
+          }
         });
+        if (existingOrder) {
+          return { alreadyPlaced: true, order: existingOrder };
+        }
       }
-    }
 
     let shippingDetails = {};
     if (addressId) {
-      const address = await prisma.address.findUnique({ where: { id: addressId } });
+      const address = await tx.address.findUnique({ where: { id: addressId } });
       if (address) {
         shippingDetails = {
           shippingName: address.fullName || req.user.name || '',
@@ -154,9 +156,13 @@ export const createOrder = async (req, res, next) => {
     let subtotal = 0;
     const orderItemsData = [];
     let maxDeliveryDays = 4;
+    
+    const productIds = items.map(i => i.productId);
+    const productsList = await tx.product.findMany({ where: { id: { in: productIds } } });
+    const productMap = Object.fromEntries(productsList.map(p => [p.id, p]));
 
     for (const item of items) {
-      const product = await prisma.product.findUnique({ where: { id: item.productId } });
+      const product = productMap[item.productId];
       if (!product) {
         return next(new NotFoundError(`Product ${item.productId} does not exist.`));
       }
@@ -193,7 +199,7 @@ export const createOrder = async (req, res, next) => {
 
     let discount = 0;
     if (couponCode) {
-      const coupon = await prisma.coupon.findUnique({ where: { code: couponCode } });
+      const coupon = await tx.coupon.findUnique({ where: { code: couponCode } });
       if (coupon && coupon.status === 'active' && (!coupon.expiresAt || new Date(coupon.expiresAt) > new Date())) {
         if (subtotal >= coupon.minSpend) {
           if (coupon.type === 'percentage') {
@@ -229,8 +235,7 @@ export const createOrder = async (req, res, next) => {
     const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
     const invoiceNumber = `INV-${dateStr}-${Math.floor(100000 + Math.random() * 900000)}`;
 
-    const order = await prisma.$transaction(async (tx) => {
-      const newOrder = await tx.order.create({
+    const newOrder = await tx.order.create({
         data: {
           orderId: userFacingOrderId,
           invoiceNumber,
@@ -260,7 +265,13 @@ export const createOrder = async (req, res, next) => {
         }
       });
 
-      // No stock decrement or inventory logging per simplified model.
+      // Decrement stock logic
+      for (const item of items) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { stock: { decrement: item.quantity } }
+        });
+      }
 
       await tx.notification.create({
         data: {
@@ -272,16 +283,27 @@ export const createOrder = async (req, res, next) => {
       });
 
       await tx.cartItem.deleteMany({
-        where: { userId }
+        where: { 
+          userId,
+          productId: { in: productIds }
+        }
       });
 
-      return newOrder;
+      return { alreadyPlaced: false, order: newOrder };
     });
+
+    if (result.alreadyPlaced) {
+      return res.status(200).json({
+        success: true,
+        message: "Order already placed",
+        order: result.order
+      });
+    }
 
     res.status(201).json({
       success: true,
       message: "Order placed successfully",
-      order
+      order: result.order
     });
   } catch (error) {
     next(error);
@@ -703,11 +725,11 @@ export const cancelOrder = async (req, res, next) => {
 
     let isAuthorized = false;
 
-    if (req.user && (req.user.role === 'admin' || order.userId === req.user.id)) {
-      isAuthorized = true;
-    }
-
-    if (!isAuthorized && phone) {
+    if (req.user) {
+      if (req.user.role === 'admin' || order.userId === req.user.id) {
+        isAuthorized = true;
+      }
+    } else if (phone) {
       const cleanPhone = phone.toString().replace(/\D/g, '');
       const orderPhone = order.shippingPhone ? order.shippingPhone.toString().replace(/\D/g, '') : '';
       const addressPhone = order.address?.phone ? order.address.phone.toString().replace(/\D/g, '') : '';

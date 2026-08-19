@@ -8,6 +8,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  // For production consider adding ?connection_limit=20 or similar to URL
 }
 
 model User {
@@ -114,6 +115,9 @@ model Product {
   reviews       Review[]
   orderItems    OrderItem[]
   inventoryLogs InventoryLog[]
+
+  @@index([categoryId])
+  @@index([status])
 }
 
 model InventoryLog {
@@ -170,11 +174,15 @@ model Order {
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
-  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user           User           @relation(fields: [userId], references: [id], onDelete: Restrict)
   orderItems     OrderItem[]
   returns        ReturnRequest[]
   payments       Payment[]
   trackingEvents OrderTrackingEvent[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
 }
 
 model OrderTrackingEvent {
@@ -201,6 +209,9 @@ model OrderItem {
 
   order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([productId])
 }
 
 model ReturnRequest {
@@ -312,6 +323,8 @@ model CartItem {
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@unique([userId, productId, size, color])
+  @@index([userId])
+  @@index([productId])
 }
 
 model Notification {

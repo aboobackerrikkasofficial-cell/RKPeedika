@@ -1,10 +1,12 @@
 import './src/config/env.js';
+import 'express-async-errors';
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import swaggerUi from 'swagger-ui-express';
+import rateLimit from 'express-rate-limit';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -37,6 +39,16 @@ import uploadRoutes from './src/routes/upload.routes.js';
 */
 
 const app = express();
+app.set('trust proxy', 1);
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 1000, // Limit each IP to 1000 requests per `window` (here, per 15 minutes)
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+});
+app.use(limiter);
+
 
 const PORT =
   Number(process.env.PORT) || 5000;
@@ -726,3 +738,19 @@ app.listen(
     );
   }
 );
+
+/*
+|--------------------------------------------------------------------------
+| Process-Level Error Handlers
+|--------------------------------------------------------------------------
+*/
+
+process.on('uncaughtException', (err) => {
+  logger.error('UNCAUGHT EXCEPTION! 💥 Shutting down...', err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (err) => {
+  logger.error('UNHANDLED REJECTION! 💥 Shutting down...', err);
+  process.exit(1);
+});

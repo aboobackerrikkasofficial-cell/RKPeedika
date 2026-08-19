@@ -1,21 +1,22 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, Suspense } from 'react';
 import { AppContext, AppProvider } from './context/AppContext';
+import ErrorBoundary from './components/ErrorBoundary';
 import Header from './components/Header';
 import BottomNav from './components/BottomNav';
 import apiClient from './api/client';
-import HomePage from './pages/HomePage';
-import ProductPage from './pages/ProductPage';
-import CheckoutPage from './pages/CheckoutPage';
-import SuccessPage from './pages/SuccessPage';
-import AdminPanel from './components/AdminPanel';
-import CustomerDashboard from './pages/CustomerDashboard';
-import PaymentFailedPage from './pages/PaymentFailedPage';
-import OrderTrackingPage from './pages/OrderTrackingPage';
-import ProductsPage from './pages/ProductsPage';
-import CategoriesPage from './pages/CategoriesPage';
-import CartPage from './pages/CartPage';
-import OrdersPage from './pages/OrdersPage';
-import WishlistPage from './pages/WishlistPage';
+const HomePage = React.lazy(() => import('./pages/HomePage'));
+const ProductPage = React.lazy(() => import('./pages/ProductPage'));
+const CheckoutPage = React.lazy(() => import('./pages/CheckoutPage'));
+const SuccessPage = React.lazy(() => import('./pages/SuccessPage'));
+const AdminPanel = React.lazy(() => import('./components/AdminPanel'));
+const CustomerDashboard = React.lazy(() => import('./pages/CustomerDashboard'));
+const PaymentFailedPage = React.lazy(() => import('./pages/PaymentFailedPage'));
+const OrderTrackingPage = React.lazy(() => import('./pages/OrderTrackingPage'));
+const ProductsPage = React.lazy(() => import('./pages/ProductsPage'));
+const CategoriesPage = React.lazy(() => import('./pages/CategoriesPage'));
+const CartPage = React.lazy(() => import('./pages/CartPage'));
+const OrdersPage = React.lazy(() => import('./pages/OrdersPage'));
+const WishlistPage = React.lazy(() => import('./pages/WishlistPage'));
 import { Mail, ShieldCheck, Landmark, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SessionTimeoutHandler from './components/SessionTimeoutHandler';
@@ -521,7 +522,9 @@ function AppContent() {
             exit={{ opacity: 0, y: -15 }}
             transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
           >
-            {renderView()}
+            <Suspense fallback={<div className="flex h-64 items-center justify-center">Loading...</div>}>
+              {renderView()}
+            </Suspense>
           </motion.div>
         </AnimatePresence>
       </main>
@@ -603,8 +606,10 @@ function AppContent() {
 
 export default function App() {
   return (
-    <AppProvider>
-      <AppContent />
-    </AppProvider>
+    <ErrorBoundary>
+      <AppProvider>
+        <AppContent />
+      </AppProvider>
+    </ErrorBoundary>
   );
 }

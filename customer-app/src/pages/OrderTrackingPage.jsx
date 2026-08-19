@@ -272,13 +272,41 @@ export default function OrderTrackingPage() {
       firstItemImage = null;
     }
   }
+  let calcSubtotal = 0;
+  let calcFinalTotal = 0;
+
+  const itemsList = order.items || order.orderItems || [];
+  if (itemsList.length > 0) {
+    itemsList.forEach(item => {
+      const p = item.product || {};
+      const codPrice = p.codPrice || p.price || item.price || 0;
+      const onlinePrice = p.onlinePrice || p.price || item.price || 0;
+      const qty = item.quantity || 1;
+
+      calcSubtotal += codPrice * qty;
+      
+      if (order.paymentMethod === 'cod') {
+        calcFinalTotal += codPrice * qty;
+      } else {
+        calcFinalTotal += onlinePrice * qty;
+      }
+    });
+  }
+
+  if (calcSubtotal === 0 && (order.amount || 0) > 0) {
+    calcSubtotal = (order.amount || 0) + (order.discountAmount || 0);
+    calcFinalTotal = order.amount || 0;
+  }
+
+  const calcDiscount = Math.max(0, calcSubtotal - calcFinalTotal);
+
   const pricing = {
-    subtotal: Math.round((order.amount || 0) + (order.discountAmount || 0)),
-    discountAmount: Math.round(order.discountAmount || 0),
-    finalTotal: Math.round(order.amount || 0)
+    subtotal: Math.round(calcSubtotal),
+    discountAmount: Math.round(calcDiscount),
+    finalTotal: Math.round(calcFinalTotal)
   };
 
-  const itemPrice = firstItem.price || pricing.finalTotal || order.amount || 0;
+  const itemPrice = pricing.finalTotal;
   
   // Get recently viewed products
   const recentlyViewedItems = (recentlyViewed || [])

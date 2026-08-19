@@ -19,27 +19,6 @@ export default function OrderTrackingPage() {
   const [loading, setLoading] = useState(true);
   const [isKnowMoreOpen, setIsKnowMoreOpen] = useState(false);
 
-  const handleCancelOrder = async () => {
-    const confirmCancel = await window.showConfirm("Are you sure you want to cancel this order?", "Cancel Order");
-    if (!confirmCancel) return;
-
-    try {
-      setLoading(true);
-      const res = await apiClient.put(`/orders/${order.id}/cancel`);
-      if (res.data && res.data.success) {
-        showToast("Order cancelled successfully.", "success");
-        setOrder(res.data.order);
-      } else {
-        showToast(res.data.message || "Failed to cancel order.", "error");
-      }
-    } catch (err) {
-      console.error("Cancel order error:", err);
-      showToast(err.response?.data?.message || "Failed to cancel order. Please contact support.", "error");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Form states for guest track lookup
   const [searchOrderId, setSearchOrderId] = useState(trackingOrderId || '');
   const [searchPhone, setSearchPhone] = useState('');
@@ -126,24 +105,24 @@ export default function OrderTrackingPage() {
   const handleCancelOrder = async () => {
     if (!order) return;
     
-    const confirmCancel = window.confirm("Are you sure you want to cancel this order? This action cannot be undone.");
+    const confirmCancel = await window.showConfirm("Are you sure you want to cancel this order? This action cannot be undone.", "Cancel Order");
     if (!confirmCancel) return;
 
     setCancelling(true);
     try {
       const res = await apiClient.put(`/orders/${order.id}/cancel`);
       if (res.data && res.data.success) {
-        showToast('success', 'Order cancelled successfully.');
+        showToast('Order cancelled successfully.', 'success');
         setOrder({
           ...order,
           status: 'cancelled',
           paymentStatus: order.paymentMethod === 'cod' ? 'failed' : order.paymentStatus
         });
       } else {
-        showToast('error', res.data?.message || 'Failed to cancel order.');
+        showToast(res.data?.message || 'Failed to cancel order.', 'error');
       }
     } catch (err) {
-      showToast('error', err.response?.data?.message || 'Failed to cancel order. Please login and try again.');
+      showToast(err.response?.data?.message || 'Failed to cancel order. Please login and try again.', 'error');
     } finally {
       setCancelling(false);
     }
@@ -292,13 +271,13 @@ export default function OrderTrackingPage() {
       firstItemImage = null;
     }
   }
-  const itemPrice = firstItem.price || order.pricing?.finalTotal || order.amount || 0;
-  
   const pricing = {
     subtotal: Math.round((order.amount || 0) + (order.discountAmount || 0)),
     discountAmount: Math.round(order.discountAmount || 0),
     finalTotal: Math.round(order.amount || 0)
   };
+
+  const itemPrice = firstItem.price || pricing.finalTotal || order.amount || 0;
   
   // Get recently viewed products
   const recentlyViewedItems = (recentlyViewed || [])
@@ -404,7 +383,12 @@ export default function OrderTrackingPage() {
                     {cancelling ? 'Cancelling...' : 'Cancel Order'}
                   </button>
                 )}
-                <button className="text-xs font-bold text-[#b0076a] hover:underline text-center sm:text-right py-1">KNOW MORE</button>
+                <button 
+                  onClick={() => setIsKnowMoreOpen(true)}
+                  className="text-xs font-bold text-[#b0076a] hover:underline text-center sm:text-right py-1"
+                >
+                  KNOW MORE
+                </button>
               </div>
             </div>
 
@@ -476,11 +460,11 @@ export default function OrderTrackingPage() {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-[13px] text-gray-600">Total Product Price</span>
-                  <span className="text-[13px] font-semibold text-charcoal">₹{order.pricing?.subtotal || order.amount || 0}</span>
+                  <span className="text-[13px] font-semibold text-charcoal">₹{pricing.subtotal.toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-[13px] text-[#1F9D55]">Total Discounts</span>
-                  <span className="text-[13px] font-semibold text-[#1F9D55]">-₹{order.pricing?.discountAmount || 0}</span>
+                  <span className="text-[13px] font-semibold text-[#1F9D55]">-₹{pricing.discountAmount.toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-[13px] text-gray-600">Shipping</span>
@@ -489,11 +473,11 @@ export default function OrderTrackingPage() {
               </div>
               <div className="border-t border-gray-100 mt-3 pt-3 flex justify-between items-center">
                 <span className="text-sm font-bold text-charcoal">Total Amount</span>
-                <span className="text-sm font-black text-charcoal">₹{order.pricing?.finalTotal || order.amount || 0}</span>
+                <span className="text-sm font-black text-charcoal">₹{pricing.finalTotal.toLocaleString('en-IN')}</span>
               </div>
               <div className="mt-2 bg-gray-50 p-2 rounded flex justify-between items-center">
                 <span className="text-[12px] text-gray-600">{order.paymentMethod === 'cod' ? 'Cash on Delivery' : 'Prepaid (Paid)'}</span>
-                <span className="text-[12px] font-bold text-charcoal">₹{order.pricing?.finalTotal || order.amount || 0}</span>
+                <span className="text-[12px] font-bold text-charcoal">₹{pricing.finalTotal.toLocaleString('en-IN')}</span>
               </div>
             </div>
 
@@ -532,6 +516,55 @@ export default function OrderTrackingPage() {
             </div>
 
           </div>
+
+      {/* Know More Cancellation Policy Modal */}
+      {isKnowMoreOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#1C1917]/35 backdrop-blur-sm">
+          <div className="w-full max-w-sm bg-white rounded-2xl shadow-premium p-6 flex flex-col relative animate-pop-in">
+            <button 
+              onClick={() => setIsKnowMoreOpen(false)}
+              className="absolute right-4 top-4 rounded-full p-1 text-gray-400 hover:bg-gray-150 hover:text-gray-700 transition"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <h3 className="text-base font-extrabold text-charcoal mb-3 flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-[#b0076a]" />
+              Cancellation Policy
+            </h3>
+
+            <div className="text-xs text-gray-500 space-y-3 font-semibold mb-6 leading-relaxed">
+              <p>
+                RK Peedika orders can only be cancelled before they are shipped. 
+              </p>
+              <p>
+                You can cancel your order directly from this tracking screen anytime <strong className="text-charcoal">before it enters the "Shipped" status</strong>.
+              </p>
+              <p>
+                Once an order is shipped, we cannot recall it from our logistics partners. If you need urgent assistance, changes, or address updates, please contact us.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <a 
+                href="https://wa.me/919188072646?text=Hello%20RK%20Peedika,%20I%2520need%20help%20with%20my%20order" 
+                target="_blank" 
+                rel="noreferrer" 
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-[#1F9D55] py-3 text-xs font-bold text-white hover:bg-[#187c43] transition shadow-sm"
+              >
+                <MessageCircle className="h-4.5 w-4.5" />
+                Contact +91 9188072646 on WhatsApp
+              </a>
+              <button 
+                onClick={() => setIsKnowMoreOpen(false)}
+                className="w-full rounded-xl border border-gray-250 py-2.5 text-xs font-bold text-gray-500 hover:bg-gray-50 transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

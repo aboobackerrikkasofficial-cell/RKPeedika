@@ -98,7 +98,7 @@ export const AppProvider = ({ children }) => {
         const formattedOrders = orderRes.data.map(o => {
           const subtotal = o.amount;
           return {
-            orderId: o.id,
+            orderId: o.orderId || o.id,
             date: new Date(o.createdAt).toISOString().split('T')[0],
             items: o.orderItems || [],
             address: null,
@@ -434,7 +434,7 @@ export const AppProvider = ({ children }) => {
                 const orderRes = await apiClient.get('/orders/user/history', { headers: { 'Authorization': tokenHeader } });
                 if (orderRes.data && Array.isArray(orderRes.data)) {
                   setOrderHistory(orderRes.data.map(o => ({
-                    orderId: o.id,
+                    orderId: o.orderId || o.id,
                     date: new Date(o.createdAt).toISOString().split('T')[0],
                     items: o.orderItems || [],
                     address: null,

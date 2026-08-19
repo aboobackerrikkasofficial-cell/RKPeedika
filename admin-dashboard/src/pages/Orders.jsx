@@ -137,7 +137,7 @@ export default function Orders() {
   const filteredOrders = ordersList.filter(ord => {
     const customerName = ord.user?.name || 'Guest';
     const matchesSearch = customerName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          ord.id.toLowerCase().includes(searchTerm.toLowerCase());
+                          (ord.orderId || ord.id).toLowerCase().includes(searchTerm.toLowerCase());
     
     // Normalize status filters
     const statusLower = (ord.status || '').toLowerCase();
@@ -150,7 +150,7 @@ export default function Orders() {
   });
 
   const columns = [
-    { key: "id", label: "Order ID", sortable: true, render: (row) => <span className="font-mono text-gray-700">{row.id}</span> },
+    { key: "id", label: "Order ID", sortable: true, render: (row) => <span className="font-mono text-gray-700">{row.orderId || row.id}</span> },
     { key: "customer", label: "Customer Name", sortable: true, render: (row) => <span>{row.user?.name || 'Guest'}</span> },
     { key: "date", label: "Date", sortable: true, render: (row) => <span>{new Date(row.createdAt).toLocaleDateString()}</span> },
     { key: "amount", label: "Total Value", sortable: true, render: (row) => <span className="font-black text-charcoal">₹{row.amount}</span> },
@@ -281,7 +281,7 @@ export default function Orders() {
           <div className="w-full max-w-lg bg-white rounded-xl shadow-premium p-6 overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between pb-3 border-b border-gray-100 mb-4">
               <h3 className="text-base font-extrabold text-charcoal flex items-center gap-2">
-                <Truck className="h-5 w-5 text-[#F7941D]" /> Details for {selectedOrder.id}
+                <Truck className="h-5 w-5 text-[#F7941D]" /> Details for {selectedOrder.orderId || selectedOrder.id}
               </h3>
               <button 
                 onClick={() => setSelectedOrder(null)}

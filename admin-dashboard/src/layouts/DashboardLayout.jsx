@@ -5,6 +5,7 @@ import {
   LayoutDashboard, 
   ShoppingBag, 
   Package,
+  FolderTree,
   Settings, 
   Bell, 
   Menu, 
@@ -42,6 +43,7 @@ export default function DashboardLayout({ children }) {
   const menuItems = [
     { name: 'Dashboard', path: '/', icon: <LayoutDashboard className="h-4 w-4" /> },
     { name: 'Products', path: '/products', icon: <Package className="h-4 w-4" /> },
+    { name: 'Category', path: '/categories', icon: <FolderTree className="h-4 w-4" /> },
     { name: 'Orders', path: '/orders', icon: <ShoppingBag className="h-4 w-4" /> },
     { name: 'Settings', path: '/settings', icon: <Settings className="h-4 w-4" /> },
   ];

@@ -2,9 +2,19 @@ import React, { useContext, useEffect, useState } from 'react';
 import { AppContext } from '../context/AppContext';
 import { ArrowLeft, Check, Truck, MapPin, Package, RefreshCcw, CheckCircle, Search, AlertCircle, FileText, ChevronRight, MessageCircle } from 'lucide-react';
 import apiClient from '../api/client';
+import getImageUrl from '../utils/imageUrl';
 
 export default function OrderTrackingPage() {
-  const { trackingOrderId, setTrackingOrderId, setCurrentView, showToast, orderHistory } = useContext(AppContext);
+  const { 
+    trackingOrderId, 
+    setTrackingOrderId, 
+    setCurrentView, 
+    showToast, 
+    orderHistory,
+    recentlyViewed,
+    products,
+    setSelectedProductId
+  } = useContext(AppContext);
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -234,9 +244,19 @@ export default function OrderTrackingPage() {
   }
   const itemPrice = firstItem.price || order.pricing?.finalTotal || order.amount || 0;
   
-  // Get 4 random or top products for recently viewed
-  // AppContext not imported with products in this file? Wait, let me add it.
-  // Actually, I can use a fallback empty array if not found.
+  // Get recently viewed products
+  const recentlyViewedItems = (recentlyViewed || [])
+    .map(id => (products || []).find(p => p.id === id))
+    .filter(Boolean);
+
+  // Pad with active products if recentlyViewed is empty or has < 3 products
+  const displayRecentlyViewed = [...recentlyViewedItems];
+  if (displayRecentlyViewed.length < 3 && products && products.length > 0) {
+    const additional = products
+      .filter(p => !displayRecentlyViewed.find(rp => rp.id === p.id))
+      .slice(0, 3 - displayRecentlyViewed.length);
+    displayRecentlyViewed.push(...additional);
+  }
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 md:px-8 page-content-mobile bg-gray-50/50 min-h-screen pb-20">
@@ -245,7 +265,7 @@ export default function OrderTrackingPage() {
             <div className="bg-white p-4 flex gap-4 mt-2 shadow-[0_1px_3px_rgba(0,0,0,0.05)] cursor-pointer active:bg-gray-50 transition">
               <div className="w-[72px] h-[72px] bg-white border border-gray-200 p-0.5 rounded shrink-0 overflow-hidden flex items-center justify-center">
                 <img 
-                  src={firstItemImage ? (firstItemImage.startsWith('http') ? firstItemImage : `https://res.cloudinary.com/akg9ozdu/image/upload/v1723700000/rkpeedika_products/${firstItemImage}`) : "/images/coffee_maker_1.jpg"} 
+                  src={getImageUrl(firstItemImage) || "/images/coffee_maker_1.jpg"} 
                   alt="Product" 
                   className="w-full h-full object-contain rounded-sm"
                   onError={(e) => { e.currentTarget.src = "/images/coffee_maker_1.jpg"; }}
@@ -354,33 +374,30 @@ export default function OrderTrackingPage() {
             </div>
 
             {/* Recently Viewed Products */}
-            <div className="mt-4">
-              <h3 className="text-sm font-bold text-charcoal mb-2 px-2">Recently Viewed</h3>
-              <div className="flex overflow-x-auto gap-3 pb-4 no-scrollbar px-2">
-                {/* We can use dummy products here if AppContext.products is not readily available, but I'll add context products */}
-                <div className="min-w-[130px] w-[130px] bg-white rounded-lg border border-gray-100 overflow-hidden flex flex-col shadow-sm">
-                  <img src="/images/coffee_maker_1.jpg" alt="Kitchen" className="w-full h-[110px] object-cover" />
-                  <div className="p-2 flex flex-col gap-1">
-                    <p className="text-[11px] font-semibold text-charcoal line-clamp-1">Kitchen Container Set</p>
-                    <p className="text-xs font-black">₹399</p>
-                  </div>
-                </div>
-                <div className="min-w-[130px] w-[130px] bg-white rounded-lg border border-gray-100 overflow-hidden flex flex-col shadow-sm">
-                  <img src="/images/category_cleaning.jpg" alt="Cleaning" className="w-full h-[110px] object-cover" />
-                  <div className="p-2 flex flex-col gap-1">
-                    <p className="text-[11px] font-semibold text-charcoal line-clamp-1">Cleaning Brush Set</p>
-                    <p className="text-xs font-black">₹149</p>
-                  </div>
-                </div>
-                <div className="min-w-[130px] w-[130px] bg-white rounded-lg border border-gray-100 overflow-hidden flex flex-col shadow-sm">
-                  <img src="/images/category_kitchen.jpg" alt="Storage" className="w-full h-[110px] object-cover" />
-                  <div className="p-2 flex flex-col gap-1">
-                    <p className="text-[11px] font-semibold text-charcoal line-clamp-1">Storage Organizer</p>
-                    <p className="text-xs font-black">₹299</p>
-                  </div>
+            {displayRecentlyViewed.length > 0 && (
+              <div className="mt-4">
+                <h3 className="text-sm font-bold text-charcoal mb-2 px-2">Recently Viewed</h3>
+                <div className="flex overflow-x-auto gap-3 pb-4 no-scrollbar px-2">
+                  {displayRecentlyViewed.map(item => {
+                    const rawImg = typeof item.images === 'string' ? (() => { try { return JSON.parse(item.images)[0]; } catch { return ''; } })() : (Array.isArray(item.images) ? item.images[0] : '');
+                    const mainImg = getImageUrl(rawImg);
+                    return (
+                      <div 
+                        key={item.id}
+                        onClick={() => { setSelectedProductId(item.id); setCurrentView('product'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                        className="min-w-[130px] w-[130px] bg-white rounded-lg border border-gray-100 overflow-hidden flex flex-col shadow-sm cursor-pointer hover:border-gray-300 transition-premium"
+                      >
+                        <img src={mainImg || "/images/coffee_maker_1.jpg"} alt={item.name} className="w-full h-[110px] object-cover" />
+                        <div className="p-2 flex flex-col gap-1">
+                          <p className="text-[11px] font-semibold text-charcoal line-clamp-1">{item.name}</p>
+                          <p className="text-xs font-black">₹{Number(item.price || 0).toLocaleString('en-IN')}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-            </div>
+            )}
 
             {/* Help Button */}
             <div className="mt-6 flex justify-center pb-6">

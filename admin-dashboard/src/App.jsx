@@ -4,6 +4,7 @@ import DashboardLayout from './layouts/DashboardLayout';
 import Dashboard from './pages/Dashboard';
 import Orders from './pages/Orders';
 import Products from './pages/Products';
+import Categories from './pages/Categories';
 import Settings from './pages/Settings';
 import Profile from './pages/Profile';
 import Login from './pages/Login';
@@ -24,6 +25,7 @@ export default function App() {
         <Route element={<ProtectedRoute><LayoutWrapper /></ProtectedRoute>}>
           <Route path="/" element={<Dashboard />} />
           <Route path="/products" element={<Products />} />
+          <Route path="/categories" element={<Categories />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/profile" element={<Profile />} />

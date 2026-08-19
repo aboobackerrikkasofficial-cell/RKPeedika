@@ -472,8 +472,8 @@ export default function ProductPage() {
   
   // Stable random purchases logic
   const randomPurchases = product?.id 
-    ? (String(product.id).split('').reduce((a, b) => a + b.charCodeAt(0), 0) % 900) + 100 
-    : 342;
+    ? (String(product.id).split('').reduce((a, b) => a + b.charCodeAt(0), 0) % 150) + 1 
+    : 42;
   const displayPurchaseCount = product.purchaseCount || randomPurchases;
 
   // Stable random discount if none exists

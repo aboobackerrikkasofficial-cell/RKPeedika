@@ -400,14 +400,7 @@ export const AppProvider = ({ children }) => {
     };
 
     const verifySavedSession = async () => {
-      // Check Remember Me criteria
-      const rememberMe = localStorage.getItem('rememberMe') === 'true';
-      const sessionActive = sessionStorage.getItem('session_active') === 'true';
-
-      if (!rememberMe && !sessionActive) {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-      }
+      // Always preserve session for guests and OTP users unless explicitly logged out
       sessionStorage.setItem('session_active', 'true');
 
       const token = localStorage.getItem('accessToken');

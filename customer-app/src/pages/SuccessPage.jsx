@@ -3,6 +3,8 @@ import { AppContext } from '../context/AppContext';
 import { CheckCircle, ArrowRight, Truck, FileText } from 'lucide-react';
 import getImageUrl from '../utils/imageUrl';
 
+import { requestNotificationPermission } from '../utils/firebase';
+
 export default function SuccessPage() {
   const { activeOrder, setCurrentView, setTrackingOrderId } = useContext(AppContext);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -17,6 +19,10 @@ export default function SuccessPage() {
 
     setShowConfetti(true);
     const timer = setTimeout(() => setShowConfetti(false), 3000);
+    
+    // Request FCM permission after successful order
+    requestNotificationPermission().catch(console.error);
+
     return () => clearTimeout(timer);
   }, []);
 

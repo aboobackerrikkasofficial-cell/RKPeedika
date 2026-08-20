@@ -386,6 +386,29 @@ export const markNotificationRead = async (req, res, next) => {
   }
 };
 
+export const registerFcmToken = async (req, res, next) => {
+  const { token } = req.body;
+  if (!token) {
+    return next(new BadRequestError("Token is required."));
+  }
+
+  try {
+    // Upsert token to ensure no duplicates, but allow a user to have multiple different tokens
+    const fcmToken = await prisma.fcmToken.upsert({
+      where: { token },
+      update: { userId: req.user.id },
+      create: {
+        token,
+        userId: req.user.id
+      }
+    });
+
+    res.status(201).json({ success: true, message: "Token registered", token: fcmToken });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const updateProfile = async (req, res, next) => {
   const { name, email, phone } = req.body;
 

@@ -21,10 +21,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 
-const SPONGE_IMAGES = [
-  'https://images.unsplash.com/photo-1584820927498-cafe8c12217c?auto=format&fit=crop&w=400&q=80',
-  'https://images.unsplash.com/photo-1596700057257-2e11855e975d?auto=format&fit=crop&w=400&q=80'
-];
+
 
 const getRatingColor = (rating) => {
   if (rating >= 4) return 'bg-[#1F9D55]/10 text-[#1F9D55]';
@@ -149,6 +146,8 @@ export default function ProductPage() {
   
   // Review Image Modal State
   const [previewImage, setPreviewImage] = useState(null);
+  const [isGalleryModalOpen, setIsGalleryModalOpen] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
 
   // Review Form Modal State
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
@@ -492,14 +491,7 @@ export default function ProductPage() {
   const randomPurchases = product?.id 
     ? (String(product.id).split('').reduce((a, b) => a + b.charCodeAt(0), 0) % 150) + 1 
     : 42;
-    
-  let displayPurchaseCount = product.purchaseCount || randomPurchases;
-  const currentReviewCount = reviewSummary.totalCount || product.reviewCount || 0;
-  
-  if (displayPurchaseCount < currentReviewCount + 18) {
-    const randomExtra = product?.id ? (String(product.id).charCodeAt(0) % 30) : 10;
-    displayPurchaseCount = currentReviewCount + 18 + randomExtra;
-  }
+  const displayPurchaseCount = product.purchaseCount || randomPurchases;
 
   // Stable random discount if none exists
   const stableRandom = product?.id 
@@ -933,22 +925,34 @@ export default function ProductPage() {
               </div>
             )}
 
-            {/* CUSTOMER PHOTOS GALLERY STRIP (Requirement 10) */}
+            {/* CUSTOMER PHOTOS GALLERY STRIP */}
             {reviewSummary.allImages && reviewSummary.allImages.length > 0 && (
-              <div className="space-y-2.5">
-                <h5 className="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <ImageIcon className="h-4 w-4 text-[#0B1B2B]" /> Customer Uploaded Photos ({reviewSummary.allImages.length})
-                </h5>
-                <div className="flex flex-wrap gap-2.5">
-                  {reviewSummary.allImages.map((photo, index) => (
-                    <div 
-                      key={index}
-                      onClick={() => setPreviewImage(photo.imageUrl)}
-                      className="cursor-pointer w-16 h-16 rounded-premium border border-gray-200 bg-gray-50 overflow-hidden hover:border-[#0B1B2B] transition-premium shadow-sm hover:scale-105"
-                    >
-                      <img src={photo.imageUrl} alt="Review attachment" className="w-full h-full object-cover" loading="lazy" />
-                    </div>
-                  ))}
+              <div className="space-y-3 pt-2">
+                <h3 className="text-base font-extrabold text-charcoal flex items-center gap-2">
+                  Real Photos ({reviewSummary.allImages.length})
+                </h3>
+                <div className="grid grid-cols-3 grid-rows-2 gap-2 h-64 md:h-72">
+                  {reviewSummary.allImages.slice(0, 5).map((photo, index) => {
+                    const isFirst = index === 0;
+                    return (
+                      <div 
+                        key={index}
+                        onClick={() => {
+                          setGalleryIndex(index);
+                          setIsGalleryModalOpen(true);
+                        }}
+                        className={`cursor-pointer overflow-hidden rounded-xl border border-gray-100 bg-gray-50 hover:border-[#0B1B2B] transition-premium shadow-sm relative group ${isFirst ? 'col-span-2 row-span-2' : 'col-span-1 row-span-1'}`}
+                      >
+                        <img src={getImageUrl(photo.imageUrl)} alt="Review attachment" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                        {index === 4 && reviewSummary.allImages.length > 5 && (
+                          <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white backdrop-blur-[1px]">
+                            <span className="text-xl md:text-2xl font-bold">+{reviewSummary.allImages.length - 5}</span>
+                            <span className="text-[10px] md:text-xs font-semibold uppercase tracking-wider mt-0.5">More</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -968,17 +972,6 @@ export default function ProductPage() {
                     }
                   }
 
-                  // Auto-seed images for Sponge Holder product if none present
-                  if (parsedImages.length === 0 && product?.name?.toLowerCase().includes('sponge')) {
-                    const idNum = parseInt((rev.id || "0").toString().replace(/\D/g, '').substring(0, 5)) || Math.floor(Math.random() * 100000);
-                    if (idNum % 10 < 3) {
-                      const numImg = (idNum % 2) + 1; // 1 or 2
-                      const startIdx = idNum % SPONGE_IMAGES.length;
-                      for (let i = 0; i < numImg; i++) {
-                        parsedImages.push(SPONGE_IMAGES[(startIdx + i) % SPONGE_IMAGES.length]);
-                      }
-                    }
-                  }
 
                   return (
                     <div key={rev.id} className="rounded-none bg-white border-b border-gray-100 py-5 space-y-2.5 last:border-b-0">
@@ -1012,10 +1005,18 @@ export default function ProductPage() {
                           {parsedImages.map((img, idx) => (
                             <div 
                               key={idx} 
-                              onClick={() => setPreviewImage(img)}
+                              onClick={() => {
+                                const galleryIdx = reviewSummary.allImages?.findIndex(ai => ai.imageUrl === img);
+                                if (galleryIdx !== -1) {
+                                  setGalleryIndex(galleryIdx);
+                                  setIsGalleryModalOpen(true);
+                                } else {
+                                  setPreviewImage(getImageUrl(img));
+                                }
+                              }}
                               className="cursor-pointer w-[72px] h-[72px] rounded border border-gray-200 overflow-hidden bg-gray-50 hover:border-gray-300 transition-colors"
                             >
-                              <img src={img} alt="Attached upload" className="w-full h-full object-cover" loading="lazy" />
+                              <img src={getImageUrl(img)} alt="Attached upload" className="w-full h-full object-cover" loading="lazy" />
                             </div>
                           ))}
                         </div>
@@ -1257,6 +1258,53 @@ export default function ProductPage() {
               <X className="h-6 w-6" />
             </button>
             <img src={previewImage} alt="Large Attachment View" className="max-w-full max-h-[85vh] object-contain rounded shadow-2xl" />
+          </div>
+        </div>
+      )}
+
+      {/* FULL GALLERY SLIDER MODAL */}
+      {isGalleryModalOpen && reviewSummary.allImages && reviewSummary.allImages.length > 0 && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-sm touch-none">
+          {/* Close Button */}
+          <button 
+            onClick={() => setIsGalleryModalOpen(false)}
+            className="absolute top-4 right-4 z-10 text-white bg-white/10 hover:bg-white/20 p-2 rounded-full transition"
+          >
+            <X className="h-6 w-6" />
+          </button>
+          
+          {/* Prev Button */}
+          {reviewSummary.allImages.length > 1 && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); setGalleryIndex(prev => prev === 0 ? reviewSummary.allImages.length - 1 : prev - 1); }}
+              className="absolute left-4 top-1/2 -translate-y-1/2 z-10 text-white bg-white/10 hover:bg-white/20 p-3 rounded-full transition"
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+          )}
+
+          {/* Main Image */}
+          <div className="relative max-w-4xl max-h-[85vh] w-full flex items-center justify-center p-4">
+            <img 
+              src={reviewSummary.allImages[galleryIndex]?.imageUrl ? getImageUrl(reviewSummary.allImages[galleryIndex].imageUrl) : ''} 
+              alt="Gallery view" 
+              className="max-w-full max-h-[80vh] object-contain select-none" 
+            />
+          </div>
+
+          {/* Next Button */}
+          {reviewSummary.allImages.length > 1 && (
+            <button 
+              onClick={(e) => { e.stopPropagation(); setGalleryIndex(prev => prev === reviewSummary.allImages.length - 1 ? 0 : prev + 1); }}
+              className="absolute right-4 top-1/2 -translate-y-1/2 z-10 text-white bg-white/10 hover:bg-white/20 p-3 rounded-full transition"
+            >
+              <ChevronRight className="h-6 w-6" />
+            </button>
+          )}
+
+          {/* Indicator text */}
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 text-white/80 font-semibold text-sm tracking-widest">
+            {galleryIndex + 1} / {reviewSummary.allImages.length}
           </div>
         </div>
       )}

@@ -282,6 +282,18 @@ export const createOrder = async (req, res, next) => {
         }
       });
 
+      // FCM Notification
+      try {
+        const { sendOrderNotification } = await import('../services/notification.service.js');
+        await sendOrderNotification(
+          userId,
+          'Order Placed Successfully',
+          `Your order ${userFacingOrderId} has been received.`
+        );
+      } catch (fcmErr) {
+        console.error("FCM Error on Order Placed:", fcmErr);
+      }
+
       await tx.cartItem.deleteMany({
         where: { 
           userId,
@@ -400,6 +412,31 @@ export const updateOrderStatus = async (req, res, next) => {
         ...(trackingNumber && { trackingNumber })
       }
     });
+
+    // FCM Notification
+    try {
+      const { sendOrderNotification } = await import('../services/notification.service.js');
+      const orderIdFormatted = order.orderId;
+      let title = '';
+      let body = '';
+      
+      if (status === 'shipped') {
+        title = 'Order Shipped';
+        body = `Your order ${orderIdFormatted} has been shipped.`;
+      } else if (status === 'out_for_delivery') {
+        title = 'Out for Delivery';
+        body = `Your order ${orderIdFormatted} is out for delivery today.`;
+      } else if (status === 'delivered') {
+        title = 'Order Delivered';
+        body = `Your order ${orderIdFormatted} has been delivered successfully.`;
+      }
+
+      if (title && body) {
+        await sendOrderNotification(order.userId, title, body);
+      }
+    } catch (fcmErr) {
+      console.error("FCM Error on Status Update:", fcmErr);
+    }
 
     res.json({
       success: true,

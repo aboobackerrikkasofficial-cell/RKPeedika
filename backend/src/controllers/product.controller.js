@@ -36,6 +36,18 @@ export const formatProduct = (product) => {
   formatted.relatedProducts = parseJson(formatted.relatedProducts, []);
   formatted.active = formatted.status === 'active';
 
+  // Make the purchase count randomly higher than reviews count (at least 18 difference)
+  const revCount = formatted.reviewCount || 0;
+  const purCount = formatted.purchaseCount || 0;
+  
+  // Deterministic "random" value based on product ID so it doesn't jump around on reload
+  const randomBump = formatted.id ? (formatted.id.charCodeAt(formatted.id.length - 1) % 40) : 15;
+  const minPurchaseCount = revCount + 18 + randomBump;
+
+  if (purCount < minPurchaseCount) {
+    formatted.purchaseCount = minPurchaseCount;
+  }
+
   return formatted;
 };
 

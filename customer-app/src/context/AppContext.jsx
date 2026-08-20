@@ -4,6 +4,7 @@ import { DEFAULT_ADDRESSES } from '../constants/addresses';
 import { PINCODE_DATABASE } from '../constants/pincodes';
 import apiClient from '../api/client';
 import getImageUrl from '../utils/imageUrl';
+import { onMessageListener } from '../utils/firebase';
 
 // Safe JSON parse that never throws
 const safeJsonParse = (value, fallback) => {
@@ -455,6 +456,21 @@ export const AppProvider = ({ children }) => {
 
     fetchPublicData();
     verifySavedSession();
+    
+    // Foreground FCM listener
+    const setupFCMListener = async () => {
+      try {
+        const payload = await onMessageListener();
+        if (payload && payload.notification) {
+          showToast(`${payload.notification.title}: ${payload.notification.body}`, 'info');
+        }
+        setupFCMListener(); // recursive call to keep listening
+      } catch (err) {
+        console.error("FCM foreground error", err);
+      }
+    };
+    setupFCMListener();
+    
   }, []);
 
   // Listen to multi-tab events and local logout triggers

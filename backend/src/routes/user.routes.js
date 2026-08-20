@@ -20,7 +20,8 @@ import {
   adminGetOtpLogs,
   updateAddress,
   deleteAddress,
-  setDefaultAddress
+  setDefaultAddress,
+  registerFcmToken
 } from '../controllers/user.controller.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 
@@ -58,5 +59,6 @@ router.delete('/wishlist/:productId', authenticate, removeFromWishlist);
 // Notifications
 router.get('/notifications', authenticate, getNotifications);
 router.put('/notifications/:id/read', authenticate, markNotificationRead);
+router.post('/fcm-token', authenticate, registerFcmToken);
 
 export default router;

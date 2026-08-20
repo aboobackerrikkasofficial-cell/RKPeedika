@@ -426,11 +426,10 @@ app.get('/api/seed-all-reviews', async (req, res) => {
       });
     }
 
-    const products = await prismaDb.product.findMany();
+    const products = await prismaDb.product.findMany({ where: { reviewCount: 0 } });
     let logs = [];
 
     for (const prod of products) {
-      await prismaDb.review.deleteMany({ where: { productId: prod.id } });
 
       const targetReviewCount = Math.floor(Math.random() * (85 - 20 + 1)) + 20; 
       const manualBalance = Math.floor(Math.random() * 2) + 5; 

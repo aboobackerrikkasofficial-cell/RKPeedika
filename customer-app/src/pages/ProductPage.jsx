@@ -1,4 +1,4 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect, useRef } from 'react';
 import { AppContext } from '../context/AppContext';
 import apiClient from '../api/client';
 import getImageUrl from '../utils/imageUrl';
@@ -148,6 +148,27 @@ export default function ProductPage() {
   const [previewImage, setPreviewImage] = useState(null);
   const [isGalleryModalOpen, setIsGalleryModalOpen] = useState(false);
   const [galleryIndex, setGalleryIndex] = useState(0);
+
+  // Swipe handling
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
+
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.changedTouches[0].screenX;
+  };
+
+  const handleTouchEnd = (e) => {
+    touchEndX.current = e.changedTouches[0].screenX;
+    if (touchStartX.current - touchEndX.current > 50) {
+      // swipe left
+      setGalleryIndex(prev => prev === reviewSummary.allImages.length - 1 ? 0 : prev + 1);
+    }
+    if (touchEndX.current - touchStartX.current > 50) {
+      // swipe right
+      setGalleryIndex(prev => prev === 0 ? reviewSummary.allImages.length - 1 : prev - 1);
+    }
+  };
+
 
   // Review Form Modal State
   const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
@@ -931,28 +952,19 @@ export default function ProductPage() {
                 <h3 className="text-base font-extrabold text-charcoal flex items-center gap-2">
                   Real Photos ({reviewSummary.allImages.length})
                 </h3>
-                <div className="grid grid-cols-3 grid-rows-2 gap-2 h-64 md:h-72">
-                  {reviewSummary.allImages.slice(0, 5).map((photo, index) => {
-                    const isFirst = index === 0;
-                    return (
-                      <div 
-                        key={index}
-                        onClick={() => {
-                          setGalleryIndex(index);
-                          setIsGalleryModalOpen(true);
-                        }}
-                        className={`cursor-pointer overflow-hidden rounded-xl border border-gray-100 bg-gray-50 hover:border-[#0B1B2B] transition-premium shadow-sm relative group ${isFirst ? 'col-span-2 row-span-2' : 'col-span-1 row-span-1'}`}
-                      >
-                        <img src={getImageUrl(photo.imageUrl)} alt="Review attachment" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
-                        {index === 4 && reviewSummary.allImages.length > 5 && (
-                          <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center text-white backdrop-blur-[1px]">
-                            <span className="text-xl md:text-2xl font-bold">+{reviewSummary.allImages.length - 5}</span>
-                            <span className="text-[10px] md:text-xs font-semibold uppercase tracking-wider mt-0.5">More</span>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                <div className="flex overflow-x-auto snap-x snap-mandatory gap-3 pb-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                  {reviewSummary.allImages.map((photo, index) => (
+                    <div 
+                      key={index}
+                      onClick={() => {
+                        setGalleryIndex(index);
+                        setIsGalleryModalOpen(true);
+                      }}
+                      className="cursor-pointer flex-shrink-0 w-32 h-32 md:w-40 md:h-40 snap-start overflow-hidden rounded-xl border border-gray-100 bg-gray-50 hover:border-[#0B1B2B] transition-premium shadow-sm relative group"
+                    >
+                      <img src={getImageUrl(photo.imageUrl)} alt="Review attachment" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" loading="lazy" />
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -1263,7 +1275,11 @@ export default function ProductPage() {
           )}
 
           {/* Main Image */}
-          <div className="relative max-w-4xl max-h-[85vh] w-full flex items-center justify-center p-4">
+          <div 
+            className="relative max-w-4xl max-h-[85vh] w-full flex items-center justify-center p-4"
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+          >
             <img 
               src={reviewSummary.allImages[galleryIndex]?.imageUrl ? getImageUrl(reviewSummary.allImages[galleryIndex].imageUrl) : ''} 
               alt="Gallery view" 

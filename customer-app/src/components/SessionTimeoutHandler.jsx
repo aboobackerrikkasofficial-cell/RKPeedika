@@ -34,7 +34,13 @@ export default function SessionTimeoutHandler() {
       // Trigger silent token refresh
       const refreshToken = localStorage.getItem('refreshToken');
       if (refreshToken) {
-        await apiClient.post('/auth/refresh', { refreshToken });
+        const response = await apiClient.post('/auth/refresh', { refreshToken });
+        if (response.data && response.data.token) {
+          localStorage.setItem('accessToken', response.data.token);
+          if (response.data.refreshToken) {
+            localStorage.setItem('refreshToken', response.data.refreshToken);
+          }
+        }
         window.dispatchEvent(new CustomEvent('show-toast', {
           detail: { message: '✓ Session Extended Successfully!', type: 'success' }
         }));

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Table from '../components/Table';
 import apiClient from '../api/client';
-import { FolderTree, Plus, Search, Trash2, Edit3, X, CheckCircle, AlertCircle } from 'lucide-react';
+import { FolderTree, Plus, Search, Trash2, Edit3, X, CheckCircle, AlertCircle, ImagePlus, Loader2 } from 'lucide-react';
 
 export default function Categories() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -14,6 +14,7 @@ export default function Categories() {
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [image, setImage] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     fetchCategories();
@@ -55,6 +56,69 @@ export default function Categories() {
     setImage(category.image || "");
     setIsModalOpen(true);
   };
+
+  function compressImageToBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 800;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // Compress as JPEG at 0.7 quality
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          resolve(dataUrl);
+        };
+        img.onerror = (err) => reject(err);
+        img.src = event.target.result;
+      };
+      reader.onerror = (err) => reject(err);
+      reader.readAsDataURL(file);
+    });
+  }
+
+  async function handleImageUpload(event) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      showStatus('error', `${file.name} is not a valid image.`);
+      return;
+    }
+
+    try {
+      setUploading(true);
+      const base64Url = await compressImageToBase64(file);
+      setImage(base64Url);
+    } catch (error) {
+      console.error('Image processing failed:', error);
+      showStatus('error', 'Image processing failed. Please try again.');
+    } finally {
+      setUploading(false);
+      event.target.value = '';
+    }
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -236,14 +300,39 @@ export default function Categories() {
               </div>
 
               <div>
-                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Image URL (Optional)</label>
-                <input 
-                  type="text" 
-                  value={image}
-                  onChange={e => setImage(e.target.value)}
-                  placeholder="/images/category.jpg"
-                  className="w-full rounded-xl border border-gray-200 px-3.5 py-2 text-xs text-charcoal outline-none focus:border-[#F7941D]"
-                />
+                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Category Image (Optional)</label>
+                {image ? (
+                  <div className="relative inline-block border border-gray-200 rounded-xl overflow-hidden group">
+                    <img src={image} alt="Category" className="h-24 w-24 object-cover" />
+                    <button
+                      type="button"
+                      onClick={() => setImage("")}
+                      className="absolute top-1 right-1 rounded-full bg-red-500 text-white p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="flex flex-col items-center justify-center w-full h-24 rounded-xl border-2 border-dashed border-gray-200 hover:border-[#F7941D] hover:bg-orange-50/30 transition-colors cursor-pointer relative overflow-hidden">
+                    <div className="flex flex-col items-center justify-center text-gray-400 group-hover:text-[#F7941D]">
+                      {uploading ? (
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                      ) : (
+                        <>
+                          <ImagePlus className="h-6 w-6 mb-1" />
+                          <span className="text-[10px] font-bold">Upload Image</span>
+                        </>
+                      )}
+                    </div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      disabled={uploading}
+                      className="absolute inset-0 opacity-0 cursor-pointer disabled:cursor-not-allowed"
+                    />
+                  </label>
+                )}
               </div>
 
               <div className="flex justify-end gap-2 pt-2">

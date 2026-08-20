@@ -999,28 +999,7 @@ export default function ProductPage() {
                         {rev.comment}
                       </p>
 
-                      {/* Attachable images preview within review */}
-                      {parsedImages && parsedImages.length > 0 && (
-                        <div className="flex gap-2 pt-1 pb-1">
-                          {parsedImages.map((img, idx) => (
-                            <div 
-                              key={idx} 
-                              onClick={() => {
-                                const galleryIdx = reviewSummary.allImages?.findIndex(ai => ai.imageUrl === img);
-                                if (galleryIdx !== -1) {
-                                  setGalleryIndex(galleryIdx);
-                                  setIsGalleryModalOpen(true);
-                                } else {
-                                  setPreviewImage(getImageUrl(img));
-                                }
-                              }}
-                              className="cursor-pointer w-[72px] h-[72px] rounded border border-gray-200 overflow-hidden bg-gray-50 hover:border-gray-300 transition-colors"
-                            >
-                              <img src={getImageUrl(img)} alt="Attached upload" className="w-full h-full object-cover" loading="lazy" />
-                            </div>
-                          ))}
-                        </div>
-                      )}
+
 
                       {/* Admin replies block */}
                       {rev.reply && (

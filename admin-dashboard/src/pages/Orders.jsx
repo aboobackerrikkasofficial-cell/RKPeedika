@@ -133,6 +133,21 @@ export default function Orders() {
     }
   };
 
+  const handleDeleteOrder = async (orderId) => {
+    if (!window.confirm("Are you sure you want to delete this order entirely? This action cannot be undone.")) return;
+    try {
+      const res = await apiClient.delete(`/orders/${orderId}`);
+      if (res.data.success) {
+        showStatus('success', 'Order deleted successfully.');
+        setSelectedOrder(null);
+        fetchOrders();
+      }
+    } catch (err) {
+      console.error("Failed to delete order", err);
+      showStatus('error', err.response?.data?.message || "Failed to delete order.");
+    }
+  };
+
   // Filtering logic
   const filteredOrders = ordersList.filter(ord => {
     const customerName = ord.user?.name || 'Guest';
@@ -510,7 +525,13 @@ export default function Orders() {
             </div>
 
             {/* Modal action footer */}
-            <div className="pt-5 border-t border-gray-100 mt-5 flex gap-2 justify-end">
+            <div className="pt-5 border-t border-gray-100 mt-5 flex gap-2 justify-between">
+              <button 
+                onClick={() => handleDeleteOrder(selectedOrder.id)}
+                className="rounded-xl bg-red-50 text-red-600 px-5 py-2.5 text-xs font-bold border border-red-100 hover:bg-red-100 transition-all flex items-center gap-2"
+              >
+                <X className="h-4 w-4" /> Delete Order
+              </button>
               <button 
                 onClick={() => setSelectedOrder(null)}
                 className="rounded-xl bg-charcoal px-5 py-2.5 text-xs font-bold text-white hover:bg-black transition-all"

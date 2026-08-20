@@ -823,3 +823,30 @@ export const cancelOrder = async (req, res, next) => {
     next(error);
   }
 };
+
+export const deleteOrder = async (req, res, next) => {
+  const { id } = req.params;
+
+  try {
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+
+    const order = await prisma.order.findFirst({
+      where: isUuid ? { id } : { orderId: id }
+    });
+
+    if (!order) {
+      return next(new NotFoundError(`Order ID ${id} not found`));
+    }
+
+    await prisma.order.delete({
+      where: { id: order.id }
+    });
+
+    res.json({
+      success: true,
+      message: 'Order has been deleted successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};

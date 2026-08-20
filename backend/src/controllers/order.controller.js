@@ -629,7 +629,6 @@ export const publicTrackOrder = async (req, res, next) => {
         orderItems: { include: { product: true } },
         trackingEvents: { orderBy: { eventDate: 'desc' } },
         payments: true,
-        address: true,
         user: true
       }
     });
@@ -716,7 +715,7 @@ export const cancelOrder = async (req, res, next) => {
 
     const order = await prisma.order.findFirst({
       where: isUuid ? { id } : { orderId: id },
-      include: { address: true, user: true }
+      include: { user: true }
     });
 
     if (!order) {

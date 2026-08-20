@@ -16,18 +16,18 @@ const firebaseConfig = {
 // We'll leave placeholders and tell the user to fill them.
 
 firebase.initializeApp({
-  apiKey: "REPLACE_WITH_API_KEY",
-  authDomain: "REPLACE_WITH_AUTH_DOMAIN",
-  projectId: "REPLACE_WITH_PROJECT_ID",
-  messagingSenderId: "REPLACE_WITH_MESSAGING_SENDER_ID",
-  appId: "REPLACE_WITH_APP_ID"
+  apiKey: "AIzaSyAYC-Ayx4mzRMBjuteRwdUZeXhAqpLESDA",
+  authDomain: "rkpeedika.firebaseapp.com",
+  projectId: "rkpeedika",
+  messagingSenderId: "1052874337976",
+  appId: "1:1052874337976:web:d79a247e685eff336a0e4d"
 });
 
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
   console.log('[firebase-messaging-sw.js] Received background message ', payload);
-  
+
   const notificationTitle = payload.notification.title;
   const notificationOptions = {
     body: payload.notification.body,

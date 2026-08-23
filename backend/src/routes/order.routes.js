@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { createOrder, getOrderById, updateOrderStatus, requestReturn, getReturns, getAllOrders, getUserOrderHistory, getOrderByOrderIdFormatted, updateOrderTracking, addTrackingEvent, publicTrackOrder, syncOrderTracking, cancelOrder, deleteOrder } from '../controllers/order.controller.js';
+import { createOrder, getOrderById, updateOrderStatus, requestReturn, getReturns, getAllOrders, getUserOrderHistory, getOrderByOrderIdFormatted, updateOrderTracking, addTrackingEvent, publicTrackOrder, syncOrderTracking, cancelOrder, deleteOrder, clearAllOrders } from '../controllers/order.controller.js';
 import { authenticate, authorize, optionalAuthenticate } from '../middleware/auth.js';
 
 const router = Router();
@@ -12,6 +12,7 @@ router.put('/:id/cancel', optionalAuthenticate, cancelOrder);
 router.put('/:id/tracking', authenticate, authorize('admin'), updateOrderTracking);
 router.post('/:id/tracking/events', authenticate, authorize('admin'), addTrackingEvent);
 router.post('/:id/tracking/sync', authenticate, authorize('admin'), syncOrderTracking);
+router.delete('/clear-all', authenticate, authorize('admin'), clearAllOrders);
 router.delete('/:id', authenticate, authorize('admin'), deleteOrder);
 /**
  * @swagger

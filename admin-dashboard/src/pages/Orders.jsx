@@ -148,6 +148,23 @@ export default function Orders() {
     }
   };
 
+  const handleClearAllOrders = async () => {
+    if (!window.confirm("Are you sure you want to CLEAR ALL orders? This action cannot be undone and will delete all order history.")) return;
+    setIsLoading(true);
+    try {
+      const res = await apiClient.delete('/orders/clear-all');
+      if (res.data.success) {
+        showStatus('success', 'All orders cleared successfully.');
+        setSelectedOrder(null);
+        fetchOrders();
+      }
+    } catch (err) {
+      console.error("Failed to clear all orders", err);
+      showStatus('error', err.response?.data?.message || "Failed to clear all orders.");
+      setIsLoading(false);
+    }
+  };
+
   // Filtering logic
   const filteredOrders = ordersList.filter(ord => {
     const customerName = ord.user?.name || 'Guest';
@@ -194,26 +211,39 @@ export default function Orders() {
     },
     {
       key: "actions",
-      label: "Details",
+      label: "Actions",
       render: (row) => (
-        <button 
-          onClick={() => {
-            setSelectedOrder(row);
-            setTrackingForm({
-              courier: row.courier || "",
-              trackingNumber: row.trackingNumber || "",
-              trackingUrl: row.trackingUrl || "",
-              estimatedDeliveryDate: row.estimatedDeliveryDate || "",
-              shippedDate: row.shippedDate || "",
-              internalNotes: row.internalNotes || "",
-              customerMessage: row.customerMessage || ""
-            });
-            setEventForm({ status: "processing", message: "", location: "", date: new Date().toISOString().split('T')[0] });
-          }}
-          className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-50 hover:text-[#F7941D] transition-all"
-        >
-          <Eye className="h-4 w-4" />
-        </button>
+        <div className="flex items-center space-x-2">
+          <button 
+            onClick={() => {
+              setSelectedOrder(row);
+              setTrackingForm({
+                courier: row.courier || "",
+                trackingNumber: row.trackingNumber || "",
+                trackingUrl: row.trackingUrl || "",
+                estimatedDeliveryDate: row.estimatedDeliveryDate || "",
+                shippedDate: row.shippedDate || "",
+                internalNotes: row.internalNotes || "",
+                customerMessage: row.customerMessage || ""
+              });
+              setEventForm({ status: "processing", message: "", location: "", date: new Date().toISOString().split('T')[0] });
+            }}
+            className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-50 hover:text-[#F7941D] transition-all"
+            title="View Details"
+          >
+            <Eye className="h-4 w-4" />
+          </button>
+          <button 
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteOrder(row.id);
+            }}
+            className="rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all"
+            title="Delete Order"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
       )
     }
   ];
@@ -235,6 +265,12 @@ export default function Orders() {
           <h2 className="text-2xl font-black text-gray-900 tracking-tight">Order Management</h2>
           <p className="text-xs font-semibold text-gray-400 mt-1">Review customer receipts, billing addresses, and transit status updates.</p>
         </div>
+        <button 
+          onClick={handleClearAllOrders}
+          className="rounded-xl bg-red-50 text-red-600 px-4 py-2 text-xs font-bold border border-red-100 hover:bg-red-100 transition-all flex items-center gap-2 self-start sm:self-auto"
+        >
+          <X className="h-4 w-4" /> Clear All Orders
+        </button>
       </div>
 
       {/* Status Msg */}
@@ -406,9 +442,16 @@ export default function Orders() {
 
               {/* Delivery Details */}
               <div className="space-y-2 pb-3 border-b border-gray-100">
-                <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Shipping Destination Pincode</h4>
-                <div className="text-charcoal flex items-start gap-1">
-                  <p className="leading-relaxed font-semibold">Pincode: {selectedOrder.pincode}</p>
+                <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Shipping Destination Details</h4>
+                <div className="text-charcoal flex flex-col gap-1 text-xs">
+                  <p className="font-semibold">{selectedOrder.shippingName || selectedOrder.user?.name || 'Name not provided'}</p>
+                  <p>{selectedOrder.shippingPhone || selectedOrder.user?.phone || 'Phone not provided'}</p>
+                  <p className="leading-relaxed">
+                    {selectedOrder.shippingStreet && <>{selectedOrder.shippingStreet}<br /></>}
+                    {selectedOrder.shippingCity && <>{selectedOrder.shippingCity}, </>}
+                    {selectedOrder.shippingState && <>{selectedOrder.shippingState} </>}
+                    <span className="font-semibold">{selectedOrder.pincode || selectedOrder.shippingPincode}</span>
+                  </p>
                 </div>
               </div>
 

@@ -107,17 +107,24 @@ export default function CheckoutPage() {
 
   const shippingCharge = selectedShippingMethod === "express" ? 150 : 0;
   const isOnline = selectedPaymentMethod !== "cod";
-  const isCouponValid = couponConfig.enabled && new Date(couponConfig.expiry) > new Date() && onlineSubtotal >= couponConfig.minPurchase;
-  const activeDiscountPct = (isOnline && isCouponValid) ? couponConfig.discountPct : 0;
-  const onlineDiscount = isOnline ? Math.round(onlineSubtotal * (activeDiscountPct / 100)) : 0;
 
-  const onlineFinalPrice = onlineSubtotal + shippingCharge - (isCouponValid ? Math.round(onlineSubtotal * (couponConfig.discountPct / 100)) : 0);
+  // Note: we removed the global 12% extra online discount logic. 
+  // If there are coupons, they can still apply. For simplicity in this logic, we use standard final price.
+  const isCouponValid = couponConfig.enabled && new Date(couponConfig.expiry) > new Date() && onlineSubtotal >= couponConfig.minPurchase;
+  const couponDiscount = (isOnline && isCouponValid) ? Math.round(onlineSubtotal * (couponConfig.discountPct / 100)) : 0;
+
+  const onlineFinalPrice = onlineSubtotal + shippingCharge - couponDiscount;
   const codFinalPrice = codSubtotal + shippingCharge;
   const finalPrice = selectedPaymentMethod === 'cod' ? codFinalPrice : onlineFinalPrice;
 
-  // Total Savings should only calculate if there's actual savings. 
-  const baseSavings = Math.max(0, originalSubtotal - subtotal);
-  const totalSavings = baseSavings + onlineDiscount;
+  // New savings logic based on MRP and COD prices
+  const mrpSubtotal = checkoutItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+  const savedFromCod = Math.max(0, codSubtotal - onlineSubtotal);
+  const savedFromMrp = Math.max(0, mrpSubtotal - onlineSubtotal);
+  const totalSavings = savedFromCod + couponDiscount; // total explicit savings shown at bottom
+
+  // Base savings based on user preference to not show extra if COD
+  const baseSavings = isOnline ? savedFromCod : 0;
   // Meta Pixel: InitiateCheckout
   useEffect(() => {
     if (checkoutItems.length > 0 && window.fbq) {
@@ -428,10 +435,20 @@ export default function CheckoutPage() {
                 <span className="text-charcoal font-bold">₹{codSubtotal.toLocaleString('en-IN')}</span>
               </div>
 
-              {isOnline && (Math.max(0, codSubtotal - onlineSubtotal) + onlineDiscount) > 0 && (
+              {!isOnline && (
+                <div className="flex justify-between text-gray-500 font-semibold">
+                  <span>Discount</span>
+                  <span>No discount applied</span>
+                </div>
+              )}
+
+              {isOnline && savedFromCod > 0 && (
                 <div className="flex justify-between text-[#1F9D55] font-bold">
                   <span className="flex items-center gap-1"><Percent className="h-4 w-4" /> Prepaid Discount</span>
-                  <span>-₹{(Math.max(0, codSubtotal - onlineSubtotal) + onlineDiscount).toLocaleString('en-IN')}</span>
+                  <div className="text-right text-xs">
+                    ₹{savedFromCod.toLocaleString('en-IN')} saved <br/>
+                    <span className="text-[10px]">(₹{savedFromMrp.toLocaleString('en-IN')} saved from MRP)</span>
+                  </div>
                 </div>
               )}
 

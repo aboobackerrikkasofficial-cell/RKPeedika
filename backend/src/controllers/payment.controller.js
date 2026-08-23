@@ -321,11 +321,8 @@ export const createRazorpayOrder = async (req, res, next) => {
         }
       }
 
-      // Online payment discount (12%)
-      const storeSettings = await prisma.storeSetting.findUnique({ where: { id: 'default' } });
-      const onlineDiscountPct = storeSettings?.onlineDiscount ?? 12;
-      const paymentDiscount = (subtotal - discount) * (onlineDiscountPct / 100);
-
+      const paymentDiscount = 0; // Removed extra percentage discount
+  
       const totalDiscount = discount + paymentDiscount;
       finalAmount = Math.max(0, subtotal - totalDiscount);
 

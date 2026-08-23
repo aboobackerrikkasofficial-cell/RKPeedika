@@ -214,9 +214,9 @@ export const createOrder = async (req, res, next) => {
       }
     }
 
-    let paymentDiscount = 0;
+    let paymentDiscount = 0; // Removed extra percentage discount
     if (paymentMethod !== 'COD') {
-      paymentDiscount = (subtotal - discount) * 0.12; 
+      // paymentDiscount = (subtotal - discount) * 0.12; 
     }
 
     const totalDiscount = discount + paymentDiscount;
@@ -871,6 +871,18 @@ export const deleteOrder = async (req, res, next) => {
     res.json({
       success: true,
       message: 'Order has been deleted successfully'
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const clearAllOrders = async (req, res, next) => {
+  try {
+    await prisma.order.deleteMany({});
+    res.json({
+      success: true,
+      message: 'All orders have been cleared successfully'
     });
   } catch (error) {
     next(error);

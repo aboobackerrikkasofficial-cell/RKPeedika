@@ -18,6 +18,7 @@ export default function Orders() {
   const [statusMsg, setStatusMsg] = useState({ type: '', text: '' });
   const [isLoading, setIsLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set()); // for checkbox selection
 
   useEffect(() => {
     fetchOrders();
@@ -133,36 +134,66 @@ export default function Orders() {
     }
   };
 
+  // Optimistic instant delete — removes from UI immediately, API in background
   const handleDeleteOrder = async (orderId) => {
-    if (!window.confirm("Are you sure you want to delete this order entirely? This action cannot be undone.")) return;
-    try {
-      const res = await apiClient.delete(`/orders/${orderId}`);
-      if (res.data.success) {
-        showStatus('success', 'Order deleted successfully.');
-        setSelectedOrder(null);
-        fetchOrders();
-      }
-    } catch (err) {
-      console.error("Failed to delete order", err);
-      showStatus('error', err.response?.data?.message || "Failed to delete order.");
-    }
+    if (!window.confirm("Delete this order? This cannot be undone.")) return;
+    // Remove instantly from UI
+    setOrdersList(prev => prev.filter(o => o.id !== orderId));
+    setSelectedIds(prev => { const s = new Set(prev); s.delete(orderId); return s; });
+    if (selectedOrder?.id === orderId) setSelectedOrder(null);
+    // Fire API in background silently
+    apiClient.delete(`/orders/${orderId}`).catch(err => {
+      console.error("Delete failed", err);
+      showStatus('error', 'Delete failed — please refresh.');
+      fetchOrders(); // revert on failure
+    });
+  };
+
+  // Optimistic bulk delete — removes all ticked orders from UI instantly
+  const handleDeleteSelected = async () => {
+    if (selectedIds.size === 0) return;
+    if (!window.confirm(`Delete ${selectedIds.size} selected order(s)? This cannot be undone.`)) return;
+    const idsToDelete = [...selectedIds];
+    // Remove all ticked instantly from UI
+    setOrdersList(prev => prev.filter(o => !selectedIds.has(o.id)));
+    setSelectedIds(new Set());
+    if (selectedOrder && idsToDelete.includes(selectedOrder.id)) setSelectedOrder(null);
+    // Fire all deletes in parallel in background
+    Promise.all(idsToDelete.map(id => apiClient.delete(`/orders/${id}`))).catch(err => {
+      console.error("Bulk delete failed", err);
+      showStatus('error', 'Some deletes failed — please refresh.');
+      fetchOrders();
+    });
   };
 
   const handleClearAllOrders = async () => {
     if (!window.confirm("Are you sure you want to CLEAR ALL orders? This action cannot be undone and will delete all order history.")) return;
-    setIsLoading(true);
-    try {
-      const res = await apiClient.delete('/orders/clear-all');
-      if (res.data.success) {
-        showStatus('success', 'All orders cleared successfully.');
-        setSelectedOrder(null);
-        fetchOrders();
-      }
-    } catch (err) {
+    // Optimistic: clear UI instantly
+    setOrdersList([]);
+    setSelectedIds(new Set());
+    setSelectedOrder(null);
+    apiClient.delete('/orders/clear-all').catch(err => {
       console.error("Failed to clear all orders", err);
       showStatus('error', err.response?.data?.message || "Failed to clear all orders.");
-      setIsLoading(false);
+      fetchOrders();
+    });
+  };
+
+  // Checkbox helpers
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredOrders.length && filteredOrders.length > 0) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredOrders.map(o => o.id)));
     }
+  };
+
+  const toggleSelectOne = (id) => {
+    setSelectedIds(prev => {
+      const s = new Set(prev);
+      s.has(id) ? s.delete(id) : s.add(id);
+      return s;
+    });
   };
 
   // Filtering logic
@@ -181,7 +212,32 @@ export default function Orders() {
     return matchesSearch && matchesStatus;
   });
 
+  const isAllSelected = filteredOrders.length > 0 && filteredOrders.every(o => selectedIds.has(o.id));
+  const isIndeterminate = filteredOrders.some(o => selectedIds.has(o.id)) && !isAllSelected;
+
   const columns = [
+    {
+      key: "checkbox",
+      label: (
+        <input
+          type="checkbox"
+          checked={isAllSelected}
+          ref={el => { if (el) el.indeterminate = isIndeterminate; }}
+          onChange={toggleSelectAll}
+          className="w-4 h-4 accent-[#F7941D] cursor-pointer"
+          title={isAllSelected ? "Deselect All" : "Select All"}
+        />
+      ),
+      render: (row) => (
+        <input
+          type="checkbox"
+          checked={selectedIds.has(row.id)}
+          onChange={() => toggleSelectOne(row.id)}
+          onClick={e => e.stopPropagation()}
+          className="w-4 h-4 accent-[#F7941D] cursor-pointer"
+        />
+      )
+    },
     { key: "id", label: "Order ID", sortable: true, render: (row) => <span className="font-mono text-gray-700">{row.orderId || row.id}</span> },
     { key: "customer", label: "Customer Name", sortable: true, render: (row) => <span>{row.user?.name || 'Guest'}</span> },
     { key: "date", label: "Date", sortable: true, render: (row) => <span>{new Date(row.createdAt).toLocaleDateString()}</span> },
@@ -215,7 +271,8 @@ export default function Orders() {
       render: (row) => (
         <div className="flex items-center space-x-2">
           <button 
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
               setSelectedOrder(row);
               setTrackingForm({
                 courier: row.courier || "",
@@ -265,12 +322,22 @@ export default function Orders() {
           <h2 className="text-2xl font-black text-gray-900 tracking-tight">Order Management</h2>
           <p className="text-xs font-semibold text-gray-400 mt-1">Review customer receipts, billing addresses, and transit status updates.</p>
         </div>
-        <button 
-          onClick={handleClearAllOrders}
-          className="rounded-xl bg-red-50 text-red-600 px-4 py-2 text-xs font-bold border border-red-100 hover:bg-red-100 transition-all flex items-center gap-2 self-start sm:self-auto"
-        >
-          <X className="h-4 w-4" /> Clear All Orders
-        </button>
+        <div className="flex items-center gap-2">
+          {selectedIds.size > 0 && (
+            <button
+              onClick={handleDeleteSelected}
+              className="rounded-xl bg-red-500 text-white px-4 py-2 text-xs font-bold hover:bg-red-600 transition-all flex items-center gap-2 shadow-sm"
+            >
+              <X className="h-4 w-4" /> Delete Selected ({selectedIds.size})
+            </button>
+          )}
+          <button 
+            onClick={handleClearAllOrders}
+            className="rounded-xl bg-red-50 text-red-600 px-4 py-2 text-xs font-bold border border-red-100 hover:bg-red-100 transition-all flex items-center gap-2"
+          >
+            <X className="h-4 w-4" /> Clear All
+          </button>
+        </div>
       </div>
 
       {/* Status Msg */}

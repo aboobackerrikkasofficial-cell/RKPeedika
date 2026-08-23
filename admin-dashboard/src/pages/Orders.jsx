@@ -19,21 +19,32 @@ export default function Orders() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set()); // for checkbox selection
+  // Pagination
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalOrders, setTotalOrders] = useState(0);
+  const LIMIT = 25;
 
   useEffect(() => {
-    fetchOrders();
-  }, []);
+    fetchOrders(page);
+  }, [page]);
 
-  const fetchOrders = async () => {
+  const fetchOrders = async (pageNum = 1) => {
     setIsLoading(true);
     try {
-      const res = await apiClient.get('/orders');
-      if (Array.isArray(res.data)) {
+      const res = await apiClient.get(`/orders?page=${pageNum}&limit=${LIMIT}`);
+      // Handle paginated response
+      if (res.data?.orders) {
+        setOrdersList(res.data.orders);
+        setTotalPages(res.data.pagination?.totalPages || 1);
+        setTotalOrders(res.data.pagination?.total || 0);
+      } else if (Array.isArray(res.data)) {
+        // Fallback for old non-paginated response
         setOrdersList(res.data);
       }
     } catch (err) {
-      console.error("Failed to load orders", err);
-      showStatus('error', "Could not load order history.");
+      console.error('Failed to load orders', err);
+      showStatus('error', 'Could not load order history.');
     }
     setIsLoading(false);
   };
@@ -305,10 +316,42 @@ export default function Orders() {
     }
   ];
 
-  if (isLoading) {
+  if (isLoading && ordersList.length === 0) {
+    // First load: show skeleton rows inside the real page layout
     return (
-      <div className="p-8 text-center font-bold text-xs text-gray-400 animate-pulse">
-        Fetching order logs...
+      <div className="p-6 md:p-8 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-black text-gray-900 tracking-tight">Order Management</h2>
+            <p className="text-xs font-semibold text-gray-400 mt-1">Review customer receipts, billing addresses, and transit status updates.</p>
+          </div>
+        </div>
+        {/* Skeleton search bar */}
+        <div className="flex gap-4 bg-white p-4 border border-gray-100 rounded-xl shadow-sm">
+          <div className="h-8 w-64 rounded-xl bg-gray-100 animate-pulse" />
+          <div className="flex gap-2">
+            {[...Array(4)].map((_,i) => <div key={i} className="h-8 w-20 rounded-xl bg-gray-100 animate-pulse" />)}
+          </div>
+        </div>
+        {/* Skeleton table */}
+        <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="grid grid-cols-7 gap-4 px-4 py-3 bg-gray-50 border-b border-gray-100">
+            {['','Order ID','Customer','Date','Total','Payment','Status'].map((h,i) => (
+              <div key={i} className="h-3 rounded bg-gray-200 animate-pulse" style={{width: i===0?'1rem':'80%'}} />
+            ))}
+          </div>
+          {[...Array(8)].map((_,i) => (
+            <div key={i} className="grid grid-cols-7 gap-4 px-4 py-4 border-b border-gray-50">
+              <div className="h-4 w-4 rounded bg-gray-100 animate-pulse" />
+              <div className="h-3 rounded bg-gray-100 animate-pulse" />
+              <div className="h-3 rounded bg-gray-100 animate-pulse" />
+              <div className="h-3 rounded bg-gray-100 animate-pulse" />
+              <div className="h-3 rounded bg-gray-100 animate-pulse" />
+              <div className="h-3 rounded bg-gray-100 animate-pulse" />
+              <div className="h-5 w-16 rounded-full bg-gray-100 animate-pulse" />
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
@@ -386,12 +429,70 @@ export default function Orders() {
       </div>
 
       {/* Orders Table */}
-      <Table 
-        columns={columns}
-        data={filteredOrders}
-        itemsPerPage={10}
-        emptyMessage="No orders match your filter criteria."
-      />
+      {isLoading ? (
+        // Soft reload skeleton (page already has content — show a subtle overlay)
+        <div className="relative">
+          <div className="absolute inset-0 bg-white/70 backdrop-blur-[1px] z-10 rounded-xl flex items-center justify-center">
+            <div className="h-6 w-6 border-2 border-[#F7941D] border-t-transparent rounded-full animate-spin" />
+          </div>
+          <Table
+            columns={columns}
+            data={filteredOrders}
+            itemsPerPage={LIMIT}
+            emptyMessage="No orders match your filter criteria."
+          />
+        </div>
+      ) : (
+        <Table
+          columns={columns}
+          data={filteredOrders}
+          itemsPerPage={LIMIT}
+          emptyMessage="No orders match your filter criteria."
+        />
+      )}
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between bg-white border border-gray-100 rounded-xl px-5 py-3 shadow-sm">
+          <p className="text-xs font-semibold text-gray-400">
+            Showing page <span className="text-gray-700 font-bold">{page}</span> of <span className="text-gray-700 font-bold">{totalPages}</span>
+            {' '}·{' '}<span className="text-gray-700 font-bold">{totalOrders}</span> total orders
+          </p>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => { setPage(p => Math.max(1, p - 1)); setSelectedIds(new Set()); }}
+              disabled={page <= 1 || isLoading}
+              className="px-4 py-1.5 rounded-xl text-xs font-bold border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              ← Prev
+            </button>
+            {/* Page number pills */}
+            {[...Array(Math.min(5, totalPages))].map((_, i) => {
+              const pg = Math.max(1, Math.min(page - 2, totalPages - 4)) + i;
+              return (
+                <button
+                  key={pg}
+                  onClick={() => { setPage(pg); setSelectedIds(new Set()); }}
+                  className={`w-8 h-8 rounded-xl text-xs font-bold transition-all ${
+                    pg === page
+                      ? 'bg-[#F7941D] text-white shadow-sm'
+                      : 'border border-gray-200 text-gray-500 hover:bg-gray-50'
+                  }`}
+                >
+                  {pg}
+                </button>
+              );
+            })}
+            <button
+              onClick={() => { setPage(p => Math.min(totalPages, p + 1)); setSelectedIds(new Set()); }}
+              disabled={page >= totalPages || isLoading}
+              className="px-4 py-1.5 rounded-xl text-xs font-bold border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            >
+              Next →
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ORDER DETAILS MODAL POPUP */}
       {selectedOrder && (

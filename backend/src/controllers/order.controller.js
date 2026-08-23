@@ -620,45 +620,82 @@ export const getReturns = async (req, res, next) => {
 
 export const getAllOrders = async (req, res, next) => {
   try {
-    const page = parseInt(req.query.page) || 0;
-    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+    // Always paginate — never dump entire orders table
+    const page  = Math.max(1, parseInt(req.query.page)  || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 25));
+    const skip  = (page - 1) * limit;
 
-    // If no pagination params, return all (backward compatible)
-    if (!req.query.page && !req.query.limit) {
-      const orders = await prisma.order.findMany({
-        include: {
-          user: { select: { name: true, email: true, phone: true } },
-          orderItems: { include: { product: true } },
-          payments: true
-        },
-        orderBy: { createdAt: 'desc' }
-      });
-      return res.json(orders);
-    }
+    // Build optional status filter
+    const statusFilter = req.query.status && req.query.status !== 'All'
+      ? { status: req.query.status }
+      : {};
 
-    const skip = (Math.max(1, page) - 1) * limit;
     const [orders, total] = await Promise.all([
       prisma.order.findMany({
-        include: {
+        where: statusFilter,
+        // Only return columns the admin list actually displays
+        select: {
+          id: true,
+          orderId: true,
+          invoiceNumber: true,
+          amount: true,
+          status: true,
+          paymentMethod: true,
+          paymentStatus: true,
+          pincode: true,
+          shippingName: true,
+          shippingPhone: true,
+          shippingStreet: true,
+          shippingCity: true,
+          shippingState: true,
+          shippingPincode: true,
+          trackingNumber: true,
+          courier: true,
+          trackingUrl: true,
+          shippedAt: true,
+          estimatedDelivery: true,
+          internalNotes: true,
+          customerStatusMessage: true,
+          razorpayOrderId: true,
+          razorpayPaymentId: true,
+          paidAt: true,
+          paymentFailureReason: true,
+          createdAt: true,
+          updatedAt: true,
+          // Customer: name/phone/email only
           user: { select: { name: true, email: true, phone: true } },
-          orderItems: { include: { product: true } },
-          payments: true
+          // Order items: name + quantity + price (snapshot) + thumbnail only
+          orderItems: {
+            select: {
+              id: true,
+              quantity: true,
+              price: true,
+              productName: true,
+              productImage: true,
+              productId: true,
+              // Only the product name from product relation — no full object
+              product: { select: { id: true, name: true } }
+            }
+          },
+          // Tracking events for detail modal
+          trackingEvents: { orderBy: { eventDate: 'desc' } },
         },
         orderBy: { createdAt: 'desc' },
         take: limit,
-        skip
+        skip,
       }),
-      prisma.order.count()
+      prisma.order.count({ where: statusFilter }),
     ]);
 
     res.json({
       orders,
-      pagination: { page: Math.max(1, page), limit, total, totalPages: Math.ceil(total / limit) }
+      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) }
     });
   } catch (error) {
     next(error);
   }
 };
+
 
 export const getUserOrderHistory = async (req, res, next) => {
   try {

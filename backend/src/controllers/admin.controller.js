@@ -14,14 +14,29 @@ export const getDashboardKPIs = async (req, res, next) => {
       todayOrders,
       pendingOrders,
       deliveredOrders,
-      ordersPaid
+      ordersPaid,
+      recentOrders
     ] = await Promise.all([
       prisma.product.count(),
       prisma.product.count({ where: { status: 'active' } }),
       prisma.order.count({ where: { createdAt: { gte: startOfToday } } }),
       prisma.order.count({ where: { status: { notIn: ['delivered', 'completed', 'cancelled'] } } }),
       prisma.order.count({ where: { status: { in: ['delivered', 'completed'] } } }),
-      prisma.order.findMany({ where: { paymentStatus: 'paid' }, select: { amount: true } })
+      prisma.order.findMany({ where: { paymentStatus: 'paid' }, select: { amount: true } }),
+      // Lean query — only columns the dashboard list card needs
+      prisma.order.findMany({
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          orderId: true,
+          amount: true,
+          status: true,
+          shippingName: true,
+          createdAt: true,
+          user: { select: { name: true } }
+        }
+      })
     ]);
 
     const totalRevenue = ordersPaid.reduce((sum, ord) => sum + ord.amount, 0);
@@ -37,12 +52,14 @@ export const getDashboardKPIs = async (req, res, next) => {
         pendingOrders,
         deliveredOrders,
         completedOrders: deliveredOrders
-      }
+      },
+      recentOrders
     });
   } catch (error) {
     next(error);
   }
 };
+
 
 /**
  * GET ALL PRODUCTS (Admin — includes inactive/draft)

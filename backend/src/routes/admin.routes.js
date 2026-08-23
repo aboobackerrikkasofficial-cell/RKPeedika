@@ -2,9 +2,7 @@ import { Router } from 'express';
 import { getDashboardKPIs, getAnalytics, restockProduct, getAdminProducts, toggleProductStatus } from '../controllers/admin.controller.js';
 import { importFromMeesho } from '../controllers/meesho.controller.js';
 import { authenticate, authorize } from '../middleware/auth.js';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import prisma from '../config/db.js';
 
 const router = Router();
 

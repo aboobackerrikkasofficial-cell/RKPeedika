@@ -29,17 +29,14 @@ export default function Dashboard() {
         setIsLoading(true);
         setError(null);
 
-        const [kpiRes, ordersRes] = await Promise.all([
-          apiClient.get('/admin/dashboard'),
-          apiClient.get('/orders'),
-        ]);
+        // Single call — dashboard API now returns both metrics AND recent orders
+        const kpiRes = await apiClient.get('/admin/dashboard');
 
         if (kpiRes.data?.success) {
           setMetrics(kpiRes.data.metrics);
-        }
-
-        if (Array.isArray(ordersRes.data)) {
-          setRecentOrders(ordersRes.data.slice(0, 5));
+          if (Array.isArray(kpiRes.data.recentOrders)) {
+            setRecentOrders(kpiRes.data.recentOrders);
+          }
         }
       } catch (err) {
         console.error('Failed to fetch admin dashboard data', err);

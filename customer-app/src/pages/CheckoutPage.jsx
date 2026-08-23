@@ -118,7 +118,10 @@ export default function CheckoutPage() {
   const finalPrice = selectedPaymentMethod === 'cod' ? codFinalPrice : onlineFinalPrice;
 
   // New savings logic based on MRP and COD prices
-  const mrpSubtotal = checkoutItems.reduce((acc, item) => acc + (item.price * item.quantity), 0);
+  const mrpSubtotal = checkoutItems.reduce((acc, item) => {
+    const origPrice = item.originalPrice !== null && item.originalPrice !== undefined ? item.originalPrice : item.price;
+    return acc + (origPrice * item.quantity);
+  }, 0);
   const savedFromCod = Math.max(0, codSubtotal - onlineSubtotal);
   const savedFromMrp = Math.max(0, mrpSubtotal - onlineSubtotal);
   const totalSavings = savedFromCod + couponDiscount; // total explicit savings shown at bottom

@@ -208,6 +208,7 @@ model OrderItem {
   productId   String
   quantity    Int
   price       Float
+  mrp         Float?   // Snapshot of originalPrice at order time
   productName String?  // Snapshot of product name at order time
   productImage String? // Snapshot of product image at order time
   createdAt   DateTime @default(now())

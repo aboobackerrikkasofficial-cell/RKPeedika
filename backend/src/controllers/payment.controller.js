@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import prisma from '../config/db.js';
 import { getActiveGateway } from '../services/payment.service.js';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/appError.js';
+import { calculateProductPrice, getProductMRP } from '../utils/pricing.js';
 
 export const createPaymentOrder = async (req, res, next) => {
   const { amount, orderId, method, upiId } = req.body;
@@ -276,9 +277,11 @@ export const createRazorpayOrder = async (req, res, next) => {
           return next(new NotFoundError(`Product ${item.productId} does not exist.`));
         }
         // Fetch online price for online payment
-        const itemPrice = product.onlinePrice || product.price;
-        subtotal += itemPrice * item.quantity;
+        const itemPrice = calculateProductPrice(product, 'ONLINE');
+        const itemMrp = getProductMRP(product);
 
+        subtotal += itemPrice * item.quantity;
+        
         let productImage = null;
         try {
           const images = JSON.parse(product.images);
@@ -291,6 +294,7 @@ export const createRazorpayOrder = async (req, res, next) => {
           productId: product.id,
           quantity: item.quantity,
           price: itemPrice,
+          mrp: itemMrp,
           productName: product.name,
           productImage: productImage
         });

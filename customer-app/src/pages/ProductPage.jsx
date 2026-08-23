@@ -504,41 +504,29 @@ export default function ProductPage() {
   const hasVariants = variants && Object.keys(variants).length > 0 && Object.values(variants).some(arr => Array.isArray(arr) && arr.length > 0);
 
   // Pricing calculations
-  const codPrice = Number(product.codPrice || product.price || 0);
-  const onlinePrice = Number(product.onlinePrice || product.price || 0);
-  const originalPrice = Number(product.originalPrice || 0);
+  const basePrice = Number(product.price || 0);
+  const codPrice = product.codPrice !== null && product.codPrice !== undefined 
+    ? Number(product.codPrice) 
+    : basePrice;
+  const onlinePrice = product.onlinePrice !== null && product.onlinePrice !== undefined 
+    ? Number(product.onlinePrice) 
+    : basePrice;
+  const originalPrice = product.originalPrice !== null && product.originalPrice !== undefined 
+    ? Number(product.originalPrice) 
+    : basePrice;
 
-  // Stable random purchases logic
-  const randomPurchases = product?.id
-    ? (String(product.id).split('').reduce((a, b) => a + b.charCodeAt(0), 0) % 150) + 1
-    : 42;
-  const displayPurchaseCount = product.purchaseCount || randomPurchases;
+  const displayPurchaseCount = product.purchaseCount || 42;
 
-  // Stable random discount if none exists
-  const stableRandom = product?.id
-    ? (String(product.id).split('').reduce((a, b) => a + b.charCodeAt(0), 0) % 25) + 6
-    : 10;
-
-  const calculatedDiscount = originalPrice > onlinePrice
+  const finalDiscount = originalPrice > onlinePrice
     ? Math.round(((originalPrice - onlinePrice) / originalPrice) * 100)
     : 0;
-
-  const displayDiscount = calculatedDiscount > 0 ? calculatedDiscount : stableRandom;
-
-  const displayOriginal = originalPrice > onlinePrice
-    ? originalPrice
-    : (() => {
-      const rawCalc = Math.round(onlinePrice / (1 - (displayDiscount / 100)));
-      const remainder = rawCalc % 50;
-      const cleanPrice = remainder === 0 ? rawCalc - 1 : rawCalc + (50 - remainder) - 1;
-      return cleanPrice;
-    })();
-
-  const finalDiscount = Math.round(((displayOriginal - onlinePrice) / displayOriginal) * 100);
+  
+  // Assuming 'originalPrice' is our MRP display
+  const displayOriginal = originalPrice;
 
   const savings = Math.max(0, codPrice - onlinePrice);
   const activePrice = paymentOption === 'cod' ? codPrice : onlinePrice;
-  const hasOffer = (product?.enableOnlineDiscount && Number(product?.onlinePrice || 0) > 0) || (displayOriginal > Number(product?.price || 0));
+  const hasOffer = product?.enableOnlineDiscount && product?.onlinePrice && finalDiscount > 0;
 
   // Delivery date calculations
   const pincodeData = pincodeDatabase?.[userPincode] || { days: 3 };

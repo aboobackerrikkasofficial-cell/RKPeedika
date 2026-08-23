@@ -1,5 +1,7 @@
 import prisma from '../config/db.js';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/appError.js';
+import { clearUserCart } from '../utils/cartHelpers.js';
+import { calculateProductPrice, getProductMRP } from '../utils/pricing.js';
 import { syncTracking, parseTrackingLinkOrNumber } from '../services/tracking.service.js';
 
 const augmentOrderTrackingEvents = (order) => {
@@ -167,9 +169,8 @@ export const createOrder = async (req, res, next) => {
         return next(new NotFoundError(`Product ${item.productId} does not exist.`));
       }
 
-      const itemPrice = paymentMethod === 'COD' 
-        ? (product.codPrice || product.price) 
-        : (product.onlinePrice || product.price);
+      const itemPrice = calculateProductPrice(product, paymentMethod);
+      const itemMrp = getProductMRP(product);
 
       subtotal += itemPrice * item.quantity;
       
@@ -185,6 +186,7 @@ export const createOrder = async (req, res, next) => {
         productId: product.id,
         quantity: item.quantity,
         price: itemPrice,
+        mrp: itemMrp,
         productName: product.name,
         productImage: productImage
       });

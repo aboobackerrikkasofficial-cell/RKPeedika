@@ -37,30 +37,18 @@ export default function ProductCard({ product }) {
      PRICE CALCULATIONS
   ------------------------------------------------------------------ */
   const basePrice = Number(product?.price || 0);
-  const onlinePrice = Number(product?.onlinePrice || basePrice);
-  const rawOriginal = Number(product?.originalPrice || 0);
-  
-  // Stable random discount if none exists
-  const stableRandom = product?.id 
-    ? (String(product.id).split('').reduce((a, b) => a + b.charCodeAt(0), 0) % 25) + 6 
-    : 10;
+  const onlinePrice = product?.onlinePrice !== null && product?.onlinePrice !== undefined 
+    ? Number(product.onlinePrice) 
+    : basePrice;
     
-  const calculatedDiscount = rawOriginal > onlinePrice 
-    ? Math.round(((rawOriginal - onlinePrice) / rawOriginal) * 100)
-    : 0;
-    
-  const displayDiscount = calculatedDiscount > 0 ? calculatedDiscount : stableRandom;
-  
-  const displayOriginal = rawOriginal > onlinePrice 
-    ? rawOriginal 
-    : (() => {
-        const rawCalc = Math.round(onlinePrice / (1 - (displayDiscount / 100)));
-        const remainder = rawCalc % 50;
-        const cleanPrice = remainder === 0 ? rawCalc - 1 : rawCalc + (50 - remainder) - 1;
-        return cleanPrice;
-      })();
+  const displayOriginal = product?.originalPrice !== null && product?.originalPrice !== undefined 
+    ? Number(product.originalPrice) 
+    : basePrice;
 
-  const finalDiscount = Math.round(((displayOriginal - onlinePrice) / displayOriginal) * 100);
+  // The discount percentage based strictly on DB fields (MRP vs Online Price)
+  const finalDiscount = displayOriginal > onlinePrice 
+    ? Math.round(((displayOriginal - onlinePrice) / displayOriginal) * 100)
+    : 0;
 
   /* ------------------------------------------------------------------
      DELIVERY DATE
@@ -122,7 +110,7 @@ export default function ProductCard({ product }) {
     setImageFailed(false);
   };
 
-  const hasOffer = (product?.enableOnlineDiscount && product?.onlinePrice) || displayDiscount > 0;
+  const hasOffer = product?.enableOnlineDiscount && product?.onlinePrice && finalDiscount > 0;
 
   /* ------------------------------------------------------------------
      RENDER

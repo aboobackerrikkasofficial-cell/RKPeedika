@@ -65,7 +65,8 @@ const EMPTY_FORM = {
   description: '',
   highlights: '',
   specifications: '{}',
-  price: '',          // MRP / base price
+  originalPrice: '',  // MRP
+  price: '',          // Base price
   codPrice: '',       // Regular / COD price
   onlinePrice: '',    // Prepaid / online price
   rating: '',
@@ -260,6 +261,7 @@ export default function Products() {
       description: product.description || '',
       highlights: Array.isArray(highlights) ? highlights.join('\n') : '',
       specifications: JSON.stringify(specifications || {}, null, 2),
+      originalPrice: product.originalPrice ?? '',
       price: product.price ?? '',
       codPrice: product.codPrice ?? '',
       onlinePrice: product.onlinePrice ?? '',
@@ -398,7 +400,11 @@ export default function Products() {
       return;
     }
     if (!form.price || Number(form.price) <= 0) {
-      showStatus('error', 'Please enter a valid MRP (price).');
+      showStatus('error', 'Please enter a valid Base Price (price).');
+      return;
+    }
+    if (!form.originalPrice || Number(form.originalPrice) <= 0) {
+      showStatus('error', 'Please enter a valid MRP (originalPrice).');
       return;
     }
     if (images.length === 0) {
@@ -441,6 +447,7 @@ export default function Products() {
       name: form.name.trim(),
       tagline: form.tagline || `${form.name.trim()} for everyday use.`,
       description: form.description,
+      originalPrice: Number(form.originalPrice),
       price: Number(form.price),
       codPrice: form.codPrice === '' || !form.codAvailable ? null : Number(form.codPrice),
       onlinePrice: form.onlinePrice === '' || !form.prepaidAvailable ? null : Number(form.onlinePrice),
@@ -1028,7 +1035,26 @@ export default function Products() {
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div>
                           <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
-                            MRP (Base Price) *
+                            MRP (Max Retail Price) *
+                          </label>
+                          <div className="relative">
+                            <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">₹</span>
+                            <input
+                              type="number"
+                              value={form.originalPrice}
+                              onChange={(e) => updateField('originalPrice', e.target.value)}
+                              placeholder="499"
+                              min="0"
+                              step="0.01"
+                              required
+                              className="w-full rounded-xl border border-gray-200 pl-6 pr-2 py-2.5 text-xs outline-none focus:border-[#F7941D] transition-colors"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] font-bold uppercase text-gray-400 block mb-1">
+                            Base Price *
                           </label>
                           <div className="relative">
                             <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-bold text-gray-400">₹</span>
@@ -1036,7 +1062,7 @@ export default function Products() {
                               type="number"
                               value={form.price}
                               onChange={(e) => updateField('price', e.target.value)}
-                              placeholder="499"
+                              placeholder="400"
                               min="0"
                               step="0.01"
                               required

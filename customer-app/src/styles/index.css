@@ -2,6 +2,12 @@
 
 @import "tailwindcss";
 
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+
 @theme {
   --color-primary: #0B1B2B;
   --color-primaryDark: #071320;

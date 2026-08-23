@@ -1,4 +1,4 @@
-import React, { useContext, useState, Suspense } from 'react';
+import React, { useContext, useState, Suspense, useEffect } from 'react';
 import { AppContext, AppProvider } from './context/AppContext';
 import ErrorBoundary from './components/ErrorBoundary';
 import Header from './components/Header';
@@ -39,8 +39,47 @@ const FacebookIcon = () => (
   </svg>
 );
 
+// Page skeleton shown while lazy-loaded chunks are downloading
+const PageSkeleton = () => (
+  <div className="w-full px-4 py-4 space-y-4 animate-pulse">
+    <div className="flex gap-2 overflow-hidden">
+      {[1,2,3,4,5].map(i => <div key={i} className="h-8 w-20 rounded-full bg-gray-100 shrink-0" />)}
+    </div>
+    <div className="h-28 md:h-44 rounded-2xl bg-gray-100" />
+    <div className="grid grid-cols-2 gap-3 mt-2">
+      {[1,2,3,4].map(i => (
+        <div key={i} className="rounded-xl bg-white border border-[#EDEDED] overflow-hidden">
+          <div className="h-40 bg-gray-100" />
+          <div className="p-3 space-y-2">
+            <div className="h-3 bg-gray-100 rounded w-3/4" />
+            <div className="h-3 bg-gray-100 rounded w-1/2" />
+            <div className="h-5 bg-gray-100 rounded w-1/3" />
+          </div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 function AppContent() {
   const { currentView, setCurrentView, storeSettings, activeToast, categories, setSelectedCategory } = useContext(AppContext);
+
+  // Wake up Render backend immediately on mount — prevents 30-90s cold start
+  // by firing a cheap HEAD request before the real data fetches
+  useEffect(() => {
+    const warmUpBackend = async () => {
+      try {
+        await fetch('https://rkpeedika.onrender.com/api/health', {
+          method: 'HEAD',
+          cache: 'no-store',
+          signal: AbortSignal.timeout(5000)
+        });
+      } catch {
+        // Silent — this is just a warm-up, failure is fine
+      }
+    };
+    warmUpBackend();
+  }, []);
 
   // Modal State
   const [activeModal, setActiveModal] = useState(null); // 'about', 'terms', 'privacy', 'returns'
@@ -522,7 +561,7 @@ function AppContent() {
             exit={{ opacity: 0, y: -15 }}
             transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
           >
-            <Suspense fallback={<div className="flex h-64 items-center justify-center">Loading...</div>}>
+            <Suspense fallback={<PageSkeleton />}>
               {renderView()}
             </Suspense>
           </motion.div>

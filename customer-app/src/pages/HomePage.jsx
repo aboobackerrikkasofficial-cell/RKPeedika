@@ -235,7 +235,10 @@ export default function HomePage() {
           </div>
         ) : (
           <div className="mt-2">
-            <div className="product-grid">
+            <div
+              className="product-grid"
+              style={{ animation: 'fadeIn 0.25s ease-out' }}
+            >
               {filteredProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
               ))}

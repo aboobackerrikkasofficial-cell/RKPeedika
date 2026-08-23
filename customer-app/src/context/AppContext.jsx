@@ -16,19 +16,25 @@ const safeJsonParse = (value, fallback) => {
 export const AppContext = createContext();
 
 export const AppProvider = ({ children }) => {
-  // App routing & views
-  const [currentView, setCurrentView] = useState('home'); // home | product | checkout | success | admin | login
+  const authChannelRef = useRef(null);
+  const userProfileRef = useRef(null);
+
+  // Safe initializers to prevent SPA refresh state wiping
+  const initialParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : new URLSearchParams();
+  const [currentView, setCurrentView] = useState(initialParams.get('view') || 'home'); // home | product | checkout | success | admin | login
   const [redirectAfterLogin, setRedirectAfterLogin] = useState(null);
-  const [selectedProductId, setSelectedProductId] = useState("prod-1");
+  const [selectedProductId, setSelectedProductId] = useState(initialParams.get('id') || "prod-1");
   const [recentlyViewed, setRecentlyViewed] = useState([]);
 
   // E-commerce items
   const [products, setProducts] = useState(DEFAULT_PRODUCTS);
   const [isProductsLoading, setIsProductsLoading] = useState(true);
+  const [isSessionLoading, setIsSessionLoading] = useState(true);
   const [cart, setCart] = useState([]);
   const [quickPurchaseItem, setQuickPurchaseItem] = useState(null);
   const [wishlist, setWishlist] = useState([]);
   const [userProfile, setUserProfile] = useState(null);
+  userProfileRef.current = userProfile;
   const [categories, setCategories] = useState([]);
   const [activeToast, setActiveToast] = useState(null);
   const [orderProcessing, setOrderProcessing] = useState(false);
@@ -43,8 +49,8 @@ export const AppProvider = ({ children }) => {
   const [orderHistory, setOrderHistory] = useState([]);
 
   // Search & Filters
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [searchQuery, setSearchQuery] = useState(initialParams.get('search') || "");
+  const [selectedCategory, setSelectedCategory] = useState(initialParams.get('category') || "All");
   const [userPincode, setUserPincode] = useState("560001");
   const [locationName, setLocationName] = useState("Bengaluru, KA");
 
@@ -83,11 +89,11 @@ export const AppProvider = ({ children }) => {
     try {
       // Parallel fetch all user data instead of 5 sequential requests
       const [profileRes, addrRes, orderRes, wishlistRes, cartRes] = await Promise.all([
-        apiClient.get('/users/profile'),
-        apiClient.get('/users/addresses'),
-        apiClient.get('/orders/user/history'),
-        apiClient.get('/users/wishlist'),
-        apiClient.get('/users/cart')
+        apiClient.get('/users/profile', { timeout: 10000 }),
+        apiClient.get('/users/addresses', { timeout: 10000 }),
+        apiClient.get('/orders/user/history', { timeout: 10000 }),
+        apiClient.get('/users/wishlist', { timeout: 10000 }),
+        apiClient.get('/users/cart', { timeout: 10000 })
       ]);
 
       // 1. Profile
@@ -163,12 +169,13 @@ export const AppProvider = ({ children }) => {
   // Helper: Send OTP
   const sendOtp = async (phone) => {
     try {
-      const res = await apiClient.post('/auth/send-otp', { phone });
+      const res = await apiClient.post('/auth/send-otp', { phone }, { timeout: 10000 });
       if (res.data && res.data.success) {
         showToast('✓ OTP Sent successfully!', 'success');
         // Return development OTP for dev console logging if present
         return { success: true, developmentOtp: res.data.developmentOtp };
       }
+      return { success: false, message: res.data?.message || "Failed to send OTP." };
     } catch (err) {
       console.error("Send OTP failed", err);
       const errMsg = err.response?.data?.error?.message || err.response?.data?.message || "Failed to send OTP.";
@@ -180,45 +187,45 @@ export const AppProvider = ({ children }) => {
   // Helper: Simple Name & Mobile Login (Free Validation)
   const simpleLogin = async (name, phone, rememberMe = false) => {
     try {
-      const res = await apiClient.post('/auth/simple-login', { name, phone, rememberMe });
+      const res = await apiClient.post('/auth/simple-login', { name, phone, rememberMe }, { timeout: 10000 });
       if (res.data && res.data.success) {
         const { token, refreshToken, user } = res.data;
 
         localStorage.setItem('rememberMe', rememberMe ? 'true' : 'false');
         localStorage.setItem('accessToken', token);
         localStorage.setItem('refreshToken', refreshToken);
+        localStorage.setItem('isGuest', 'false');
         sessionStorage.setItem('session_active', 'true');
 
         // Merge guest cart to DB
         if (cart.length > 0) {
           try {
-            await apiClient.post('/users/cart/merge', { cart });
+            await apiClient.post('/users/cart/merge', { cart }, { timeout: 10000 });
           } catch (mergeErr) {
             console.error("Failed to merge guest cart", mergeErr);
           }
         }
 
-        // Load data
-        setUserProfile(user);
+        // Load data first before updating user profile to prevent race conditions
         await fetchUserData();
+        setUserProfile(user);
 
         showToast('✓ Logged In Successfully!', 'success');
 
         // Broadcast to other tabs
-        const authChannel = new BroadcastChannel('auth_channel');
-        authChannel.postMessage({ type: 'LOGIN', user });
-        authChannel.close();
+        authChannelRef.current?.postMessage({ type: 'LOGIN', user });
 
         // Redirect after login
         if (redirectAfterLogin) {
           setCurrentView(redirectAfterLogin);
           setRedirectAfterLogin(null);
         } else {
-          setCurrentView('profile');
+          setCurrentView('home');
         }
 
         return { success: true };
       }
+      return { success: false, message: res.data?.message || "Failed to log in." };
     } catch (err) {
       console.error("Simple login failed", err);
       const errMsg = err.response?.data?.error?.message || err.response?.data?.message || "Failed to log in.";
@@ -230,34 +237,33 @@ export const AppProvider = ({ children }) => {
   // Helper: Verify OTP
   const verifyOtp = async (phone, otp, rememberMe = false) => {
     try {
-      const res = await apiClient.post('/auth/verify-otp', { phone, code: otp, rememberMe });
+      const res = await apiClient.post('/auth/verify-otp', { phone, code: otp, rememberMe }, { timeout: 10000 });
       if (res.data && res.data.success) {
         const { token, refreshToken, user, isNewUser } = res.data;
 
         localStorage.setItem('rememberMe', rememberMe ? 'true' : 'false');
         localStorage.setItem('accessToken', token);
         localStorage.setItem('refreshToken', refreshToken);
+        localStorage.setItem('isGuest', 'false');
         sessionStorage.setItem('session_active', 'true');
 
         // Merge guest cart to DB
         if (cart.length > 0) {
           try {
-            await apiClient.post('/users/cart/merge', { cart });
+            await apiClient.post('/users/cart/merge', { cart }, { timeout: 10000 });
           } catch (mergeErr) {
             console.error("Failed to merge guest cart", mergeErr);
           }
         }
 
-        // Load data
-        setUserProfile(user);
+        // Load data first before updating user profile to prevent race conditions
         await fetchUserData();
+        setUserProfile(user);
 
         showToast('✓ OTP Verified Successfully!', 'success');
 
         // Broadcast to other tabs
-        const authChannel = new BroadcastChannel('auth_channel');
-        authChannel.postMessage({ type: 'LOGIN', user });
-        authChannel.close();
+        authChannelRef.current?.postMessage({ type: 'LOGIN', user });
 
         // Redirect after login if not a new user completing profile
         if (!isNewUser) {
@@ -265,12 +271,13 @@ export const AppProvider = ({ children }) => {
             setCurrentView(redirectAfterLogin);
             setRedirectAfterLogin(null);
           } else {
-            setCurrentView('profile');
+            setCurrentView('home');
           }
         }
 
         return { success: true, isNewUser };
       }
+      return { success: false, message: res.data?.message || "Invalid OTP code." };
     } catch (err) {
       console.error("Verify OTP failed", err);
       const errMsg = err.response?.data?.error?.message || err.response?.data?.message || "Invalid OTP code.";
@@ -282,7 +289,7 @@ export const AppProvider = ({ children }) => {
   // Helper: Complete Profile
   const completeProfile = async (profileData) => {
     try {
-      const res = await apiClient.put('/users/profile', profileData);
+      const res = await apiClient.put('/users/profile', profileData, { timeout: 10000 });
       if (res.data && res.data.success) {
         setUserProfile(res.data.user);
         showToast('✓ Profile completed successfully!', 'success');
@@ -292,11 +299,12 @@ export const AppProvider = ({ children }) => {
           setCurrentView(redirectAfterLogin);
           setRedirectAfterLogin(null);
         } else {
-          setCurrentView('profile');
+          setCurrentView('home');
         }
 
         return { success: true };
       }
+      return { success: false, message: res.data?.message || "Failed to save profile." };
     } catch (err) {
       console.error("Complete profile failed", err);
       const errMsg = err.response?.data?.error?.message || err.response?.data?.message || "Failed to save profile.";
@@ -316,13 +324,72 @@ export const AppProvider = ({ children }) => {
     return { success: false };
   };
 
+  // Helper: Guest Auto-Login
+  const loginAsGuest = async () => {
+    const existingToken = localStorage.getItem('accessToken');
+    if (existingToken) {
+      await fetchUserData();
+      return;
+    }
+
+    const isAdminLoginMode = new URLSearchParams(window.location.search).get('admin_login') === 'true';
+    if (isAdminLoginMode) return;
+
+    try {
+      const res = await apiClient.post('/auth/guest-login', null, { timeout: 10000 });
+      if (res.data && res.data.success) {
+        const { token: gToken, refreshToken: gRefreshToken, user: gUser } = res.data;
+        localStorage.setItem('accessToken', gToken);
+        localStorage.setItem('refreshToken', gRefreshToken);
+        localStorage.setItem('isGuest', 'true');
+        setUserProfile(gUser);
+
+        const tokenHeader = gToken.startsWith('Bearer ') ? gToken : `Bearer ${gToken}`;
+        try {
+          const [profileRes, addrRes, orderRes] = await Promise.all([
+            apiClient.get('/users/profile', { headers: { 'Authorization': tokenHeader }, timeout: 10000 }),
+            apiClient.get('/users/addresses', { headers: { 'Authorization': tokenHeader }, timeout: 10000 }),
+            apiClient.get('/orders/user/history', { headers: { 'Authorization': tokenHeader }, timeout: 10000 })
+          ]);
+          setUserProfile(profileRes.data);
+          if (addrRes.data && Array.isArray(addrRes.data) && addrRes.data.length > 0) {
+            setAddresses(addrRes.data);
+            setSelectedAddressId(addrRes.data[0].id);
+          } else {
+            setAddresses([]);
+          }
+          if (orderRes.data && Array.isArray(orderRes.data)) {
+            setOrderHistory(orderRes.data.map(o => ({
+              orderId: o.orderId || o.id,
+              date: new Date(o.createdAt).toISOString().split('T')[0],
+              items: o.orderItems || [],
+              address: null,
+              shippingMethod: "normal",
+              paymentMethod: o.paymentMethod || "cod",
+              pricing: { subtotal: o.amount, shipping: 0, discountPercentage: 0, discountAmount: 0, finalTotal: o.amount },
+              status: o.status || "Order Confirmed",
+              invoiceNumber: o.invoiceNumber,
+              estimatedDelivery: new Date(new Date(o.createdAt).getTime() + 4 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+            })));
+          } else {
+            setOrderHistory([]);
+          }
+        } catch (innerErr) {
+          console.error("Failed to load guest data:", innerErr);
+        }
+      }
+    } catch (err) {
+      console.error("Guest auto-login failed:", err);
+    }
+  };
+
   // Helper: Logout User
   const logoutUser = async (skipApi = false) => {
     const refreshToken = localStorage.getItem('refreshToken');
 
     if (!skipApi && refreshToken) {
       try {
-        await apiClient.post('/auth/logout', { refreshToken });
+        await apiClient.post('/auth/logout', { refreshToken }, { timeout: 10000 });
       } catch (err) {
         console.error("Backend logout failed", err);
       }
@@ -331,6 +398,7 @@ export const AppProvider = ({ children }) => {
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
     localStorage.removeItem('rememberMe');
+    localStorage.removeItem('isGuest');
     sessionStorage.removeItem('session_active');
 
     // Clear all cookies
@@ -349,9 +417,10 @@ export const AppProvider = ({ children }) => {
 
     showToast('✓ Logout Successful!', 'success');
 
-    const authChannel = new BroadcastChannel('auth_channel');
-    authChannel.postMessage({ type: 'LOGOUT' });
-    authChannel.close();
+    authChannelRef.current?.postMessage({ type: 'LOGOUT' });
+
+    // Auto-login as a new guest so the visitor has a valid guest session
+    await loginAsGuest();
   };
 
   // Intercept view navigation to protect routes
@@ -406,59 +475,21 @@ export const AppProvider = ({ children }) => {
     };
 
     const verifySavedSession = async () => {
-      // Always preserve session for guests and OTP users unless explicitly logged out
-      sessionStorage.setItem('session_active', 'true');
+      setIsSessionLoading(true);
+      try {
+        // Always preserve session for guests and OTP users unless explicitly logged out
+        sessionStorage.setItem('session_active', 'true');
 
-      const token = localStorage.getItem('accessToken');
-      if (token) {
-        await fetchUserData();
-      } else {
-        // Silent guest auto-login for frictionless shopping, unless admin login is specified in the URL query string
-        const isAdminLoginMode = new URLSearchParams(window.location.search).get('admin_login') === 'true';
-        if (!isAdminLoginMode) {
-          try {
-            const res = await apiClient.post('/auth/guest-login');
-            if (res.data && res.data.success) {
-              const { token: gToken, refreshToken: gRefreshToken, user: gUser } = res.data;
-              localStorage.setItem('accessToken', gToken);
-              localStorage.setItem('refreshToken', gRefreshToken);
-              setUserProfile(gUser);
-
-              const tokenHeader = gToken.startsWith('Bearer ') ? gToken : `Bearer ${gToken}`;
-              try {
-                // Parallel fetch guest data instead of 3 sequential requests
-                const [profileRes, addrRes, orderRes] = await Promise.all([
-                  apiClient.get('/users/profile', { headers: { 'Authorization': tokenHeader } }),
-                  apiClient.get('/users/addresses', { headers: { 'Authorization': tokenHeader } }),
-                  apiClient.get('/orders/user/history', { headers: { 'Authorization': tokenHeader } })
-                ]);
-                setUserProfile(profileRes.data);
-                if (addrRes.data && Array.isArray(addrRes.data) && addrRes.data.length > 0) {
-                  setAddresses(addrRes.data);
-                  setSelectedAddressId(addrRes.data[0].id);
-                }
-                if (orderRes.data && Array.isArray(orderRes.data)) {
-                  setOrderHistory(orderRes.data.map(o => ({
-                    orderId: o.orderId || o.id,
-                    date: new Date(o.createdAt).toISOString().split('T')[0],
-                    items: o.orderItems || [],
-                    address: null,
-                    shippingMethod: "normal",
-                    paymentMethod: o.paymentMethod || "cod",
-                    pricing: { subtotal: o.amount, shipping: 0, discountPercentage: 0, discountAmount: 0, finalTotal: o.amount },
-                    status: o.status || "Order Confirmed",
-                    invoiceNumber: o.invoiceNumber,
-                    estimatedDelivery: new Date(new Date(o.createdAt).getTime() + 4 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-                  })));
-                }
-              } catch (innerErr) {
-                console.error("Failed to load guest data:", innerErr);
-              }
-            }
-          } catch (err) {
-            console.error("Guest auto-login failed:", err);
-          }
+        const token = localStorage.getItem('accessToken');
+        if (token) {
+          await fetchUserData();
+        } else {
+          await loginAsGuest();
         }
+      } catch (err) {
+        console.error("verifySavedSession failed", err);
+      } finally {
+        setIsSessionLoading(false);
       }
     };
 
@@ -484,8 +515,9 @@ export const AppProvider = ({ children }) => {
   // Listen to multi-tab events and local logout triggers
   useEffect(() => {
     const authChannel = new BroadcastChannel('auth_channel');
+    authChannelRef.current = authChannel;
 
-    const handleAuthBroadcast = (e) => {
+    const handleAuthBroadcast = async (e) => {
       if (e.data.type === 'LOGOUT') {
         setUserProfile(null);
         setCart([]);
@@ -494,20 +526,50 @@ export const AppProvider = ({ children }) => {
         setOrderHistory([]);
         setCurrentView('home');
         showToast('Session logged out on another tab', 'warning');
+        await loginAsGuest();
       } else if (e.data.type === 'LOGIN') {
-        setUserProfile(e.data.user);
-        fetchUserData();
+        await fetchUserData();
         showToast('Session logged in on another tab', 'success');
       }
     };
 
     authChannel.addEventListener('message', handleAuthBroadcast);
 
-    const handleLocalLogoutEvent = () => {
-      logoutUser(true);
+    const handleLocalLogoutEvent = async () => {
+      await logoutUser(true);
     };
 
     window.addEventListener('auth-logout', handleLocalLogoutEvent);
+
+    // Storage listener to handle token clearing / changes in other tabs
+    const getUserIdFromToken = (t) => {
+      if (!t) return null;
+      try {
+        const parts = t.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          return payload.id;
+        }
+      } catch (e) {}
+      return null;
+    };
+
+    const handleStorageChange = async (e) => {
+      if (e.key === 'accessToken') {
+        const newToken = e.newValue;
+        if (!newToken) {
+          await logoutUser(true);
+        } else {
+          const newUserId = getUserIdFromToken(newToken);
+          const currentUserId = userProfileRef.current?.id;
+          if (newUserId !== currentUserId) {
+            await fetchUserData();
+          }
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
 
     // Toast event listener for Axios client integration
     const handleShowToastEvent = (e) => {
@@ -521,6 +583,7 @@ export const AppProvider = ({ children }) => {
       authChannel.removeEventListener('message', handleAuthBroadcast);
       authChannel.close();
       window.removeEventListener('auth-logout', handleLocalLogoutEvent);
+      window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('show-toast', handleShowToastEvent);
     };
   }, []); // Fixed: was [cart] which caused re-registration on every cart change
@@ -834,17 +897,17 @@ export const AppProvider = ({ children }) => {
 
   const updateUserProfile = async (updatedData) => {
     try {
-      const res = await apiClient.put('/users/profile', updatedData);
+      const res = await apiClient.put('/users/profile', updatedData, { timeout: 10000 });
       if (res.data && res.data.success) {
         setUserProfile(res.data.user);
         return { success: true };
       }
+      return { success: false, message: res.data?.message || "Failed to update profile details." };
     } catch (err) {
       console.error("Failed to update profile", err);
       const errMsg = err.response?.data?.error?.message || err.response?.data?.message || "Failed to update profile details.";
       return { success: false, message: errMsg };
     }
-    return { success: false, message: "Unknown error" };
   };
 
   // Pincode Validator
@@ -1236,6 +1299,7 @@ export const AppProvider = ({ children }) => {
 
       // User details & store settings
       userProfile,
+      isSessionLoading,
       loginUser,
       registerUser,
       sendOtp,
@@ -1259,7 +1323,7 @@ export const AppProvider = ({ children }) => {
     cart, quickPurchaseItem, wishlist, addresses, selectedAddressId,
     selectedShippingMethod, selectedPaymentMethod, activeOrder, orderHistory,
     userPincode, locationName, searchQuery, selectedCategory, couponConfig,
-    userProfile, storeSettings, categories, activeToast, orderProcessing, trackingOrderId
+    userProfile, isSessionLoading, storeSettings, categories, activeToast, orderProcessing, trackingOrderId
   ]);
 
   return (

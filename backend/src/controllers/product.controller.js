@@ -22,6 +22,16 @@ const parseJson = (value, fallback) => {
 };
 
 /**
+ * Parse boolean values from requests safely
+ */
+const parseBoolean = (value, fallback) => {
+  if (value === undefined || value === null || value === '') return fallback;
+  if (value === 'true' || value === true || value === 1 || value === '1') return true;
+  if (value === 'false' || value === false || value === 0 || value === '0') return false;
+  return fallback;
+};
+
+/**
  * Format product for frontend.
  */
 export const formatProduct = (product) => {
@@ -168,6 +178,25 @@ export const makeShortProductName = (input) => {
     .trim();
 
   return shortName || 'New Product';
+};
+
+/**
+ * Safely clear product cache using SCAN
+ */
+const clearProductsCache = async () => {
+  try {
+    let cursor = '0';
+    do {
+      const res = await redisClient.scan(cursor, 'MATCH', 'products:*', 'COUNT', 100);
+      cursor = res[0];
+      const keys = res[1];
+      if (keys.length > 0) {
+        await redisClient.del(...keys);
+      }
+    } while (cursor !== '0');
+  } catch (err) {
+    // Redis optional.
+  }
 };
 
 /**
@@ -397,21 +426,10 @@ export const createProduct = async (req, res, next) => {
             ? Number(onlineDiscount)
             : null,
 
-        enableOnlineDiscount:
-          enableOnlineDiscount === true ||
-          enableOnlineDiscount === 'true',
-
-        codAvailable:
-          codAvailable !== false &&
-          codAvailable !== 'false',
-
-        prepaidAvailable:
-          prepaidAvailable !== false &&
-          prepaidAvailable !== 'false',
-
-        returnAvailable:
-          returnAvailable !== false &&
-          returnAvailable !== 'false',
+        enableOnlineDiscount: parseBoolean(enableOnlineDiscount, false),
+        codAvailable: parseBoolean(codAvailable, true),
+        prepaidAvailable: parseBoolean(prepaidAvailable, true),
+        returnAvailable: parseBoolean(returnAvailable, true),
 
         returnWindow:
           returnWindow !== undefined && returnWindow !== null && returnWindow !== ''
@@ -451,9 +469,7 @@ export const createProduct = async (req, res, next) => {
             : relatedProducts || '[]',
 
         ...(showPurchaseCount !== undefined && {
-          showPurchaseCount:
-            showPurchaseCount === true ||
-            showPurchaseCount === 'true',
+          showPurchaseCount: parseBoolean(showPurchaseCount, true),
         }),
 
         ...(purchaseCountMode && {
@@ -471,15 +487,7 @@ export const createProduct = async (req, res, next) => {
     });
 
     // Clear product cache.
-    try {
-      const keys = await redisClient.keys('products:*');
-
-      for (const key of keys) {
-        await redisClient.del(key);
-      }
-    } catch {
-      // Redis optional.
-    }
+    await clearProductsCache();
 
     res.status(201).json({
       success: true,
@@ -498,127 +506,108 @@ export const updateProduct = async (req, res, next) => {
   const { id } = req.params;
 
   try {
-    const data = {
-      ...req.body,
-    };
+    const {
+      name,
+      tagline,
+      description,
+      price,
+      originalPrice,
+      categoryId,
+      stock,
+      seller,
+      images,
+      codPrice,
+      onlinePrice,
+      onlineDiscount,
+      enableOnlineDiscount,
+      codAvailable,
+      prepaidAvailable,
+      returnAvailable,
+      returnWindow,
+      returnPolicy,
+      highlights,
+      specifications,
+      variants,
+      relatedProducts,
+      estimatedDeliveryDays,
+      active,
+    } = req.body;
 
-    if (data.active !== undefined) {
-      data.status = data.active === false || data.active === 'false' ? 'draft' : 'active';
-      delete data.active;
+    const data = {};
+
+    if (active !== undefined) {
+      data.status = parseBoolean(active, true) ? 'active' : 'draft';
     }
 
+    if (name) data.name = makeShortProductName(name);
+    if (tagline !== undefined) data.tagline = tagline;
+    if (description !== undefined) data.description = description;
+    if (price !== undefined) data.price = Number(price);
+    
+    if (originalPrice !== undefined) {
+      data.originalPrice = originalPrice === '' || originalPrice === null ? null : Number(originalPrice);
+    }
+    if (categoryId) data.categoryId = String(categoryId);
+    
+    if (codPrice !== undefined) {
+      data.codPrice = codPrice === '' || codPrice === null ? null : Number(codPrice);
+    }
+    if (onlinePrice !== undefined) {
+      data.onlinePrice = onlinePrice === '' || onlinePrice === null ? null : Number(onlinePrice);
+    }
+    if (onlineDiscount !== undefined) {
+      data.onlineDiscount = onlineDiscount === '' || onlineDiscount === null ? null : Number(onlineDiscount);
+    }
+
+    if (estimatedDeliveryDays !== undefined) {
+      data.estimatedDeliveryDays = Number(estimatedDeliveryDays);
+    }
+
+    if (enableOnlineDiscount !== undefined) {
+      data.enableOnlineDiscount = parseBoolean(enableOnlineDiscount, false);
+    }
+
+    if (codAvailable !== undefined) {
+      data.codAvailable = parseBoolean(codAvailable, true);
+    }
+
+    if (prepaidAvailable !== undefined) {
+      data.prepaidAvailable = parseBoolean(prepaidAvailable, true);
+    }
+
+    if (returnAvailable !== undefined) {
+      data.returnAvailable = parseBoolean(returnAvailable, true);
+    }
+
+    if (returnWindow !== undefined) {
+      data.returnWindow = returnWindow === '' || returnWindow === null ? 3 : Number(returnWindow);
+    }
+
+    if (returnPolicy !== undefined) {
+      data.returnPolicy = returnPolicy || '';
+    }
+
+    data.inStock = true;
     data.stock = 9999;
-    data.inStock = true;
 
-    if (data.name) {
-      data.name = makeShortProductName(data.name);
+    if (images !== undefined) {
+      data.images = Array.isArray(images) ? JSON.stringify(images) : images || '[]';
     }
 
-    if (data.price !== undefined) {
-      data.price = Number(data.price);
+    if (highlights !== undefined) {
+      data.highlights = Array.isArray(highlights) ? JSON.stringify(highlights) : highlights || '[]';
     }
 
-    if (data.originalPrice !== undefined) {
-      data.originalPrice =
-        data.originalPrice === '' ||
-          data.originalPrice === null
-          ? null
-          : Number(data.originalPrice);
+    if (specifications !== undefined) {
+      data.specifications = typeof specifications === 'object' ? JSON.stringify(specifications) : specifications || '{}';
     }
 
-    if (data.codPrice !== undefined) {
-      data.codPrice =
-        data.codPrice === '' ||
-          data.codPrice === null
-          ? null
-          : Number(data.codPrice);
+    if (variants !== undefined) {
+      data.variants = typeof variants === 'object' ? JSON.stringify(variants) : variants || '{}';
     }
 
-    if (data.onlinePrice !== undefined) {
-      data.onlinePrice =
-        data.onlinePrice === '' ||
-          data.onlinePrice === null
-          ? null
-          : Number(data.onlinePrice);
-    }
-
-    if (data.onlineDiscount !== undefined) {
-      data.onlineDiscount =
-        data.onlineDiscount === '' ||
-          data.onlineDiscount === null
-          ? null
-          : Number(data.onlineDiscount);
-    }
-
-    if (data.estimatedDeliveryDays !== undefined) {
-      data.estimatedDeliveryDays =
-        Number(data.estimatedDeliveryDays);
-    }
-
-    if (data.enableOnlineDiscount !== undefined) {
-      data.enableOnlineDiscount =
-        data.enableOnlineDiscount === true ||
-        data.enableOnlineDiscount === 'true';
-    }
-
-    if (data.codAvailable !== undefined) {
-      data.codAvailable =
-        data.codAvailable !== false &&
-        data.codAvailable !== 'false';
-    }
-
-    if (data.prepaidAvailable !== undefined) {
-      data.prepaidAvailable =
-        data.prepaidAvailable !== false &&
-        data.prepaidAvailable !== 'false';
-    }
-
-    if (data.returnAvailable !== undefined) {
-      data.returnAvailable =
-        data.returnAvailable !== false &&
-        data.returnAvailable !== 'false';
-    }
-
-    if (data.returnWindow !== undefined) {
-      data.returnWindow =
-        data.returnWindow === '' || data.returnWindow === null
-          ? 3
-          : Number(data.returnWindow);
-    }
-
-    if (data.returnPolicy !== undefined) {
-      data.returnPolicy = data.returnPolicy || '';
-    }
-
-    data.inStock = true;
-
-    if (Array.isArray(data.images)) {
-      data.images = JSON.stringify(data.images);
-    }
-
-    if (Array.isArray(data.highlights)) {
-      data.highlights = JSON.stringify(data.highlights);
-    }
-
-    if (
-      data.specifications &&
-      typeof data.specifications === 'object'
-    ) {
-      data.specifications =
-        JSON.stringify(data.specifications);
-    }
-
-    if (
-      data.variants &&
-      typeof data.variants === 'object'
-    ) {
-      data.variants =
-        JSON.stringify(data.variants);
-    }
-
-    if (Array.isArray(data.relatedProducts)) {
-      data.relatedProducts =
-        JSON.stringify(data.relatedProducts);
+    if (relatedProducts !== undefined) {
+      data.relatedProducts = Array.isArray(relatedProducts) ? JSON.stringify(relatedProducts) : relatedProducts || '[]';
     }
 
     const product = await prisma.product.update({
@@ -626,15 +615,7 @@ export const updateProduct = async (req, res, next) => {
       data,
     });
 
-    try {
-      const keys = await redisClient.keys('products:*');
-
-      for (const key of keys) {
-        await redisClient.del(key);
-      }
-    } catch {
-      // Redis optional.
-    }
+    await clearProductsCache();
 
     res.json({
       success: true,
@@ -667,15 +648,7 @@ export const deleteProduct = async (req, res, next) => {
       where: { id },
     });
 
-    try {
-      const keys = await redisClient.keys('products:*');
-
-      for (const key of keys) {
-        await redisClient.del(key);
-      }
-    } catch {
-      // Redis optional.
-    }
+    await clearProductsCache();
 
     res.json({
       success: true,

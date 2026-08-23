@@ -1,6 +1,5 @@
 import prisma from '../config/db.js';
 import { NotFoundError, BadRequestError, ForbiddenError } from '../utils/appError.js';
-import { clearUserCart } from '../utils/cartHelpers.js';
 import { calculateProductPrice, getProductMRP } from '../utils/pricing.js';
 import { syncTracking, parseTrackingLinkOrNumber } from '../services/tracking.service.js';
 
@@ -167,6 +166,18 @@ export const createOrder = async (req, res, next) => {
       const product = productMap[item.productId];
       if (!product) {
         return next(new NotFoundError(`Product ${item.productId} does not exist.`));
+      }
+
+      if (product.stock < item.quantity) {
+        throw new BadRequestError(`Insufficient stock for product: ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}`);
+      }
+
+      if (paymentMethod === 'COD' && !product.codAvailable) {
+        throw new BadRequestError(`Cash on Delivery is not available for product: ${product.name}`);
+      }
+      
+      if (paymentMethod !== 'COD' && !product.prepaidAvailable) {
+        throw new BadRequestError(`Online payment is not available for product: ${product.name}`);
       }
 
       const itemPrice = calculateProductPrice(product, paymentMethod);
@@ -384,6 +395,10 @@ export const getOrderById = async (req, res, next) => {
       return next(new NotFoundError(`Order ID ${id} not found`));
     }
 
+    if (order.userId !== req.user.id && req.user.role !== 'admin') {
+      return next(new ForbiddenError("Forbidden: You are not authorized to view this order."));
+    }
+
     // Auto sync tracking details if order is not delivered yet
     if (order.trackingNumber && order.status !== 'delivered') {
       try {
@@ -407,6 +422,32 @@ export const updateOrderStatus = async (req, res, next) => {
   const { status, trackingNumber } = req.body;
 
   try {
+    const currentOrder = await prisma.order.findUnique({ where: { id } });
+    if (!currentOrder) {
+      return next(new NotFoundError(`Order ID ${id} not found`));
+    }
+
+    const allowedTransitions = {
+      pending: ['confirmed', 'cancelled'],
+      confirmed: ['packed', 'cancelled'],
+      packed: ['shipped', 'cancelled'],
+      shipped: ['out_for_delivery'],
+      out_for_delivery: ['delivered'],
+      delivered: ['exchange_requested', 'completed'],
+      exchange_requested: ['completed'],
+      completed: [],
+      cancelled: []
+    };
+
+    const currentStatus = currentOrder.status.toLowerCase();
+    const targetStatus = status.toLowerCase();
+
+    if (currentStatus !== targetStatus) {
+      if (!allowedTransitions[currentStatus] || !allowedTransitions[currentStatus].includes(targetStatus)) {
+        return next(new BadRequestError(`Invalid status transition from ${currentOrder.status} to ${status}`));
+      }
+    }
+
     const order = await prisma.order.update({
       where: { id },
       data: { 
@@ -850,13 +891,12 @@ export const cancelOrder = async (req, res, next) => {
       return res.status(403).json({ success: false, message: "Unauthorized: Please login or provide a matching phone number to cancel this order." });
     }
 
-    const nonCancellableStates = ['shipped', 'out_for_delivery', 'delivered', 'completed', 'cancelled'];
-    if (nonCancellableStates.includes(order.status.toLowerCase())) {
-      return res.status(400).json({
-        success: false,
-        message: `Order cannot be cancelled as it is already ${order.status}`
-      });
-    }
+      if (order.status.toLowerCase() !== 'out_for_delivery') {
+        return res.status(400).json({
+          success: false,
+          message: `Order cannot be cancelled at this stage. Cancellation is only allowed when the order reaches your doorstep.`
+        });
+      }
 
     const updatedOrder = await prisma.order.update({
       where: { id: order.id },

@@ -43,22 +43,26 @@ const apiClient = axios.create({
 let refreshTokenPromise = null;
 
 function clearAuthSession() {
+  const isGuest = localStorage.getItem('isGuest') === 'true';
   localStorage.removeItem('accessToken');
   localStorage.removeItem('refreshToken');
+  localStorage.removeItem('isGuest');
 
   window.dispatchEvent(
     new Event('auth-logout')
   );
 
-  window.dispatchEvent(
-    new CustomEvent('show-toast', {
-      detail: {
-        message:
-          'Your session has expired. Please sign in again.',
-        type: 'warning',
-      },
-    })
-  );
+  if (!isGuest) {
+    window.dispatchEvent(
+      new CustomEvent('show-toast', {
+        detail: {
+          message:
+            'Your session has expired. Please sign in again.',
+          type: 'warning',
+        },
+      })
+    );
+  }
 }
 
 async function getValidToken() {
@@ -91,6 +95,8 @@ async function getValidToken() {
     refreshTokenPromise = axios
       .post(`${API_URL}/auth/refresh`, {
         refreshToken,
+      }, {
+        timeout: 10000
       })
       .then((response) => {
         const data = response.data;
@@ -148,10 +154,7 @@ apiClient.interceptors.request.use(
   async (config) => {
     const url = config.url || '';
 
-    const isAuthEndpoint =
-      url.includes('/auth/login') ||
-      url.includes('/auth/refresh') ||
-      url.includes('/auth/register');
+    const isAuthEndpoint = url.includes('/auth/');
 
     if (isAuthEndpoint) {
       return config;
@@ -200,10 +203,7 @@ apiClient.interceptors.response.use(
     const url =
       originalRequest.url || '';
 
-    const isAuthEndpoint =
-      url.includes('/auth/login') ||
-      url.includes('/auth/refresh') ||
-      url.includes('/auth/register');
+    const isAuthEndpoint = url.includes('/auth/');
 
     if (
       error.response &&

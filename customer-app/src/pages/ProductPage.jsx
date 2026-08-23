@@ -153,8 +153,8 @@ export default function ProductPage() {
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
 
-  const handleImageTouchMove = (e) => {
-    touchStartX.current = e.changedTouches[0].screenX;
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].screenX;
   };
 
   const handleTouchEnd = (e) => {
@@ -576,9 +576,9 @@ export default function ProductPage() {
               className="w-full h-full relative cursor-crosshair overflow-hidden"
               onMouseMove={handleMouseMove}
               onMouseLeave={handleMouseLeave}
-              onTouchStart={handleImageTouchStart}
-              onTouchMove={handleImageTouchMove}
-              onTouchEnd={handleImageTouchEnd}
+            onTouchStart={handleImageTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleImageTouchEnd}
             >
               <img
                 src={productImages[activeImgIndex]}

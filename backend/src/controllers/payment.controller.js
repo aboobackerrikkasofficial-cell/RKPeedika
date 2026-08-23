@@ -66,6 +66,10 @@ export const verifyPayment = async (req, res, next) => {
       return next(new NotFoundError("Payment record not found"));
     }
 
+    if (payment.status === 'paid') {
+      return res.json({ success: true, message: "Payment already verified", payment });
+    }
+
     const gatewayContext = await getActiveGateway();
     if (!gatewayContext) {
       return next(new BadRequestError("No active payment gateway found"));
@@ -276,6 +280,13 @@ export const createRazorpayOrder = async (req, res, next) => {
         if (!product) {
           return next(new NotFoundError(`Product ${item.productId} does not exist.`));
         }
+        if (product.stock < item.quantity) {
+          return next(new BadRequestError(`Insufficient stock for product: ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}`));
+        }
+        if (!product.prepaidAvailable) {
+          return next(new BadRequestError(`Online payment is not available for product: ${product.name}`));
+        }
+        
         // Fetch online price for online payment
         const itemPrice = calculateProductPrice(product, 'ONLINE');
         const itemMrp = getProductMRP(product);
@@ -509,6 +520,21 @@ export const verifyRazorpayPayment = async (req, res, next) => {
         }
       });
 
+      // Decrement stock logic
+      const orderItems = await tx.orderItem.findMany({
+        where: { orderId: internal_order_id }
+      });
+      for (const item of orderItems) {
+        const product = await tx.product.findUnique({ where: { id: item.productId } });
+        if (!product || product.stock < item.quantity) {
+          throw new BadRequestError(`Insufficient stock for product ${product?.name || item.productId} during payment confirmation.`);
+        }
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { stock: { decrement: item.quantity } }
+        });
+      }
+
       return { updatedOrder: uOrder };
     });
 
@@ -597,6 +623,21 @@ export const handleRazorpayWebhook = async (req, res, next) => {
                 type: "order"
               }
             });
+
+            // Decrement stock logic
+            const orderItems = await tx.orderItem.findMany({
+              where: { orderId: order.id }
+            });
+            for (const item of orderItems) {
+              const product = await tx.product.findUnique({ where: { id: item.productId } });
+              if (!product || product.stock < item.quantity) {
+                throw new Error(`Insufficient stock for product ${product?.name || item.productId} during payment confirmation.`);
+              }
+              await tx.product.update({
+                where: { id: item.productId },
+                data: { stock: { decrement: item.quantity } }
+              });
+            }
           });
           console.log(`Order ${order.orderId} paid successfully via webhook event ${event}.`);
         } else {

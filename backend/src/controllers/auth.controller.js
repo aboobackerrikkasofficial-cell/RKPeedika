@@ -873,9 +873,9 @@ export const verifyOtpCode = async (
 };
 
 
-// ============================================================
-// REFRESH TOKEN
-// ============================================================
+// Cache to prevent race conditions during token refresh across concurrent requests or multiple tabs
+const rotatedTokensCache = new Map(); // token -> { token, refreshToken, rotatedAt }
+const pendingRefreshes = new Map(); // token -> Promise<{ token, refreshToken }>
 
 export const refresh = async (
   req,
@@ -894,187 +894,234 @@ export const refresh = async (
     );
   }
 
-  try {
+  // 1. Check if this token was recently rotated (grace period for concurrent requests / tabs)
+  if (rotatedTokensCache.has(refreshToken)) {
+    const cached = rotatedTokensCache.get(refreshToken);
+    if (Date.now() - cached.rotatedAt < 30000) {
+      return res.status(200).json({
+        success: true,
+        token: cached.token,
+        refreshToken: cached.refreshToken
+      });
+    }
+  }
+
+  // 2. Check if this token is currently in the middle of being refreshed (concurrency lock)
+  if (pendingRefreshes.has(refreshToken)) {
+    try {
+      const cachedResult = await pendingRefreshes.get(refreshToken);
+      return res.status(200).json({
+        success: true,
+        token: cachedResult.token,
+        refreshToken: cachedResult.refreshToken
+      });
+    } catch (refreshErr) {
+      return next(refreshErr);
+    }
+  }
+
+  const refreshPromise = (async () => {
     const refreshSecret =
       process.env.JWT_REFRESH_SECRET ||
       'refresh_secret';
 
-    jwt.verify(
-      refreshToken,
-      refreshSecret,
-      async (
-        err,
-        decoded
-      ) => {
-        if (err) {
-          return next(
-            new ForbiddenError(
-              'Invalid or expired refresh token. Please login again.'
-            )
-          );
-        }
-
-        try {
-          const dbToken =
-            await prisma.refreshToken.findUnique({
-              where: {
-                token: refreshToken
-              }
-            });
-
-          if (
-            !dbToken ||
-            dbToken.expiresAt <
-            new Date()
-          ) {
-            if (dbToken) {
-              await prisma.refreshToken
-                .delete({
-                  where: {
-                    id: dbToken.id
-                  }
-                })
-                .catch(() => { });
-            }
-
-            return next(
+    return new Promise((resolve, reject) => {
+      jwt.verify(
+        refreshToken,
+        refreshSecret,
+        async (
+          err,
+          decoded
+        ) => {
+          if (err) {
+            return reject(
               new ForbiddenError(
-                'Your session has expired or has been revoked. Please sign in again.'
+                'Invalid or expired refresh token. Please login again.'
               )
             );
           }
 
-          const user =
-            await prisma.user.findUnique({
-              where: {
-                id: decoded.id
+          try {
+            const dbToken =
+              await prisma.refreshToken.findUnique({
+                where: {
+                  token: refreshToken
+                }
+              });
+
+            if (
+              !dbToken ||
+              dbToken.expiresAt <
+              new Date()
+            ) {
+              if (dbToken) {
+                await prisma.refreshToken
+                  .delete({
+                    where: {
+                      id: dbToken.id
+                    }
+                  })
+                  .catch(() => { });
               }
-            });
 
-          if (
-            !user ||
-            user.status === 'banned'
-          ) {
-            return next(
-              new ForbiddenError(
-                'Your account is disabled or no longer exists.'
-              )
-            );
-          }
-
-          const jwtSecret =
-            process.env.JWT_SECRET ||
-            'secret';
-
-          const accessToken =
-            jwt.sign(
-              {
-                id: user.id,
-                email: user.email,
-                phone: user.phone,
-                role: user.role
-              },
-              jwtSecret,
-              {
-                expiresIn: '15m'
-              }
-            );
-
-          const nextExpiresAt =
-            dbToken.expiresAt;
-
-          const daysLeft =
-            Math.max(
-              1,
-              Math.ceil(
-                (nextExpiresAt.getTime() -
-                  Date.now()) /
-                (1000 *
-                  60 *
-                  60 *
-                  24)
-              )
-            );
-
-          const nextRefreshToken =
-            jwt.sign(
-              {
-                id: user.id,
-                email: user.email,
-                phone: user.phone,
-                role: user.role
-              },
-              process.env
-                .JWT_REFRESH_SECRET ||
-              'refresh_secret',
-              {
-                expiresIn:
-                  `${daysLeft}d`
-              }
-            );
-
-          // Delete old token
-          await prisma.refreshToken
-            .delete({
-              where: {
-                id: dbToken.id
-              }
-            })
-            .catch(() => { });
-
-          // Store new token
-          await prisma.refreshToken.create({
-            data: {
-              token:
-                nextRefreshToken,
-              userId: user.id,
-              expiresAt:
-                nextExpiresAt
+              return reject(
+                new ForbiddenError(
+                  'Your session has expired or has been revoked. Please sign in again.'
+                )
+              );
             }
-          });
 
-          // Update legacy session
-          const session =
-            await prisma.userSession.findFirst({
-              where: {
-                refreshToken,
-                userId:
-                  user.id
-              }
-            });
+            const user =
+              await prisma.user.findUnique({
+                where: {
+                  id: decoded.id
+                }
+              });
 
-          if (session) {
-            await prisma.userSession.update({
-              where: {
-                id: session.id
-              },
+            if (
+              !user ||
+              user.status === 'banned'
+            ) {
+              return reject(
+                new ForbiddenError(
+                  'Your account is disabled or no longer exists.'
+                )
+              );
+            }
+
+            const jwtSecret =
+              process.env.JWT_SECRET ||
+              'secret';
+
+            const accessToken =
+              jwt.sign(
+                {
+                  id: user.id,
+                  email: user.email,
+                  phone: user.phone,
+                  role: user.role
+                },
+                jwtSecret,
+                {
+                  expiresIn: '15m'
+                }
+              );
+
+            const nextExpiresAt =
+              dbToken.expiresAt;
+
+            const daysLeft =
+              Math.max(
+                1,
+                Math.ceil(
+                  (nextExpiresAt.getTime() -
+                    Date.now()) /
+                  (1000 *
+                    60 *
+                    60 *
+                    24)
+                )
+              );
+
+            const nextRefreshToken =
+              jwt.sign(
+                {
+                  id: user.id,
+                  email: user.email,
+                  phone: user.phone,
+                  role: user.role
+                },
+                process.env
+                  .JWT_REFRESH_SECRET ||
+                'refresh_secret',
+                {
+                  expiresIn:
+                    `${daysLeft}d`
+                }
+              );
+
+            // Delete old token
+            await prisma.refreshToken
+              .delete({
+                where: {
+                  id: dbToken.id
+                }
+              })
+              .catch(() => { });
+
+            // Store new token
+            await prisma.refreshToken.create({
               data: {
-                refreshToken:
+                token:
                   nextRefreshToken,
-                lastActivity:
-                  new Date(),
-                lastLogin:
-                  new Date()
+                userId: user.id,
+                expiresAt:
+                  nextExpiresAt
               }
             });
+
+            // Save to rotatedTokensCache to handle race conditions (grace period of 30 seconds)
+            rotatedTokensCache.set(refreshToken, {
+              token: `Bearer ${accessToken}`,
+              refreshToken: nextRefreshToken,
+              rotatedAt: Date.now()
+            });
+            setTimeout(() => {
+              rotatedTokensCache.delete(refreshToken);
+            }, 30000);
+
+            // Update legacy session
+            const session =
+              await prisma.userSession.findFirst({
+                where: {
+                  refreshToken,
+                  userId:
+                    user.id
+                }
+              });
+
+            if (session) {
+              await prisma.userSession.update({
+                where: {
+                  id: session.id
+                },
+                data: {
+                  refreshToken:
+                    nextRefreshToken,
+                  lastActivity:
+                    new Date(),
+                  lastLogin:
+                    new Date()
+                }
+              });
+            }
+
+            resolve({
+              token: `Bearer ${accessToken}`,
+              refreshToken: nextRefreshToken
+            });
+
+          } catch (innerError) {
+            reject(innerError);
           }
-
-          return res.json({
-            success: true,
-            token:
-              `Bearer ${accessToken}`,
-            refreshToken:
-              nextRefreshToken
-          });
-
-        } catch (innerError) {
-          next(innerError);
         }
-      }
-    );
+      );
+    });
+  })();
 
+  pendingRefreshes.set(refreshToken, refreshPromise);
+
+  try {
+    const result = await refreshPromise;
+    return res.status(200).json({
+      success: true,
+      token: result.token,
+      refreshToken: result.refreshToken
+    });
   } catch (error) {
     next(error);
+  } finally {
+    pendingRefreshes.delete(refreshToken);
   }
 };
 
@@ -1315,11 +1362,20 @@ export const guestLogin = async (
         }
       );
 
-    const refreshTokenVal =
-      Math.random()
-        .toString(36)
-        .substring(2) +
-      Date.now().toString(36);
+    const refreshSecret =
+      process.env.JWT_REFRESH_SECRET ||
+      'refresh_secret';
+
+    const refreshTokenVal = jwt.sign(
+      {
+        id: user.id,
+        role: user.role
+      },
+      refreshSecret,
+      {
+        expiresIn: '30d'
+      }
+    );
 
     const refreshExpiry =
       new Date(
@@ -1526,21 +1582,33 @@ export const simpleLogin = async (
       );
 
     // Refresh token
-    const refreshTokenVal =
-      Math.random()
-        .toString(36)
-        .substring(2) +
-      Date.now().toString(36);
+    const expiryDays =
+      rememberMe ? 30 : 1;
 
     const refreshExpiry =
       new Date(
         Date.now() +
-        30 *
+        expiryDays *
         24 *
         60 *
         60 *
         1000
       );
+
+    const refreshSecret =
+      process.env.JWT_REFRESH_SECRET ||
+      'refresh_secret';
+
+    const refreshTokenVal = jwt.sign(
+      {
+        id: user.id,
+        role: user.role
+      },
+      refreshSecret,
+      {
+        expiresIn: `${expiryDays}d`
+      }
+    );
 
     await prisma.refreshToken.create({
       data: {

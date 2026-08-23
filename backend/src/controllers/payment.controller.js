@@ -283,12 +283,8 @@ export const createRazorpayOrder = async (req, res, next) => {
         if (product.stock < item.quantity) {
           return next(new BadRequestError(`Insufficient stock for product: ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}`));
         }
-        if (!product.prepaidAvailable) {
-          return next(new BadRequestError(`Online payment is not available for product: ${product.name}`));
-        }
-        
         // Fetch online price for online payment
-        const itemPrice = calculateProductPrice(product, 'ONLINE');
+        const itemPrice = product.onlinePrice || product.price;
         const itemMrp = getProductMRP(product);
 
         subtotal += itemPrice * item.quantity;

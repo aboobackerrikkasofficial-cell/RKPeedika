@@ -20,15 +20,8 @@ const storage = multer.diskStorage({
     },
 
     filename: (_req, file, cb) => {
-        const extMap = {
-            'image/jpeg': '.jpg',
-            'image/jpg': '.jpg',
-            'image/png': '.png',
-            'image/webp': '.webp',
-            'image/avif': '.avif',
-            'image/gif': '.gif'
-        };
-        const extension = extMap[file.mimetype] || '.jpg';
+        const extension =
+            path.extname(file.originalname) || '.jpg';
 
         const safeName = path
             .basename(file.originalname, extension)

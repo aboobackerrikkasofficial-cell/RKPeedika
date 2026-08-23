@@ -172,14 +172,6 @@ export const createOrder = async (req, res, next) => {
         throw new BadRequestError(`Insufficient stock for product: ${product.name}. Available: ${product.stock}, Requested: ${item.quantity}`);
       }
 
-      if (paymentMethod === 'COD' && !product.codAvailable) {
-        throw new BadRequestError(`Cash on Delivery is not available for product: ${product.name}`);
-      }
-      
-      if (paymentMethod !== 'COD' && !product.prepaidAvailable) {
-        throw new BadRequestError(`Online payment is not available for product: ${product.name}`);
-      }
-
       const itemPrice = calculateProductPrice(product, paymentMethod);
       const itemMrp = getProductMRP(product);
 

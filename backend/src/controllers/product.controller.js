@@ -22,16 +22,6 @@ const parseJson = (value, fallback) => {
 };
 
 /**
- * Parse boolean values from requests safely
- */
-const parseBoolean = (value, fallback) => {
-  if (value === undefined || value === null || value === '') return fallback;
-  if (value === 'true' || value === true || value === 1 || value === '1') return true;
-  if (value === 'false' || value === false || value === 0 || value === '0') return false;
-  return fallback;
-};
-
-/**
  * Format product for frontend.
  */
 export const formatProduct = (product) => {
@@ -426,10 +416,21 @@ export const createProduct = async (req, res, next) => {
             ? Number(onlineDiscount)
             : null,
 
-        enableOnlineDiscount: parseBoolean(enableOnlineDiscount, false),
-        codAvailable: parseBoolean(codAvailable, true),
-        prepaidAvailable: parseBoolean(prepaidAvailable, true),
-        returnAvailable: parseBoolean(returnAvailable, true),
+        enableOnlineDiscount:
+          enableOnlineDiscount === true ||
+          enableOnlineDiscount === 'true',
+
+        codAvailable:
+          codAvailable !== false &&
+          codAvailable !== 'false',
+
+        prepaidAvailable:
+          prepaidAvailable !== false &&
+          prepaidAvailable !== 'false',
+
+        returnAvailable:
+          returnAvailable !== false &&
+          returnAvailable !== 'false',
 
         returnWindow:
           returnWindow !== undefined && returnWindow !== null && returnWindow !== ''
@@ -469,7 +470,9 @@ export const createProduct = async (req, res, next) => {
             : relatedProducts || '[]',
 
         ...(showPurchaseCount !== undefined && {
-          showPurchaseCount: parseBoolean(showPurchaseCount, true),
+          showPurchaseCount:
+            showPurchaseCount === true ||
+            showPurchaseCount === 'true',
         }),
 
         ...(purchaseCountMode && {
@@ -536,7 +539,7 @@ export const updateProduct = async (req, res, next) => {
     const data = {};
 
     if (active !== undefined) {
-      data.status = parseBoolean(active, true) ? 'active' : 'draft';
+      data.status = active === false || active === 'false' ? 'draft' : 'active';
     }
 
     if (name) data.name = makeShortProductName(name);
@@ -564,19 +567,19 @@ export const updateProduct = async (req, res, next) => {
     }
 
     if (enableOnlineDiscount !== undefined) {
-      data.enableOnlineDiscount = parseBoolean(enableOnlineDiscount, false);
+      data.enableOnlineDiscount = enableOnlineDiscount === true || enableOnlineDiscount === 'true';
     }
 
     if (codAvailable !== undefined) {
-      data.codAvailable = parseBoolean(codAvailable, true);
+      data.codAvailable = codAvailable !== false && codAvailable !== 'false';
     }
 
     if (prepaidAvailable !== undefined) {
-      data.prepaidAvailable = parseBoolean(prepaidAvailable, true);
+      data.prepaidAvailable = prepaidAvailable !== false && prepaidAvailable !== 'false';
     }
 
     if (returnAvailable !== undefined) {
-      data.returnAvailable = parseBoolean(returnAvailable, true);
+      data.returnAvailable = returnAvailable !== false && returnAvailable !== 'false';
     }
 
     if (returnWindow !== undefined) {

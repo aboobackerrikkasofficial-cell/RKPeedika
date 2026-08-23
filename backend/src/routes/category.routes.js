@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { cachePublic } from '../middleware/cacheHeaders.js';
 import { getAllCategories, createCategory, deleteCategory, updateCategory } from '../controllers/category.controller.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 
@@ -14,7 +15,7 @@ const router = Router();
  *       200:
  *         description: List of categories returned
  */
-router.get('/', getAllCategories);
+router.get('/', cachePublic(300), getAllCategories);
 
 /**
  * @swagger

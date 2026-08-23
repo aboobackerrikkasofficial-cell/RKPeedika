@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { DEFAULT_PRODUCTS } from '../constants/products';
 import { DEFAULT_ADDRESSES } from '../constants/addresses';
 import { PINCODE_DATABASE } from '../constants/pincodes';
@@ -81,12 +81,19 @@ export const AppProvider = ({ children }) => {
     if (!token) return;
 
     try {
+      // Parallel fetch all user data instead of 5 sequential requests
+      const [profileRes, addrRes, orderRes, wishlistRes, cartRes] = await Promise.all([
+        apiClient.get('/users/profile'),
+        apiClient.get('/users/addresses'),
+        apiClient.get('/orders/user/history'),
+        apiClient.get('/users/wishlist'),
+        apiClient.get('/users/cart')
+      ]);
+
       // 1. Profile
-      const profileRes = await apiClient.get('/users/profile');
       setUserProfile(profileRes.data);
 
       // 2. Address book
-      const addrRes = await apiClient.get('/users/addresses');
       if (addrRes.data && Array.isArray(addrRes.data) && addrRes.data.length > 0) {
         setAddresses(addrRes.data);
         setSelectedAddressId(addrRes.data[0].id);
@@ -95,7 +102,6 @@ export const AppProvider = ({ children }) => {
       }
 
       // 3. Order history
-      const orderRes = await apiClient.get('/orders/user/history');
       if (orderRes.data && Array.isArray(orderRes.data)) {
         const formattedOrders = orderRes.data.map(o => {
           const subtotal = o.amount;
@@ -122,13 +128,11 @@ export const AppProvider = ({ children }) => {
       }
 
       // 4. Wishlist
-      const wishlistRes = await apiClient.get('/users/wishlist');
       if (wishlistRes.data && Array.isArray(wishlistRes.data)) {
         setWishlist(wishlistRes.data.map(item => item.productId));
       }
 
       // 5. Cart
-      const cartRes = await apiClient.get('/users/cart');
       if (cartRes.data && Array.isArray(cartRes.data)) {
         const formattedCart = cartRes.data.map(item => ({
           cartItemId: `${item.productId}-${item.size}-${item.color}`,
@@ -372,14 +376,17 @@ export const AppProvider = ({ children }) => {
   useEffect(() => {
     const fetchPublicData = async () => {
       try {
-        // Products
-        const prodRes = await apiClient.get('/products');
+        // Parallel fetch all public data instead of 3 sequential requests
+        const [prodRes, settingsRes, catRes] = await Promise.all([
+          apiClient.get('/products'),
+          apiClient.get('/settings'),
+          apiClient.get('/categories')
+        ]);
+
         if (prodRes.data && Array.isArray(prodRes.data)) {
           setProducts(prodRes.data);
         }
 
-        // Settings
-        const settingsRes = await apiClient.get('/settings');
         if (settingsRes.data && settingsRes.data.status === 'success' && settingsRes.data.data) {
           setStoreSettings(settingsRes.data.data);
           setCouponConfig(prev => ({
@@ -388,8 +395,6 @@ export const AppProvider = ({ children }) => {
           }));
         }
 
-        // Categories
-        const catRes = await apiClient.get('/categories');
         if (catRes.data) {
           setCategories(catRes.data);
         }
@@ -421,14 +426,17 @@ export const AppProvider = ({ children }) => {
 
               const tokenHeader = gToken.startsWith('Bearer ') ? gToken : `Bearer ${gToken}`;
               try {
-                const profileRes = await apiClient.get('/users/profile', { headers: { 'Authorization': tokenHeader } });
+                // Parallel fetch guest data instead of 3 sequential requests
+                const [profileRes, addrRes, orderRes] = await Promise.all([
+                  apiClient.get('/users/profile', { headers: { 'Authorization': tokenHeader } }),
+                  apiClient.get('/users/addresses', { headers: { 'Authorization': tokenHeader } }),
+                  apiClient.get('/orders/user/history', { headers: { 'Authorization': tokenHeader } })
+                ]);
                 setUserProfile(profileRes.data);
-                const addrRes = await apiClient.get('/users/addresses', { headers: { 'Authorization': tokenHeader } });
                 if (addrRes.data && Array.isArray(addrRes.data) && addrRes.data.length > 0) {
                   setAddresses(addrRes.data);
                   setSelectedAddressId(addrRes.data[0].id);
                 }
-                const orderRes = await apiClient.get('/orders/user/history', { headers: { 'Authorization': tokenHeader } });
                 if (orderRes.data && Array.isArray(orderRes.data)) {
                   setOrderHistory(orderRes.data.map(o => ({
                     orderId: o.orderId || o.id,
@@ -515,7 +523,7 @@ export const AppProvider = ({ children }) => {
       window.removeEventListener('auth-logout', handleLocalLogoutEvent);
       window.removeEventListener('show-toast', handleShowToastEvent);
     };
-  }, [cart]);
+  }, []); // Fixed: was [cart] which caused re-registration on every cart change
 
   // SPA History & URL Parameter Sync
   useEffect(() => {
@@ -747,13 +755,20 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const cartRef = useRef(cart);
+  cartRef.current = cart;
+
   const clearCart = async () => {
+    const itemsToDelete = cartRef.current;
     setCart([]);
-    if (localStorage.getItem('accessToken')) {
+    if (localStorage.getItem('accessToken') && itemsToDelete.length > 0) {
       try {
-        for (const item of cart) {
-          await apiClient.delete(`/users/cart/${item.id}?size=${item.size || ''}&color=${item.color || ''}`);
-        }
+        // Parallel delete instead of sequential loop
+        await Promise.all(
+          itemsToDelete.map(item =>
+            apiClient.delete(`/users/cart/${item.id}?size=${item.size || ''}&color=${item.color || ''}`)
+          )
+        );
       } catch (err) {
         console.error("Failed to clear database cart", err);
       }

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { cachePublic } from '../middleware/cacheHeaders.js';
 
 import {
     getAllProducts,
@@ -24,6 +25,7 @@ const router = Router();
 // Get all active products
 router.get(
     '/',
+    cachePublic(300),
     getAllProducts
 );
 

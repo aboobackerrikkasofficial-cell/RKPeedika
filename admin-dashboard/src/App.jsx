@@ -1,23 +1,25 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Routes, Route, Outlet } from 'react-router-dom';
 import DashboardLayout from './layouts/DashboardLayout';
-import Dashboard from './pages/Dashboard';
-import Orders from './pages/Orders';
-import Products from './pages/Products';
-import Categories from './pages/Categories';
-import Settings from './pages/Settings';
-import Profile from './pages/Profile';
-import Login from './pages/Login';
-import NotFound from './pages/NotFound';
 import ErrorBoundary from './pages/ErrorBoundary';
 import ProtectedRoute from './components/ProtectedRoute';
 import PopupDialog from './components/PopupDialog';
-import PaymentSettings from './pages/PaymentSettings';
+
+const Dashboard = React.lazy(() => import('./pages/Dashboard'));
+const Orders = React.lazy(() => import('./pages/Orders'));
+const Products = React.lazy(() => import('./pages/Products'));
+const Categories = React.lazy(() => import('./pages/Categories'));
+const Settings = React.lazy(() => import('./pages/Settings'));
+const Profile = React.lazy(() => import('./pages/Profile'));
+const Login = React.lazy(() => import('./pages/Login'));
+const NotFound = React.lazy(() => import('./pages/NotFound'));
+const PaymentSettings = React.lazy(() => import('./pages/PaymentSettings'));
 
 export default function App() {
   return (
     <ErrorBoundary>
       <PopupDialog />
+      <Suspense fallback={<div className="flex h-screen items-center justify-center text-gray-400">Loading...</div>}>
       <Routes>
         {/* Auth Gate */}
         <Route path="/login" element={<Login />} />
@@ -36,6 +38,7 @@ export default function App() {
         {/* 404 Fallback */}
         <Route path="*" element={<NotFound />} />
       </Routes>
+      </Suspense>
     </ErrorBoundary>
   );
 }

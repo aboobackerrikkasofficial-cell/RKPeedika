@@ -5,27 +5,24 @@ import { formatProduct } from './product.controller.js';
 
 export const getDashboardKPIs = async (req, res, next) => {
   try {
-    const totalProducts = await prisma.product.count();
-    const activeProducts = await prisma.product.count({ where: { status: 'active' } });
-
     const startOfToday = new Date();
     startOfToday.setHours(0, 0, 0, 0);
-    const todayOrders = await prisma.order.count({
-      where: { createdAt: { gte: startOfToday } }
-    });
 
-    const pendingOrders = await prisma.order.count({
-      where: { status: { notIn: ['delivered', 'completed', 'cancelled'] } }
-    });
-
-    const deliveredOrders = await prisma.order.count({
-      where: { status: { in: ['delivered', 'completed'] } }
-    });
-
-    const ordersPaid = await prisma.order.findMany({
-      where: { paymentStatus: 'paid' },
-      select: { amount: true }
-    });
+    const [
+      totalProducts,
+      activeProducts,
+      todayOrders,
+      pendingOrders,
+      deliveredOrders,
+      ordersPaid
+    ] = await Promise.all([
+      prisma.product.count(),
+      prisma.product.count({ where: { status: 'active' } }),
+      prisma.order.count({ where: { createdAt: { gte: startOfToday } } }),
+      prisma.order.count({ where: { status: { notIn: ['delivered', 'completed', 'cancelled'] } } }),
+      prisma.order.count({ where: { status: { in: ['delivered', 'completed'] } } }),
+      prisma.order.findMany({ where: { paymentStatus: 'paid' }, select: { amount: true } })
+    ]);
 
     const totalRevenue = ordersPaid.reduce((sum, ord) => sum + ord.amount, 0);
 
@@ -114,72 +111,91 @@ export const toggleProductStatus = async (req, res, next) => {
 
 export const getAnalytics = async (req, res, next) => {
   try {
-    // 1. Calculate weekly sales trend (last 7 days)
+    // Calculate date boundaries
+    const now = new Date();
+    const sevenDaysAgo = new Date(now);
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
+
+    // Fetch all data in parallel instead of looped queries
+    const [
+      weeklyOrders,
+      monthlyOrders,
+      categories,
+      codOrders,
+      onlineOrders,
+      totalRevenuePaid,
+      totalCustomers,
+      totalOrders
+    ] = await Promise.all([
+      prisma.order.findMany({
+        where: { paymentStatus: 'paid', createdAt: { gte: sevenDaysAgo } },
+        select: { amount: true, createdAt: true }
+      }),
+      prisma.order.findMany({
+        where: { paymentStatus: 'paid', createdAt: { gte: sixMonthsAgo } },
+        select: { amount: true, createdAt: true }
+      }),
+      prisma.category.findMany({
+        include: {
+          products: {
+            select: {
+              orderItems: {
+                select: { quantity: true }
+              }
+            }
+          }
+        }
+      }),
+      prisma.order.count({ where: { paymentMethod: 'COD', paymentStatus: 'paid' } }),
+      prisma.order.count({ where: { paymentMethod: 'Razorpay', paymentStatus: 'paid' } }),
+      prisma.order.findMany({ where: { paymentStatus: 'paid' }, select: { amount: true } }),
+      prisma.user.count({ where: { role: 'customer' } }),
+      prisma.order.count()
+    ]);
+
+    // 1. Aggregate weekly sales from fetched data
     const weeklySalesTrend = [];
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
       const dayName = d.toLocaleDateString('en-US', { weekday: 'short' });
-      
-      const startOfDay = new Date(d.setHours(0, 0, 0, 0));
-      const endOfDay = new Date(d.setHours(23, 59, 59, 999));
-      
-      const orders = await prisma.order.findMany({
-        where: {
-          paymentStatus: 'paid',
-          createdAt: {
-            gte: startOfDay,
-            lte: endOfDay
-          }
-        },
-        select: { amount: true }
-      });
-      
-      const daySales = orders.reduce((sum, o) => sum + o.amount, 0);
+      const dayStart = new Date(d.setHours(0, 0, 0, 0)).getTime();
+      const dayEnd = new Date(d.setHours(23, 59, 59, 999)).getTime();
+
+      const daySales = weeklyOrders
+        .filter(o => {
+          const t = new Date(o.createdAt).getTime();
+          return t >= dayStart && t <= dayEnd;
+        })
+        .reduce((sum, o) => sum + o.amount, 0);
+
       weeklySalesTrend.push({ name: dayName, Sales: daySales });
     }
 
-    // 2. Calculate monthly performance trend (last 6 months)
+    // 2. Aggregate monthly sales from fetched data
     const monthlySalesTrend = [];
     for (let i = 5; i >= 0; i--) {
       const d = new Date();
       d.setMonth(d.getMonth() - i);
       const monthName = d.toLocaleDateString('en-US', { month: 'short' });
-      
-      const startOfMonth = new Date(d.getFullYear(), d.getMonth(), 1);
-      const endOfMonth = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999);
-      
-      const orders = await prisma.order.findMany({
-        where: {
-          paymentStatus: 'paid',
-          createdAt: {
-            gte: startOfMonth,
-            lte: endOfMonth
-          }
-        },
-        select: { amount: true }
-      });
-      
-      const revenue = orders.reduce((sum, o) => sum + o.amount, 0);
-      const profit = Math.round(revenue * 0.35); // 35% standard profit estimate
+      const monthStart = new Date(d.getFullYear(), d.getMonth(), 1).getTime();
+      const monthEnd = new Date(d.getFullYear(), d.getMonth() + 1, 0, 23, 59, 59, 999).getTime();
+
+      const revenue = monthlyOrders
+        .filter(o => {
+          const t = new Date(o.createdAt).getTime();
+          return t >= monthStart && t <= monthEnd;
+        })
+        .reduce((sum, o) => sum + o.amount, 0);
+
+      const profit = Math.round(revenue * 0.35);
       monthlySalesTrend.push({ month: monthName, Revenue: revenue, Profit: profit });
     }
 
-    // 3. Category distribution (Orders count by category)
-    const categories = await prisma.category.findMany({
-      include: {
-        products: {
-          select: {
-            orderItems: {
-              select: {
-                quantity: true
-              }
-            }
-          }
-        }
-      }
-    });
-
+    // 3. Category distribution
     const categoryDistribution = categories.map(cat => {
       let orderCount = 0;
       cat.products.forEach(p => {
@@ -187,30 +203,18 @@ export const getAnalytics = async (req, res, next) => {
           orderCount += item.quantity;
         });
       });
-      return {
-        name: cat.name,
-        Orders: orderCount
-      };
+      return { name: cat.name, Orders: orderCount };
     });
 
-    // 4. Payment channel share (Direct COD vs. Online Razorpay)
-    const codOrders = await prisma.order.count({ where: { paymentMethod: 'COD', paymentStatus: 'paid' } });
-    const onlineOrders = await prisma.order.count({ where: { paymentMethod: 'Razorpay', paymentStatus: 'paid' } });
+    // 4. Payment channel share
     const totalPaidOrders = codOrders + onlineOrders;
-
     const channelData = [
       { name: 'Cash On Delivery (COD)', value: totalPaidOrders > 0 ? Math.round((codOrders / totalPaidOrders) * 100) : 0 },
       { name: 'Online Payments (Razorpay)', value: totalPaidOrders > 0 ? Math.round((onlineOrders / totalPaidOrders) * 100) : 0 }
     ];
 
     // 5. Overall statistics
-    const totalRevenuePaid = await prisma.order.findMany({
-      where: { paymentStatus: 'paid' },
-      select: { amount: true }
-    });
     const gmv = totalRevenuePaid.reduce((sum, o) => sum + o.amount, 0);
-    const totalCustomers = await prisma.user.count({ where: { role: 'customer' } });
-    const totalOrders = await prisma.order.count();
     const averageOrderValue = totalOrders > 0 ? Math.round(gmv / totalOrders) : 0;
 
     res.json({

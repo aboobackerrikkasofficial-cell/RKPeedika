@@ -266,15 +266,24 @@ export const mergeCart = async (req, res, next) => {
   }
 
   try {
-    for (const item of cart) {
-      const productId = item.id;
-      const quantity = item.quantity || 1;
-      const size = item.size || "";
-      const color = item.color || "";
+    // Batch product lookup instead of N+1 individual queries
+    const productIds = cart.map(item => item.id).filter(Boolean);
+    const existingProducts = await prisma.product.findMany({
+      where: { id: { in: productIds } },
+      select: { id: true }
+    });
+    const validProductIds = new Set(existingProducts.map(p => p.id));
 
-      const product = await prisma.product.findUnique({ where: { id: productId } });
-      if (product) {
-        await prisma.cartItem.upsert({
+    // Upsert only valid products
+    const upsertPromises = cart
+      .filter(item => validProductIds.has(item.id))
+      .map(item => {
+        const productId = item.id;
+        const quantity = item.quantity || 1;
+        const size = item.size || "";
+        const color = item.color || "";
+
+        return prisma.cartItem.upsert({
           where: {
             userId_productId_size_color: {
               userId: req.user.id,
@@ -294,8 +303,9 @@ export const mergeCart = async (req, res, next) => {
             color
           }
         });
-      }
-    }
+      });
+
+    await Promise.all(upsertPromises);
 
     const updatedCart = await prisma.cartItem.findMany({
       where: { userId: req.user.id },

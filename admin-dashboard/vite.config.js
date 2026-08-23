@@ -14,14 +14,19 @@ export default defineConfig({
     }
   },
   build: {
+    sourcemap: false,
     rollupOptions: {
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
             if (id.includes('react') || id.includes('react-dom')) return 'vendor-react';
+            if (id.includes('react-router-dom') || id.includes('@remix-run')) return 'vendor-router';
             if (id.includes('framer-motion')) return 'vendor-framer';
             if (id.includes('lucide-react')) return 'vendor-lucide';
             if (id.includes('recharts')) return 'vendor-recharts';
+            if (id.includes('react-hook-form') || id.includes('@hookform') || id.includes('zod')) return 'vendor-forms';
+            if (id.includes('@tanstack/react-query')) return 'vendor-query';
+            if (id.includes('axios')) return 'vendor-axios';
             return 'vendor';
           }
         }

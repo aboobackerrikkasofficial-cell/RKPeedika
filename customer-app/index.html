@@ -41,22 +41,29 @@
         }
       }
     </script>
-  <!-- Razorpay Standard Checkout SDK -->
-  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <!-- Preconnect to API and asset domains -->
+  <link rel="preconnect" href="https://rkpeedika.onrender.com" crossorigin />
+  <link rel="dns-prefetch" href="https://rkpeedika.onrender.com" />
+
+  <!-- Razorpay Standard Checkout SDK (async — only needed at checkout) -->
+  <script async src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script>
-    !function (f, b, e, v, n, t, s) {
-      if (f.fbq) return; n = f.fbq = function () {
-        n.callMethod ?
-          n.callMethod.apply(n, arguments) : n.queue.push(arguments)
-      };
-      if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
-      n.queue = []; t = b.createElement(e); t.async = !0;
-      t.src = v; s = b.getElementsByTagName(e)[0];
-      s.parentNode.insertBefore(t, s)
-    }(window, document, 'script',
-      'https://connect.facebook.net/en_US/fbevents.js');
-    fbq('init', '1721280282432550');
-    fbq('track', 'PageView');
+    // Defer Facebook Pixel initialization to avoid blocking first paint
+    setTimeout(function() {
+      !function (f, b, e, v, n, t, s) {
+        if (f.fbq) return; n = f.fbq = function () {
+          n.callMethod ?
+            n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+        };
+        if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
+        n.queue = []; t = b.createElement(e); t.async = !0;
+        t.src = v; s = b.getElementsByTagName(e)[0];
+        s.parentNode.insertBefore(t, s)
+      }(window, document, 'script',
+        'https://connect.facebook.net/en_US/fbevents.js');
+      fbq('init', '1721280282432550');
+      fbq('track', 'PageView');
+    }, 0);
   </script>
 </head>
 

@@ -620,15 +620,41 @@ export const getReturns = async (req, res, next) => {
 
 export const getAllOrders = async (req, res, next) => {
   try {
-    const orders = await prisma.order.findMany({
-      include: {
-        user: { select: { name: true, email: true, phone: true } },
-        orderItems: { include: { product: true } },
-        payments: true
-      },
-      orderBy: { createdAt: 'desc' }
+    const page = parseInt(req.query.page) || 0;
+    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+
+    // If no pagination params, return all (backward compatible)
+    if (!req.query.page && !req.query.limit) {
+      const orders = await prisma.order.findMany({
+        include: {
+          user: { select: { name: true, email: true, phone: true } },
+          orderItems: { include: { product: true } },
+          payments: true
+        },
+        orderBy: { createdAt: 'desc' }
+      });
+      return res.json(orders);
+    }
+
+    const skip = (Math.max(1, page) - 1) * limit;
+    const [orders, total] = await Promise.all([
+      prisma.order.findMany({
+        include: {
+          user: { select: { name: true, email: true, phone: true } },
+          orderItems: { include: { product: true } },
+          payments: true
+        },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip
+      }),
+      prisma.order.count()
+    ]);
+
+    res.json({
+      orders,
+      pagination: { page: Math.max(1, page), limit, total, totalPages: Math.ceil(total / limit) }
     });
-    res.json(orders);
   } catch (error) {
     next(error);
   }
@@ -666,7 +692,7 @@ export const publicTrackOrder = async (req, res, next) => {
         orderItems: { include: { product: true } },
         trackingEvents: { orderBy: { eventDate: 'desc' } },
         payments: true,
-        user: true
+        user: { select: { phone: true, name: true } }
       }
     });
 

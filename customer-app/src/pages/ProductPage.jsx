@@ -4,6 +4,8 @@ import apiClient from '../api/client';
 import getImageUrl from '../utils/imageUrl';
 import {
   Star,
+  Banknote,
+  Truck,
   ShoppingCart,
   ShieldCheck,
   ArrowLeft,
@@ -699,24 +701,7 @@ export default function ProductPage() {
               )}
             </div>
 
-            {/* Trust Badges Row — Above the Fold (Indian Shoppers Trust Signals) */}
-            <div className="grid grid-cols-3 gap-2 py-3.5 border-y border-[#EDEDED] mt-4 text-[10px] font-bold text-gray-500 bg-[#FAFAFA] rounded-xl px-2.5 shadow-sm">
-              <div className="flex flex-col items-center justify-center text-center gap-1">
-                <span className="text-[16px]">🚚</span>
-                <span className="text-charcoal leading-tight">Delivers by</span>
-                <span className="text-[#0B1B2B] font-extrabold">{formattedDeliveryDate}</span>
-              </div>
-              <div className="flex flex-col items-center justify-center text-center gap-1 border-x border-[#EDEDED]">
-                <span className="text-[16px]">💵</span>
-                <span className="text-charcoal leading-tight">COD Available</span>
-                <span className="text-[#1F9D55] font-extrabold">Pay on doorstep</span>
-              </div>
-              <div className="flex flex-col items-center justify-center text-center gap-1">
-                <span className="text-[16px]">🔄</span>
-                <span className="text-charcoal leading-tight">5 Days Exchange</span>
-                <span className="text-[#3E7BFA] font-extrabold">Exchange Only</span>
-              </div>
-            </div>
+            
           </div>
 
           {/* Dynamic Variants Selector - Only shown if variants exist */}
@@ -770,26 +755,6 @@ export default function ProductPage() {
             </div>
           </div>
 
-          {/* Trust Information Strip */}
-          <div className="rounded-premium border border-gray-100 bg-gray-50/50 p-4 shadow-sm space-y-4">
-            <div className="flex items-start gap-3 bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
-              <div className="bg-orange-50 p-2 rounded-full text-orange-500"><RefreshCcw className="h-4 w-4" /></div>
-              <div>
-                <h5 className="text-xs font-black text-charcoal tracking-wide">Exchange Policy</h5>
-                <p className="text-[11px] text-gray-500 font-medium leading-tight mt-1">5 Days Exchange Only • No Refunds</p>
-                <p className="text-[10px] text-gray-400 font-medium mt-0.5">Video proof of damage/defect required via WhatsApp +91 9188072646</p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-3 bg-white p-3 rounded-lg border border-gray-100 shadow-sm">
-              <div className="bg-[#0B1B2B]/5 p-2 rounded-full text-[#0B1B2B]"><ShieldCheck className="h-4 w-4 stroke-[2]" /></div>
-              <div>
-                <h5 className="text-xs font-black text-charcoal tracking-wide">Verified Manufacturer</h5>
-                <p className="text-[11px] text-gray-500 font-medium leading-tight mt-1">GST Invoices & Quality Checks</p>
-              </div>
-            </div>
-          </div>
-
           {/* CTA Actions — desktop only (mobile uses sticky bar below) */}
           <div className="hidden md:flex flex-col sm:flex-row gap-3 pt-2">
             <button
@@ -815,6 +780,30 @@ export default function ProductPage() {
             >
               Buy Now
             </button>
+          </div>
+          
+          {/* Trust Signals near Buy Button (Phase 1 Benchmark) */}
+          <div className="flex flex-wrap items-center justify-between gap-2 mt-4 p-3 bg-gray-50/70 rounded-xl border border-gray-100/50">
+            {product?.codAvailable !== false && (
+              <div className="flex items-center gap-1.5 text-[11px] font-bold text-gray-700">
+                <Banknote className="h-4.5 w-4.5 text-[#1F9D55]" />
+                Cash on Delivery
+              </div>
+            )}
+            <div className="flex items-center gap-1.5 text-[11px] font-bold text-gray-700">
+              <ShieldCheck className="h-4.5 w-4.5 text-[#3E7BFA]" />
+              Secure Payment
+            </div>
+            {product?.returnAvailable !== false && (
+              <div className="flex items-center gap-1.5 text-[11px] font-bold text-gray-700">
+                <RotateCcw className="h-4.5 w-4.5 text-[#F5A623]" />
+                {product?.returnWindow || 5} Days Return
+              </div>
+            )}
+            <div className="flex items-center gap-1.5 text-[11px] font-bold text-gray-700">
+              <Truck className="h-4.5 w-4.5 text-[#0B1B2B]" />
+              Ships in 24h
+            </div>
           </div>
 
           {/* Highlights & Features */}

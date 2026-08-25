@@ -1,6 +1,6 @@
 import React, { useContext, useState } from 'react';
 import { AppContext } from '../context/AppContext';
-import { Heart, Star, ShoppingCart } from 'lucide-react';
+import { Heart, Star, ShoppingCart, CheckCircle2 } from 'lucide-react';
 import getImageUrl from '../utils/imageUrl';
 
 /*
@@ -217,19 +217,24 @@ export default function ProductCard({ product }) {
           )}
         </div>
 
-        {/* Rating */}
+        {/* Rating & Social Proof */}
         {(product?.rating > 0 || product?.reviewCount > 0) && (
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <div className="flex items-center gap-0.5 bg-[#1F9D55]/10 text-[#1F9D55] font-black px-1.5 py-0.5 rounded text-[10px]">
-              <Star size={10} className="fill-current text-[#1F9D55]" />
+          <div className="flex items-center gap-2 mt-0.5">
+            <div className="flex items-center gap-0.5 bg-[#1F9D55] text-white font-black px-1.5 py-0.5 rounded text-[10px] shadow-sm">
+              <Star size={10} className="fill-current" />
               <span>{Number(product?.rating || 0).toFixed(1)}</span>
             </div>
             {product?.reviewCount > 0 && (
-              <span className="text-[10px] text-gray-400 font-semibold">
-                ({product.reviewCount > 999
-                  ? `${(product.reviewCount / 1000).toFixed(1)}k`
-                  : product.reviewCount.toLocaleString('en-IN')})
-              </span>
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] text-gray-500 font-bold underline decoration-dotted underline-offset-2">
+                  {product.reviewCount > 999
+                    ? `${(product.reviewCount / 1000).toFixed(1)}k`
+                    : product.reviewCount.toLocaleString('en-IN')} Reviews
+                </span>
+                <span className="flex items-center text-[9px] text-[#3E7BFA] bg-[#3E7BFA]/10 px-1 py-0.5 rounded font-black uppercase tracking-wider ml-1">
+                  <CheckCircle2 size={10} className="mr-0.5" /> Verified
+                </span>
+              </div>
             )}
           </div>
         )}

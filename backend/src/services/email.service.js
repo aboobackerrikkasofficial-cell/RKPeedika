@@ -6,7 +6,11 @@ const STORE_NAME = 'RK Peedika';
 const FROM_EMAIL = `RK Peedika <onboarding@resend.dev>`; // Resend testing email 
 
 export const sendOrderConfirmationEmail = async (order, items, email) => {
-  if (!email || !process.env.RESEND_API_KEY) return; 
+  if (!email) return;
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('RESEND_API_KEY is missing. Email will not be sent to', email);
+    return;
+  }
 
   try {
     const itemsListHtml = items.map(item => 
@@ -56,7 +60,11 @@ export const sendOrderConfirmationEmail = async (order, items, email) => {
 };
 
 export const sendOrderStatusEmail = async (order, email) => {
-  if (!email || !process.env.RESEND_API_KEY) return;
+  if (!email) return;
+  if (!process.env.RESEND_API_KEY) {
+    console.warn('RESEND_API_KEY is missing. Status email will not be sent to', email);
+    return;
+  }
 
   try {
     const htmlContent = `

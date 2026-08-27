@@ -39,15 +39,19 @@ export const sendOrderConfirmationEmail = async (order, items, email) => {
       </div>
     `;
 
-    await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
       subject: `Your ${STORE_NAME} order #${order.orderId} is confirmed`,
       html: htmlContent,
     });
-    console.log(`Order confirmation email sent to ${email} for order ${order.orderId}`);
-  } catch (error) {
-    console.error('Error sending order confirmation email:', error);
+    if (error) {
+      console.error('Resend API Error (Order Confirmation):', error);
+    } else {
+      console.log(`Order confirmation email sent to ${email} for order ${order.orderId}`);
+    }
+  } catch (err) {
+    console.error('Exception sending order confirmation email:', err);
   }
 };
 
@@ -64,14 +68,18 @@ export const sendOrderStatusEmail = async (order, email) => {
       </div>
     `;
 
-    await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to: email,
       subject: `Update on your ${STORE_NAME} order #${order.orderId}`,
       html: htmlContent,
     });
-    console.log(`Order status email sent to ${email} for order ${order.orderId}`);
-  } catch (error) {
-    console.error('Error sending order status email:', error);
+    if (error) {
+      console.error('Resend API Error (Order Status):', error);
+    } else {
+      console.log(`Order status email sent to ${email} for order ${order.orderId}`);
+    }
+  } catch (err) {
+    console.error('Exception sending order status email:', err);
   }
 };

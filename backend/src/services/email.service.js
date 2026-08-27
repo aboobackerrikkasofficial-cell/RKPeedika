@@ -3,7 +3,7 @@ import { Resend } from 'resend';
 const resend = new Resend(process.env.RESEND_API_KEY || 're_placeholder');
 
 const STORE_NAME = 'RK Peedika';
-const FROM_EMAIL = `RK Peedika <orders@rkpeedika.com>`; 
+const FROM_EMAIL = `RK Peedika <onboarding@resend.dev>`; // Resend testing email 
 
 export const sendOrderConfirmationEmail = async (order, items, email) => {
   if (!email || !process.env.RESEND_API_KEY) return; 

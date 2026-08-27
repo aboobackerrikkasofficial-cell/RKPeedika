@@ -118,8 +118,12 @@ const augmentOrderTrackingEvents = (order) => {
 };
 
 export const createOrder = async (req, res, next) => {
-  const { items, paymentMethod, pincode, addressId, couponCode, idempotencyKey } = req.body;
+  let { items, paymentMethod, pincode, addressId, couponCode, idempotencyKey } = req.body;
   const userId = req.user.id;
+
+  if (paymentMethod) {
+    paymentMethod = paymentMethod.toUpperCase();
+  }
 
   if (!items || items.length === 0 || !pincode) {
     return next(new BadRequestError("Order items and delivery pincode are required."));
@@ -920,7 +924,7 @@ export const cancelOrder = async (req, res, next) => {
       where: { id: order.id },
       data: {
         status: 'cancelled',
-        paymentStatus: order.paymentMethod === 'cod' ? 'failed' : order.paymentStatus
+        paymentStatus: String(order.paymentMethod).toUpperCase() === 'COD' ? 'failed' : order.paymentStatus
       }
     });
 

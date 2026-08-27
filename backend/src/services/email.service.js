@@ -5,7 +5,9 @@ const resend = new Resend(process.env.RESEND_API_KEY || 're_placeholder');
 
 // Gmail Transporter Setup (Free alternative)
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false, // Use TLS (Port 587)
   auth: {
     user: process.env.GMAIL_USER, // e.g., yourname@gmail.com
     pass: process.env.GMAIL_APP_PASSWORD, // 16-character App Password

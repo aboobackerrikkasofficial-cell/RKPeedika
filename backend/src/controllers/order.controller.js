@@ -319,6 +319,9 @@ export const createOrder = async (req, res, next) => {
     }
     
     // Trigger email for COD orders right away
+    console.log(`[Order Debug] Checking email conditions for order ${result.order.orderId}:`);
+    console.log(`[Order Debug] paymentMethod = ${result.order.paymentMethod}`);
+    console.log(`[Order Debug] customerEmail = ${result.order.customerEmail}`);
     if (result.order.paymentMethod === 'COD' && result.order.customerEmail) {
       try {
         const { sendOrderConfirmationEmail } = await import('../services/email.service.js');
@@ -326,6 +329,8 @@ export const createOrder = async (req, res, next) => {
       } catch (err) {
         console.error("Failed to send COD order confirmation email:", err);
       }
+    } else {
+      console.log(`[Order Debug] Skipping email trigger because condition failed.`);
     }
 
     res.status(201).json({

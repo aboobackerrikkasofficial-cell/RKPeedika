@@ -329,7 +329,10 @@ export const createOrder = async (req, res, next) => {
     if (result.order.paymentMethod === 'COD' && result.order.customerEmail) {
       try {
         const { sendOrderConfirmationEmail } = await import('../services/email.service.js');
-        await sendOrderConfirmationEmail(result.order, result.order.orderItems, result.order.customerEmail);
+        // Fire and forget: Do not await so we don't block the API response
+        sendOrderConfirmationEmail(result.order, result.order.orderItems, result.order.customerEmail).catch(err => {
+          console.error("Background email sending failed:", err);
+        });
       } catch (err) {
         console.error("Failed to send COD order confirmation email:", err);
       }
@@ -497,7 +500,10 @@ export const updateOrderStatus = async (req, res, next) => {
     if (order.customerEmail) {
       try {
         const { sendOrderStatusEmail } = await import('../services/email.service.js');
-        await sendOrderStatusEmail(order, order.customerEmail);
+        // Fire and forget email
+        sendOrderStatusEmail(order, order.customerEmail).catch(err => {
+          console.error("Background status email sending failed:", err);
+        });
       } catch (err) {
         console.error("Failed to send order status email:", err);
       }

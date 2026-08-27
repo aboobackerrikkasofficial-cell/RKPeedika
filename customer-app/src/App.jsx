@@ -81,6 +81,13 @@ function AppContent() {
     warmUpBackend();
   }, []);
 
+  // Track Meta Pixel PageView on route changes
+  useEffect(() => {
+    if (window.fbq) {
+      window.fbq('track', 'PageView');
+    }
+  }, [currentView]);
+
   // Modal State
   const [activeModal, setActiveModal] = useState(null); // 'about', 'terms', 'privacy', 'returns'
 

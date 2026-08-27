@@ -63,12 +63,8 @@ export default function CheckoutPage() {
   const handleAddNewAddress = async (payload) => {
     try {
       if (!userProfile) {
-        // Authenticate guest user in background
-        const loginRes = await simpleLogin(payload.fullName, payload.phone, true);
-        if (!loginRes || !loginRes.success) {
-          showToast('✖ Authentication failed. Please try a different name/mobile.', 'error');
-          return;
-        }
+        showToast('✖ Authentication issue. Please refresh the page.', 'error');
+        return;
       }
 
       const res = await addAddress({
@@ -235,7 +231,7 @@ export default function CheckoutPage() {
 
               {!userProfile && (
                 <div className="bg-[#0B1B2B]/10/50 border border-[#0B1B2B]/15 p-3 rounded-xl text-xs font-bold text-[#071320] mb-4">
-                  🔑 Enter your details to complete guest checkout. A free profile will be created for you automatically.
+                  🔑 Enter your details to complete your order.
                 </div>
               )}
 

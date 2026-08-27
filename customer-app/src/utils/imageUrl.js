@@ -27,6 +27,10 @@ export default function getImageUrl(image) {
     value.startsWith('https://') ||
     value.startsWith('data:')
   ) {
+    // If it's a Cloudinary URL, apply performance transformations
+    if (value.includes('res.cloudinary.com') && !value.includes('/upload/w_') && !value.includes('/upload/f_auto')) {
+      return value.replace('/upload/', '/upload/f_auto,q_auto,w_auto/');
+    }
     return value;
   }
 

@@ -1,6 +1,16 @@
 import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
 const resend = new Resend(process.env.RESEND_API_KEY || 're_placeholder');
+
+// Gmail Transporter Setup (Free alternative)
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.GMAIL_USER, // e.g., yourname@gmail.com
+    pass: process.env.GMAIL_APP_PASSWORD, // 16-character App Password
+  },
+});
 
 const STORE_NAME = 'RK Peedika';
 // Using the environment variable if they go live, falling back to the test onboarding email otherwise.
@@ -8,8 +18,11 @@ const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || `RK Peedika <onboarding@rese
 
 export const sendOrderConfirmationEmail = async (order, items, email) => {
   if (!email) return;
-  if (!process.env.RESEND_API_KEY) {
-    console.warn('RESEND_API_KEY is missing. Email will not be sent to', email);
+
+  const useGmail = !!(process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD);
+  
+  if (!useGmail && !process.env.RESEND_API_KEY) {
+    console.warn('Neither GMAIL credentials nor RESEND_API_KEY are configured. Email will not be sent to', email);
     return;
   }
 
@@ -100,16 +113,26 @@ export const sendOrderConfirmationEmail = async (order, items, email) => {
       </div>
     `;
 
-    const { data, error } = await resend.emails.send({
-      from: FROM_EMAIL,
-      to: email,
-      subject: `Order Confirmed: Your ${STORE_NAME} order #${order.orderId} has been successfully placed`,
-      html: htmlContent,
-    });
-    if (error) {
-      console.error('Resend API Error (Order Confirmation):', error);
+    if (useGmail) {
+      await transporter.sendMail({
+        from: `"${STORE_NAME}" <${process.env.GMAIL_USER}>`,
+        to: email,
+        subject: `Order Confirmed: Your ${STORE_NAME} order #${order.orderId} has been successfully placed`,
+        html: htmlContent,
+      });
+      console.log(`Order confirmation email sent via GMAIL to ${email} for order ${order.orderId}`);
     } else {
-      console.log(`Order confirmation email sent to ${email} for order ${order.orderId}`);
+      const { data, error } = await resend.emails.send({
+        from: FROM_EMAIL,
+        to: email,
+        subject: `Order Confirmed: Your ${STORE_NAME} order #${order.orderId} has been successfully placed`,
+        html: htmlContent,
+      });
+      if (error) {
+        console.error('Resend API Error (Order Confirmation):', error);
+      } else {
+        console.log(`Order confirmation email sent via RESEND to ${email} for order ${order.orderId}`);
+      }
     }
   } catch (err) {
     console.error('Exception sending order confirmation email:', err);
@@ -118,8 +141,11 @@ export const sendOrderConfirmationEmail = async (order, items, email) => {
 
 export const sendOrderStatusEmail = async (order, email) => {
   if (!email) return;
-  if (!process.env.RESEND_API_KEY) {
-    console.warn('RESEND_API_KEY is missing. Status email will not be sent to', email);
+
+  const useGmail = !!(process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD);
+  
+  if (!useGmail && !process.env.RESEND_API_KEY) {
+    console.warn('Neither GMAIL credentials nor RESEND_API_KEY are configured. Status email will not be sent to', email);
     return;
   }
 
@@ -155,16 +181,26 @@ export const sendOrderStatusEmail = async (order, email) => {
       </div>
     `;
 
-    const { data, error } = await resend.emails.send({
-      from: FROM_EMAIL,
-      to: email,
-      subject: `Update on your ${STORE_NAME} order #${order.orderId}`,
-      html: htmlContent,
-    });
-    if (error) {
-      console.error('Resend API Error (Order Status):', error);
+    if (useGmail) {
+      await transporter.sendMail({
+        from: `"${STORE_NAME}" <${process.env.GMAIL_USER}>`,
+        to: email,
+        subject: `Update on your ${STORE_NAME} order #${order.orderId}`,
+        html: htmlContent,
+      });
+      console.log(`Order status email sent via GMAIL to ${email} for order ${order.orderId}`);
     } else {
-      console.log(`Order status email sent to ${email} for order ${order.orderId}`);
+      const { data, error } = await resend.emails.send({
+        from: FROM_EMAIL,
+        to: email,
+        subject: `Update on your ${STORE_NAME} order #${order.orderId}`,
+        html: htmlContent,
+      });
+      if (error) {
+        console.error('Resend API Error (Order Status):', error);
+      } else {
+        console.log(`Order status email sent via RESEND to ${email} for order ${order.orderId}`);
+      }
     }
   } catch (err) {
     console.error('Exception sending order status email:', err);

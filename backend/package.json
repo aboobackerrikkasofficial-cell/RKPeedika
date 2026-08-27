@@ -33,6 +33,7 @@
     "nodemailer": "^9.0.4",
     "pg": "^8.23.0",
     "razorpay": "^2.9.2",
+    "resend": "^6.24.0",
     "swagger-jsdoc": "^6.3.0",
     "swagger-ui-express": "^5.0.1"
   },

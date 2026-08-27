@@ -107,8 +107,18 @@ export const verifyPayment = async (req, res, next) => {
         data: {
           paymentStatus: 'paid',
           status: 'confirmed'
-        }
+        },
+        include: { orderItems: true }
       });
+      
+      try {
+        const { sendOrderConfirmationEmail } = await import('../services/email.service.js');
+        if (order.customerEmail) {
+          await sendOrderConfirmationEmail(order, order.orderItems, order.customerEmail);
+        }
+      } catch (err) {
+        console.error("Failed to send order confirmation email:", err);
+      }
     }
 
     res.json({

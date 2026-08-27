@@ -45,6 +45,7 @@ model Address {
   fullName        String   @default("")
   phone           String   @default("")
   alternatePhone  String?
+  email           String?
   houseFlatNumber String   @default("")
   streetRoadName  String   @default("")
   areaLocality    String   @default("")
@@ -170,6 +171,7 @@ model Order {
   // Shipping address snapshot (frozen at order time)
   shippingName     String?
   shippingPhone    String?
+  customerEmail    String?
   shippingStreet   String?
   shippingCity     String?
   shippingState    String?

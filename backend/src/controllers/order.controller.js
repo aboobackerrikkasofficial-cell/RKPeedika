@@ -146,6 +146,7 @@ export const createOrder = async (req, res, next) => {
         shippingDetails = {
           shippingName: address.fullName || req.user.name || '',
           shippingPhone: address.phone,
+          customerEmail: address.email,
           shippingStreet: `${address.houseFlatNumber}, ${address.streetRoadName}, ${address.areaLocality}${address.landmark ? ', ' + address.landmark : ''}`,
           shippingCity: address.city,
           shippingState: address.state,
@@ -316,6 +317,16 @@ export const createOrder = async (req, res, next) => {
         order: result.order
       });
     }
+    
+    // Trigger email for COD orders right away
+    if (result.order.paymentMethod === 'COD' && result.order.customerEmail) {
+      try {
+        const { sendOrderConfirmationEmail } = await import('../services/email.service.js');
+        await sendOrderConfirmationEmail(result.order, result.order.orderItems, result.order.customerEmail);
+      } catch (err) {
+        console.error("Failed to send COD order confirmation email:", err);
+      }
+    }
 
     res.status(201).json({
       success: true,
@@ -471,6 +482,16 @@ export const updateOrderStatus = async (req, res, next) => {
       }
     } catch (fcmErr) {
       console.error("FCM Error on Status Update:", fcmErr);
+    }
+    
+    // Status update email
+    if (order.customerEmail) {
+      try {
+        const { sendOrderStatusEmail } = await import('../services/email.service.js');
+        await sendOrderStatusEmail(order, order.customerEmail);
+      } catch (err) {
+        console.error("Failed to send order status email:", err);
+      }
     }
 
     res.json({

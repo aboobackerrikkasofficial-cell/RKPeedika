@@ -55,13 +55,14 @@ export const createAddress = async (req, res, next) => {
       });
     }
 
-    const address = await prisma.address.create({
-      data: {
-        userId: req.user.id,
-        fullName,
-        phone,
-        alternatePhone,
-        houseFlatNumber,
+      const address = await prisma.address.create({
+        data: {
+          userId: req.user.id,
+          fullName,
+          phone,
+          alternatePhone,
+          email: req.body.email,
+          houseFlatNumber,
         streetRoadName,
         areaLocality,
         landmark,
@@ -117,7 +118,7 @@ export const updateAddress = async (req, res, next) => {
     const updatedAddress = await prisma.address.update({
       where: { id },
       data: {
-        fullName, phone, alternatePhone, houseFlatNumber, streetRoadName,
+        fullName, phone, alternatePhone, email: req.body.email, houseFlatNumber, streetRoadName,
         areaLocality, landmark, directions, city, district, state,
         pincode, addressType, isDefault
       }

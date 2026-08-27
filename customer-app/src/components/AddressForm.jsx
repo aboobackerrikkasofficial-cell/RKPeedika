@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { MapPin, User, Phone, Home, Map, CheckCircle, XCircle, Loader } from 'lucide-react';
+import { MapPin, User, Phone, Home, Map, CheckCircle, XCircle, Loader, Mail } from 'lucide-react';
 
 /**
  * Reusable Address Form
@@ -28,6 +28,7 @@ export default function AddressForm({ userProfile, onSubmit, onCancel, submitLab
   const [form, setForm] = useState({
     fullName: '',
     phone: '',
+    email: '',
     houseNo: '',
     roadArea: '',
     landmark: '',
@@ -46,6 +47,7 @@ export default function AddressForm({ userProfile, onSubmit, onCancel, submitLab
       setForm({
         fullName: initialData.fullName || '',
         phone: initialData.phone || '',
+        email: initialData.email || '',
         houseNo: initialData.houseFlatNumber || '',
         roadArea: initialData.streetRoadName || '',
         landmark: initialData.landmark || '',
@@ -66,6 +68,7 @@ export default function AddressForm({ userProfile, onSubmit, onCancel, submitLab
         ...prev,
         fullName: prev.fullName || userProfile.name || '',
         phone: prev.phone || userProfile.phone || '',
+        email: prev.email || userProfile.email || '',
       }));
     }
   }, [userProfile, initialData]);
@@ -110,6 +113,8 @@ export default function AddressForm({ userProfile, onSubmit, onCancel, submitLab
     if (digits.length === 6) lookupPincode(digits);
   };
 
+  const [emailWarning, setEmailWarning] = useState('');
+
   // Validation
   const validate = () => {
     const e = {};
@@ -124,6 +129,14 @@ export default function AddressForm({ userProfile, onSubmit, onCancel, submitLab
     if (!form.city.trim())       e.city     = 'City is required. Verify pincode to auto-fill.';
     if (!form.state.trim())      e.state    = 'State is required. Verify pincode to auto-fill.';
     setErrors(e);
+
+    // Email validation (non-blocking)
+    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      setEmailWarning('Please enter a valid email address (optional).');
+    } else {
+      setEmailWarning('');
+    }
+
     return Object.keys(e).length === 0;
   };
 
@@ -136,6 +149,7 @@ export default function AddressForm({ userProfile, onSubmit, onCancel, submitLab
       await onSubmit({
         fullName:        form.fullName.trim(),
         phone:           form.phone.trim(),
+        email:           form.email.trim(),
         houseFlatNumber: form.houseNo.trim(),
         streetRoadName:  form.roadArea.trim(),
         landmark:        form.landmark.trim(),
@@ -183,6 +197,22 @@ export default function AddressForm({ userProfile, onSubmit, onCancel, submitLab
           />
         </Field>
       </div>
+
+      {/* Email Address */}
+      <Field label="Email Address (Optional)" icon={Mail} error={errors.email}>
+        <input
+          type="email"
+          value={form.email}
+          onChange={e => { set('email', e.target.value); setEmailWarning(''); }}
+          placeholder="Enter your email to get order updates"
+          className={inputCls('email')}
+        />
+        {emailWarning && (
+          <p className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-amber-500">
+             {emailWarning}
+          </p>
+        )}
+      </Field>
 
       {/* House / Building Name */}
       <Field label="House No. / Building Name" icon={Home} error={errors.houseNo}>

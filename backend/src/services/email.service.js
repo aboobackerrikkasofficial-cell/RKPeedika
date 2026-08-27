@@ -1,33 +1,77 @@
-import nodemailer from 'nodemailer';
-import logger from '../utils/logger.js';
+import { Resend } from 'resend';
 
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST || 'smtp.mailtrap.io',
-  port: Number(process.env.EMAIL_PORT) || 2525,
-  auth: {
-    user: process.env.EMAIL_USER || 'mock_user',
-    pass: process.env.EMAIL_PASS || 'mock_pass'
-  }
-});
+const resend = new Resend(process.env.RESEND_API_KEY || 're_placeholder');
 
-export const sendEmail = async ({ to, subject, html }) => {
+const STORE_NAME = 'RK Peedika';
+const FROM_EMAIL = `RK Peedika <orders@rkpeedika.com>`; 
+
+export const sendOrderConfirmationEmail = async (order, items, email) => {
+  if (!email || !process.env.RESEND_API_KEY) return; 
+
   try {
-    if (process.env.EMAIL_USER === 'mock_user' || !process.env.EMAIL_USER) {
-      logger.info(`Simulated email sent successfully. To: ${to} | Subject: ${subject}`);
-      return { messageId: `mock_${Date.now()}` };
-    }
+    const itemsListHtml = items.map(item => 
+      `<li>${item.quantity}x ${item.productName} - ₹${item.price}</li>`
+    ).join('');
 
-    const info = await transporter.sendMail({
-      from: `"Kriti Marketplace" <no-reply@kritimarketplace.com>`,
-      to,
-      subject,
-      html
+    const htmlContent = `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+        <h2 style="color: #0B1B2B;">Order Confirmed! 🎉</h2>
+        <p>Hi ${order.shippingName || 'Customer'},</p>
+        <p>Thank you for shopping with <strong>${STORE_NAME}</strong>. We've received your order and are getting it ready for you.</p>
+        
+        <div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <h3 style="margin-top: 0; font-size: 16px;">Order Summary (ID: ${order.orderId})</h3>
+          <ul style="padding-left: 20px; line-height: 1.6;">
+            ${itemsListHtml}
+          </ul>
+          <p style="font-weight: bold; margin-bottom: 0;">Total Amount: ₹${order.amount}</p>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <h3 style="font-size: 16px;">Delivery Details:</h3>
+          <p style="margin: 0;">${order.shippingStreet}</p>
+          <p style="margin: 0;">${order.shippingCity}, ${order.shippingState} - ${order.shippingPincode}</p>
+          <p style="margin-top: 10px;"><strong>Estimated Delivery:</strong> ${order.estimatedDelivery ? new Date(order.estimatedDelivery).toLocaleDateString('en-IN') : '3-5 Business Days'}</p>
+        </div>
+
+        <p>We'll notify you once your order has been shipped.</p>
+        <p>Best regards,<br/>The ${STORE_NAME} Team</p>
+      </div>
+    `;
+
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: `Your ${STORE_NAME} order #${order.orderId} is confirmed`,
+      html: htmlContent,
     });
-
-    logger.info(`Email dispatched successfully. Msg ID: ${info.messageId}`);
-    return info;
+    console.log(`Order confirmation email sent to ${email} for order ${order.orderId}`);
   } catch (error) {
-    logger.error(`Nodemailer dispatch failed: ${error.message}`);
-    throw error;
+    console.error('Error sending order confirmation email:', error);
+  }
+};
+
+export const sendOrderStatusEmail = async (order, email) => {
+  if (!email || !process.env.RESEND_API_KEY) return;
+
+  try {
+    const htmlContent = `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; color: #333;">
+        <h2 style="color: #0B1B2B;">Order Update</h2>
+        <p>Hi ${order.shippingName || 'Customer'},</p>
+        <p>The status of your order <strong>#${order.orderId}</strong> has been updated to: <strong style="text-transform: capitalize;">${order.status.replace(/_/g, ' ')}</strong>.</p>
+        <p>Thank you for shopping with ${STORE_NAME}!</p>
+      </div>
+    `;
+
+    await resend.emails.send({
+      from: FROM_EMAIL,
+      to: email,
+      subject: `Update on your ${STORE_NAME} order #${order.orderId}`,
+      html: htmlContent,
+    });
+    console.log(`Order status email sent to ${email} for order ${order.orderId}`);
+  } catch (error) {
+    console.error('Error sending order status email:', error);
   }
 };

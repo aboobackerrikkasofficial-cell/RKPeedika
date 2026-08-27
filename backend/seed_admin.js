@@ -39,10 +39,15 @@ async function main() {
     }
   });
 
+  const updateDelivery = await prisma.product.updateMany({
+    data: { estimatedDeliveryDays: 7 }
+  });
+
   console.log('======================================');
   console.log('✅ ADMIN ACCOUNT READY');
   console.log(`📧 Email: ${admin.email}`);
   console.log(`👤 Role: ${admin.role}`);
+  console.log(`📦 Delivery time set to 7 days for ${updateDelivery.count} products`);
   console.log('🔑 Password: configured from ADMIN_PASSWORD');
   console.log('======================================');
 }

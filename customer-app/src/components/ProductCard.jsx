@@ -53,9 +53,9 @@ export default function ProductCard({ product }) {
   /* ------------------------------------------------------------------
      DELIVERY DATE
   ------------------------------------------------------------------ */
-  const pincodeData = pincodeDatabase?.[userPincode] || { days: 3 };
+  const pincodeData = pincodeDatabase?.[userPincode] || { days: 7 };
   const deliveryDays =
-    Number(product?.estimatedDeliveryDays) || pincodeData.days || 3;
+    Number(product?.estimatedDeliveryDays) || pincodeData.days || 7;
   const deliveryDateObj = new Date(Date.now() + deliveryDays * 24 * 60 * 60 * 1000);
   const formattedDeliveryDate = deliveryDateObj.toLocaleDateString('en-IN', {
     weekday: 'short',

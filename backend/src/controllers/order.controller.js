@@ -161,7 +161,7 @@ export const createOrder = async (req, res, next) => {
 
     let subtotal = 0;
     const orderItemsData = [];
-    let maxDeliveryDays = 4;
+    let maxDeliveryDays = 7;
     
     const productIds = items.map(i => i.productId);
     const productsList = await tx.product.findMany({ where: { id: { in: productIds } } });

@@ -56,7 +56,7 @@ export default class MeeshoImporter extends BaseImporter {
       highlights: [],
       rating: 4.2,
       reviewsCount: 18,
-      estimatedDeliveryDays: 4,
+      estimatedDeliveryDays: 7,
       returnPolicy: '3-day easy exchange. Free return shipping.',
       sourceUrl: url
     };

@@ -68,7 +68,7 @@ function getMockMeeshoProduct(url) {
     ],
     rating: 4.5,
     reviewsCount: 36,
-    estimatedDeliveryDays: 3,
+    estimatedDeliveryDays: 7,
     returnPolicy: "3-day easy exchange. Free return pickup.",
     sourceUrl: url
   };

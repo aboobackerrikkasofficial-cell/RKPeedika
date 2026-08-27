@@ -100,7 +100,7 @@ model Product {
   returnWindow          Int            @default(3)
   returnPolicy          String         @default("")
   inStock               Boolean        @default(true)
-  estimatedDeliveryDays Int            @default(3)
+  estimatedDeliveryDays Int            @default(7)
   highlights            String?        // Stores bullet highlights as JSON string or comma-separated
   specifications        String?        // Stores specifications as JSON string
   variants              String?        // Stores variants as JSON string

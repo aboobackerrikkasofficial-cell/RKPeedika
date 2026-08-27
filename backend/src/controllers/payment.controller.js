@@ -283,7 +283,7 @@ export const createRazorpayOrder = async (req, res, next) => {
       // 4. Calculate final amount server-side
       let subtotal = 0;
       const orderItemsData = [];
-      let maxDeliveryDays = 4;
+      let maxDeliveryDays = 7;
 
       for (const item of items) {
         const product = await prisma.product.findUnique({ where: { id: item.productId } });

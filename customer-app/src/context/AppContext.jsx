@@ -336,7 +336,7 @@ export const AppProvider = ({ children }) => {
     if (isAdminLoginMode) return;
 
     try {
-      const res = await apiClient.post('/auth/guest-login', null, { timeout: 10000 });
+      const res = await apiClient.post('/auth/guest-login', {}, { timeout: 10000 });
       if (res.data && res.data.success) {
         const { token: gToken, refreshToken: gRefreshToken, user: gUser } = res.data;
         localStorage.setItem('accessToken', gToken);

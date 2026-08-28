@@ -9,6 +9,9 @@ import {
   ChevronRight,
   X,
   Check,
+  AlertCircle,
+  RefreshCcw,
+  Terminal,
 } from 'lucide-react';
 
 /*
@@ -78,6 +81,9 @@ export default function ProductsPage() {
   const {
     products,
     isProductsLoading,
+    productsError,
+    refetchProducts,
+    rawApiResponse,
     categories,
     searchQuery,
     setSearchQuery,
@@ -532,35 +538,113 @@ export default function ProductsPage() {
 
         {/* PRODUCT GRID */}
         <div className="flex-1 min-w-0">
+          {/* 1. LOADING STATE */}
           {isProductsLoading ? (
-            <div className="product-grid">
-              {[1, 2, 3, 4, 5, 6].map((i) => (
-                <div key={i} className="animate-pulse bg-white rounded-xl shadow-sm border border-[#EDEDED] overflow-hidden">
-                  <div className="h-40 bg-gray-200"></div>
-                  <div className="p-3">
-                    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                    <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-                    <div className="h-6 bg-gray-200 rounded w-1/3"></div>
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3 shadow-xs">
+                <RefreshCcw size={15} className="animate-spin text-amber-600 shrink-0" />
+                <span>Fetching products... (Render free tier server spin-up may take up to ~45s if idle)</span>
+              </div>
+              <div className="product-grid">
+                {[1, 2, 3, 4, 5, 6].map((i) => (
+                  <div key={i} className="animate-pulse bg-white rounded-xl shadow-sm border border-[#EDEDED] overflow-hidden">
+                    <div className="h-40 bg-gray-200"></div>
+                    <div className="p-3">
+                      <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+                      <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                      <div className="h-6 bg-gray-200 rounded w-1/3"></div>
+                    </div>
                   </div>
+                ))}
+              </div>
+            </div>
+          ) : productsError ? (
+            /* 2. ERROR STATE (with Retry Button & Debug Banner) */
+            <div className="space-y-3">
+              <div className="text-center py-12 px-4 border border-red-200 rounded-xl bg-red-50/90 shadow-sm">
+                <AlertCircle size={40} className="mx-auto mb-3 text-red-500" />
+                <h3 className="text-sm font-bold text-red-900">Failed to Load Products</h3>
+                <p className="text-xs text-red-700 mt-1 max-w-sm mx-auto">
+                  {productsError}
+                </p>
+                <p className="text-[11px] text-gray-500 mt-2 max-w-xs mx-auto">
+                  Render free tier instances sleep after 15 minutes of inactivity. Please allow a few seconds and try again.
+                </p>
+                <button
+                  onClick={() => refetchProducts()}
+                  className="mt-4 inline-flex items-center gap-2 bg-[#0B1B2B] text-white text-xs font-semibold px-5 py-2.5 rounded-xl hover:bg-[#122b44] transition-colors shadow-sm cursor-pointer"
+                  style={{ minHeight: 44 }}
+                >
+                  <RefreshCcw size={14} />
+                  Retry Loading
+                </button>
+              </div>
+
+              {/* Debug Banner showing raw API response */}
+              {rawApiResponse && (
+                <div className="rounded-xl border border-slate-700 bg-slate-900 text-slate-100 p-3.5 text-xs font-mono shadow-md">
+                  <div className="flex items-center justify-between border-b border-slate-700 pb-2 mb-2">
+                    <span className="font-bold text-amber-400 flex items-center gap-1.5">
+                      <Terminal size={14} /> Raw API Debug Response (/products)
+                    </span>
+                    <span className="text-[10px] text-slate-400">{rawApiResponse.timestamp}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-[11px] mb-2">
+                    <div><span className="text-slate-400">Status:</span> <span className={rawApiResponse.error ? "text-red-400 font-bold" : "text-green-400 font-bold"}>{rawApiResponse.status} ({rawApiResponse.statusText})</span></div>
+                    <div><span className="text-slate-400">Duration:</span> {rawApiResponse.durationMs}ms</div>
+                    <div><span className="text-slate-400">Is Array:</span> {Array.isArray(rawApiResponse.data) ? 'Yes' : 'No'}</div>
+                    <div><span className="text-slate-400">Items:</span> {Array.isArray(rawApiResponse.data) ? rawApiResponse.data.length : 'N/A'}</div>
+                  </div>
+                  {rawApiResponse.error && (
+                    <div className="text-red-300 bg-red-950/60 p-2 rounded border border-red-800 text-[11px] overflow-x-auto">
+                      Error Detail: {rawApiResponse.error}
+                    </div>
+                  )}
                 </div>
-              ))}
+              )}
             </div>
           ) : filteredProducts.length === 0 ? (
-            <div className="text-center py-16 border border-dashed border-gray-200 rounded-xl bg-white">
-              <SlidersHorizontal size={36} className="mx-auto mb-3 text-gray-300" />
-              <h3 className="text-sm font-bold text-[#222222]">No Products Found</h3>
-              <p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">
-                Try relaxing your filters or search for something else.
-              </p>
-              <button
-                onClick={handleClearFilters}
-                className="mt-4 bg-[#0B1B2B] text-white text-xs font-semibold px-5 py-2.5 rounded-xl"
-                style={{ minHeight: 44 }}
-              >
-                Reset All Filters
-              </button>
+            /* 3. EMPTY STATE (Only shown when API fetch succeeded AND product array is empty or no filter match) */
+            <div className="space-y-3">
+              <div className="text-center py-16 border border-dashed border-gray-200 rounded-xl bg-white shadow-xs">
+                <SlidersHorizontal size={36} className="mx-auto mb-3 text-gray-300" />
+                <h3 className="text-sm font-bold text-[#222222]">No Products Found</h3>
+                <p className="text-xs text-gray-400 mt-1 max-w-xs mx-auto">
+                  {activeFilterCount > 0 || localSearch
+                    ? 'Try relaxing your filters or search for something else.'
+                    : 'There are currently no active products in the database.'}
+                </p>
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={handleClearFilters}
+                    className="mt-4 bg-[#0B1B2B] text-white text-xs font-semibold px-5 py-2.5 rounded-xl cursor-pointer"
+                    style={{ minHeight: 44 }}
+                  >
+                    Reset All Filters
+                  </button>
+                )}
+              </div>
+
+              {/* Debug Banner showing raw API response */}
+              {rawApiResponse && (
+                <div className="rounded-xl border border-slate-700 bg-slate-900 text-slate-100 p-3.5 text-xs font-mono shadow-md">
+                  <div className="flex items-center justify-between border-b border-slate-700 pb-2 mb-2">
+                    <span className="font-bold text-emerald-400 flex items-center gap-1.5">
+                      <Terminal size={14} /> Raw API Debug Response (/products)
+                    </span>
+                    <span className="text-[10px] text-slate-400">{rawApiResponse.timestamp}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-[11px]">
+                    <div><span className="text-slate-400">Status:</span> <span className="text-green-400 font-bold">{rawApiResponse.status} ({rawApiResponse.statusText})</span></div>
+                    <div><span className="text-slate-400">Duration:</span> {rawApiResponse.durationMs}ms</div>
+                    <div><span className="text-slate-400">Is Array:</span> {Array.isArray(rawApiResponse.data) ? 'Yes' : 'No'}</div>
+                    <div><span className="text-slate-400">Returned Items:</span> {Array.isArray(rawApiResponse.data) ? rawApiResponse.data.length : 0} items</div>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
+            /* 4. SUCCESS STATE */
             <>
               <div className="product-grid">
                 {paginatedProducts.map((product) => (

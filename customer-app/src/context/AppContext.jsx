@@ -29,6 +29,8 @@ export const AppProvider = ({ children }) => {
   // E-commerce items
   const [products, setProducts] = useState(DEFAULT_PRODUCTS);
   const [isProductsLoading, setIsProductsLoading] = useState(true);
+  const [productsError, setProductsError] = useState(null);
+  const [rawApiResponse, setRawApiResponse] = useState(null);
   const [isSessionLoading, setIsSessionLoading] = useState(true);
   const [cart, setCart] = useState([]);
   const [quickPurchaseItem, setQuickPurchaseItem] = useState(null);
@@ -441,38 +443,88 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const fetchPublicData = useCallback(async () => {
+    setIsProductsLoading(true);
+    setProductsError(null);
+    const startTime = Date.now();
+    try {
+      console.log("[DEBUG API Request]: Initiating public storefront data fetch (/products, /settings, /categories)...");
+      
+      // Allow up to 60s for Render free tier backend cold start
+      const [prodRes, settingsRes, catRes] = await Promise.all([
+        apiClient.get('/products', { timeout: 60000 }),
+        apiClient.get('/settings', { timeout: 60000 }),
+        apiClient.get('/categories', { timeout: 60000 })
+      ]);
+
+      const durationMs = Date.now() - startTime;
+      console.log(`[DEBUG API Response /products] Succeeded in ${durationMs}ms:`, {
+        status: prodRes.status,
+        statusText: prodRes.statusText,
+        dataType: typeof prodRes.data,
+        isArray: Array.isArray(prodRes.data),
+        itemCount: Array.isArray(prodRes.data) ? prodRes.data.length : null,
+        data: prodRes.data
+      });
+
+      setRawApiResponse({
+        status: prodRes.status,
+        statusText: prodRes.statusText,
+        timestamp: new Date().toISOString(),
+        durationMs,
+        data: prodRes.data,
+        error: null
+      });
+
+      if (prodRes.data && Array.isArray(prodRes.data)) {
+        setProducts(prodRes.data);
+      } else {
+        console.warn("[DEBUG API Response /products] Response data is not an array:", prodRes.data);
+        setProducts([]);
+      }
+
+      if (settingsRes.data && settingsRes.data.status === 'success' && settingsRes.data.data) {
+        setStoreSettings(settingsRes.data.data);
+        setCouponConfig(prev => ({
+          ...prev,
+          discountPct: settingsRes.data.data.onlineDiscount
+        }));
+      }
+
+      if (catRes.data) {
+        setCategories(catRes.data);
+      }
+    } catch (err) {
+      const durationMs = Date.now() - startTime;
+      const errorMessage = err.code === 'ECONNABORTED' 
+        ? 'Request timed out after 60s. The backend server on Render free tier may be spinning up from sleep mode (~45s).'
+        : (err.response?.data?.message || err.message || 'Failed to connect to backend API server');
+
+      console.error(`[DEBUG API Error /products] Request failed after ${durationMs}ms:`, {
+        message: err.message,
+        code: err.code,
+        status: err.response?.status,
+        responseData: err.response?.data,
+        errorObj: err
+      });
+
+      setProductsError(errorMessage);
+      setRawApiResponse({
+        status: err.response?.status || 'Network Error / Timeout',
+        statusText: err.code || err.name || 'FETCH_ERROR',
+        timestamp: new Date().toISOString(),
+        durationMs,
+        data: err.response?.data || null,
+        error: errorMessage
+      });
+    } finally {
+      setIsProductsLoading(false);
+    }
+  }, []);
+
   // Initialize session and public data on load
   useEffect(() => {
-    const fetchPublicData = async () => {
-      try {
-        // Parallel fetch all public data instead of 3 sequential requests
-        const [prodRes, settingsRes, catRes] = await Promise.all([
-          apiClient.get('/products'),
-          apiClient.get('/settings'),
-          apiClient.get('/categories')
-        ]);
-
-        if (prodRes.data && Array.isArray(prodRes.data)) {
-          setProducts(prodRes.data);
-        }
-
-        if (settingsRes.data && settingsRes.data.status === 'success' && settingsRes.data.data) {
-          setStoreSettings(settingsRes.data.data);
-          setCouponConfig(prev => ({
-            ...prev,
-            discountPct: settingsRes.data.data.onlineDiscount
-          }));
-        }
-
-        if (catRes.data) {
-          setCategories(catRes.data);
-        }
-      } catch (err) {
-        console.error("Failed to load storefront assets:", err);
-      } finally {
-        setIsProductsLoading(false);
-      }
-    };
+    fetchPublicData();
 
     const verifySavedSession = async () => {
       setIsSessionLoading(true);
@@ -1251,6 +1303,9 @@ export const AppProvider = ({ children }) => {
       products,
       setProducts,
       isProductsLoading,
+      productsError,
+      refetchProducts: fetchPublicData,
+      rawApiResponse,
       addProductFromAdmin,
       addCategoryFromAdmin,
 
@@ -1320,6 +1375,7 @@ export const AppProvider = ({ children }) => {
       setTrackingOrderId
   }), [
     currentView, selectedProductId, recentlyViewed, products, isProductsLoading,
+    productsError, fetchPublicData, rawApiResponse,
     cart, quickPurchaseItem, wishlist, addresses, selectedAddressId,
     selectedShippingMethod, selectedPaymentMethod, activeOrder, orderHistory,
     userPincode, locationName, searchQuery, selectedCategory, couponConfig,

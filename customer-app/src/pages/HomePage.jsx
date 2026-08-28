@@ -101,7 +101,9 @@ function BannerCarousel() {
               <img 
                 src={banner.image} 
                 alt={banner.title} 
-                className="w-full h-full object-cover rounded-full" 
+                width="160"
+                height="160"
+                className="w-full h-full object-cover rounded-full bg-white/20" 
                 loading={idx === 0 ? "eager" : "lazy"}
                 fetchPriority={idx === 0 ? "high" : "auto"}
                 decoding="async"
@@ -136,6 +138,7 @@ export default function HomePage() {
     productsError,
     refetchProducts,
     rawApiResponse,
+    isServerWakingUp,
     searchQuery,
     selectedCategory,
     setCurrentView,
@@ -216,16 +219,20 @@ export default function HomePage() {
           <div className="mt-2 space-y-3">
             <div className="flex items-center gap-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3 shadow-xs">
               <RefreshCcw size={15} className="animate-spin text-amber-600 shrink-0" />
-              <span>Fetching products... (Render free tier backend may take up to ~45s to wake up if idle)</span>
+              <span>
+                {isServerWakingUp
+                  ? 'Waking up the server, this may take a moment...'
+                  : 'Fetching products...'}
+              </span>
             </div>
             <div className="product-grid">
               {[1, 2, 3, 4].map((i) => (
                 <div key={i} className="animate-pulse bg-white rounded-xl shadow-sm border border-[#EDEDED] overflow-hidden">
-                  <div className="h-40 bg-gray-200"></div>
-                  <div className="p-3">
+                  <div className="aspect-square w-full bg-gray-200"></div>
+                  <div className="p-3 min-h-[140px] flex flex-col justify-start">
                     <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
                     <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-                    <div className="h-6 bg-gray-200 rounded w-1/3"></div>
+                    <div className="h-6 bg-gray-200 rounded w-1/3 mt-auto"></div>
                   </div>
                 </div>
               ))}

@@ -4,7 +4,6 @@ import { DEFAULT_ADDRESSES } from '../constants/addresses';
 import { PINCODE_DATABASE } from '../constants/pincodes';
 import apiClient from '../api/client';
 import getImageUrl from '../utils/imageUrl';
-import { onMessageListener } from '../utils/firebase';
 
 // Safe JSON parse that never throws
 const safeJsonParse = (value, fallback) => {
@@ -31,6 +30,7 @@ export const AppProvider = ({ children }) => {
   const [isProductsLoading, setIsProductsLoading] = useState(true);
   const [productsError, setProductsError] = useState(null);
   const [rawApiResponse, setRawApiResponse] = useState(null);
+  const [isServerWakingUp, setIsServerWakingUp] = useState(false);
   const [isSessionLoading, setIsSessionLoading] = useState(true);
   const [cart, setCart] = useState([]);
   const [quickPurchaseItem, setQuickPurchaseItem] = useState(null);
@@ -443,19 +443,31 @@ export const AppProvider = ({ children }) => {
     }
   };
 
-  const fetchPublicData = useCallback(async () => {
-    setIsProductsLoading(true);
-    setProductsError(null);
+  const fetchPublicData = useCallback(async (isRetry = false, attempt = 1) => {
+    if (!isRetry) {
+      setIsProductsLoading(true);
+      setProductsError(null);
+      setIsServerWakingUp(false);
+    }
+    
+    // Set a timer to show "waking up" message after 5s
+    const wakeUpTimer = setTimeout(() => {
+      setIsServerWakingUp(true);
+    }, 5000);
+
     const startTime = Date.now();
     try {
-      console.log("[DEBUG API Request]: Initiating public storefront data fetch (/products, /settings, /categories)...");
+      console.log(`[DEBUG API Request]: Initiating public storefront data fetch (Attempt: ${attempt})...`);
       
-      // Allow up to 60s for Render free tier backend cold start
+      // Fetch timeout of ~20 seconds
       const [prodRes, settingsRes, catRes] = await Promise.all([
-        apiClient.get('/products', { timeout: 60000 }),
-        apiClient.get('/settings', { timeout: 60000 }),
-        apiClient.get('/categories', { timeout: 60000 })
+        apiClient.get('/products', { timeout: 20000 }),
+        apiClient.get('/settings', { timeout: 20000 }),
+        apiClient.get('/categories', { timeout: 20000 })
       ]);
+
+      clearTimeout(wakeUpTimer);
+      setIsServerWakingUp(false);
 
       const durationMs = Date.now() - startTime;
       console.log(`[DEBUG API Response /products] Succeeded in ${durationMs}ms:`, {
@@ -494,13 +506,26 @@ export const AppProvider = ({ children }) => {
       if (catRes.data) {
         setCategories(catRes.data);
       }
+      setIsProductsLoading(false);
     } catch (err) {
+      clearTimeout(wakeUpTimer);
+      
+      // Automatic retry logic (up to 2 retries)
+      if (attempt <= 2) {
+        console.warn(`[DEBUG API Request]: Fetch failed on attempt ${attempt}, retrying in 2 seconds...`);
+        setTimeout(() => {
+          fetchPublicData(true, attempt + 1);
+        }, 2000);
+        return; // Don't set loading to false yet
+      }
+
+      setIsServerWakingUp(false);
       const durationMs = Date.now() - startTime;
       const errorMessage = err.code === 'ECONNABORTED' 
-        ? 'Request timed out after 60s. The backend server on Render free tier may be spinning up from sleep mode (~45s).'
+        ? 'Request timed out. The backend server on Render free tier may still be spinning up from sleep mode.'
         : (err.response?.data?.message || err.message || 'Failed to connect to backend API server');
 
-      console.error(`[DEBUG API Error /products] Request failed after ${durationMs}ms:`, {
+      console.error(`[DEBUG API Error /products] Request failed after ${durationMs}ms (Attempt ${attempt}):`, {
         message: err.message,
         code: err.code,
         status: err.response?.status,
@@ -517,7 +542,6 @@ export const AppProvider = ({ children }) => {
         data: err.response?.data || null,
         error: errorMessage
       });
-    } finally {
       setIsProductsLoading(false);
     }
   }, []);
@@ -551,6 +575,7 @@ export const AppProvider = ({ children }) => {
     // Foreground FCM listener
     const setupFCMListener = async () => {
       try {
+        const { onMessageListener } = await import('../utils/firebase');
         const payload = await onMessageListener();
         if (payload && payload.notification) {
           showToast(`${payload.notification.title}: ${payload.notification.body}`, 'info');
@@ -560,7 +585,12 @@ export const AppProvider = ({ children }) => {
         console.error("FCM foreground error", err);
       }
     };
-    setupFCMListener();
+    // Defer FCM listener setup until after initial render and idle time
+    if ('requestIdleCallback' in window) {
+      window.requestIdleCallback(() => setupFCMListener());
+    } else {
+      setTimeout(setupFCMListener, 3000);
+    }
     
   }, []);
 
@@ -1306,6 +1336,7 @@ export const AppProvider = ({ children }) => {
       productsError,
       refetchProducts: fetchPublicData,
       rawApiResponse,
+      isServerWakingUp,
       addProductFromAdmin,
       addCategoryFromAdmin,
 
@@ -1375,7 +1406,7 @@ export const AppProvider = ({ children }) => {
       setTrackingOrderId
   }), [
     currentView, selectedProductId, recentlyViewed, products, isProductsLoading,
-    productsError, fetchPublicData, rawApiResponse,
+    productsError, fetchPublicData, rawApiResponse, isServerWakingUp,
     cart, quickPurchaseItem, wishlist, addresses, selectedAddressId,
     selectedShippingMethod, selectedPaymentMethod, activeOrder, orderHistory,
     userPincode, locationName, searchQuery, selectedCategory, couponConfig,

@@ -157,7 +157,7 @@ export default function ProductCard({ product }) {
           PRODUCT INFO (Padded)
       ============================================================ */}
       <div
-        className="p-3 flex-grow flex flex-col gap-1 cursor-pointer"
+        className="p-3 flex-grow flex flex-col gap-1 cursor-pointer min-h-[140px]"
         onClick={handleCardClick}
         role="button"
         tabIndex={-1}

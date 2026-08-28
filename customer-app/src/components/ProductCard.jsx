@@ -76,6 +76,7 @@ export default function ProductCard({ product, priority = false }) {
     } catch {
       images = product.images ? [product.images] : [];
     }
+  }
   const normalizedImages = images.map((img) => getImageUrl(img, 400));
   const imageUrl = normalizedImages[imageIndex] || normalizedImages[0] || '';
 

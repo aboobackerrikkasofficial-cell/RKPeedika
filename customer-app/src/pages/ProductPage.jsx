@@ -71,7 +71,7 @@ export default function ProductPage() {
     const raw = Array.isArray(product.images)
       ? product.images
       : (typeof product.images === 'string' ? (() => { try { return JSON.parse(product.images); } catch { return []; } })() : []);
-    return raw.filter(Boolean).map(getImageUrl);
+    return raw.filter(Boolean).map(img => getImageUrl(img, 800));
   }, [product]);
 
   // Gallery state

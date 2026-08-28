@@ -47,24 +47,6 @@
 
   <!-- Razorpay Standard Checkout SDK (async — only needed at checkout) -->
   <script async src="https://checkout.razorpay.com/v1/checkout.js"></script>
-  <script>
-    // Defer Facebook Pixel initialization to avoid blocking first paint
-    setTimeout(function() {
-      !function (f, b, e, v, n, t, s) {
-        if (f.fbq) return; n = f.fbq = function () {
-          n.callMethod ?
-            n.callMethod.apply(n, arguments) : n.queue.push(arguments)
-        };
-        if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
-        n.queue = []; t = b.createElement(e); t.async = !0;
-        t.src = v; s = b.getElementsByTagName(e)[0];
-        s.parentNode.insertBefore(t, s)
-      }(window, document, 'script',
-        'https://connect.facebook.net/en_US/fbevents.js');
-      fbq('init', '1721280282432550');
-      fbq('track', 'PageView');
-    }, 0);
-  </script>
 </head>
 
 <body class="bg-white">
@@ -72,6 +54,27 @@
       src="https://www.facebook.com/tr?id=1721280282432550&ev=PageView&noscript=1" /></noscript>
   <div id="root"></div>
   <script type="module" src="/src/main.jsx"></script>
+  
+  <!-- Deferred Analytics & Meta Pixel -->
+  <script>
+    window.addEventListener('load', function() {
+      setTimeout(function() {
+        !function (f, b, e, v, n, t, s) {
+          if (f.fbq) return; n = f.fbq = function () {
+            n.callMethod ?
+              n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+          };
+          if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
+          n.queue = []; t = b.createElement(e); t.async = !0;
+          t.src = v; s = b.getElementsByTagName(e)[0];
+          s.parentNode.insertBefore(t, s)
+        }(window, document, 'script',
+          'https://connect.facebook.net/en_US/fbevents.js');
+        fbq('init', '1721280282432550');
+        fbq('track', 'PageView');
+      }, 500); // Small delay after window load to ensure main content is fully interactive
+    });
+  </script>
 </body>
 
 </html>

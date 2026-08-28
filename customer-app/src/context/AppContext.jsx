@@ -522,8 +522,8 @@ export const AppProvider = ({ children }) => {
       setIsServerWakingUp(false);
       const durationMs = Date.now() - startTime;
       const errorMessage = err.code === 'ECONNABORTED' 
-        ? 'Request timed out. The backend server on Render free tier may still be spinning up from sleep mode.'
-        : (err.response?.data?.message || err.message || 'Failed to connect to backend API server');
+        ? 'Our catalog is taking a little longer than usual to load. Please try again.'
+        : 'Unable to load products at this moment. Please check your connection and try again.';
 
       console.error(`[DEBUG API Error /products] Request failed after ${durationMs}ms (Attempt ${attempt}):`, {
         message: err.message,
@@ -548,8 +548,6 @@ export const AppProvider = ({ children }) => {
 
   // Initialize session and public data on load
   useEffect(() => {
-    fetchPublicData();
-
     const verifySavedSession = async () => {
       setIsSessionLoading(true);
       try {

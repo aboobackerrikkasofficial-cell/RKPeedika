@@ -10,7 +10,7 @@
 const API_URL = import.meta.env.VITE_API_URL || 'https://rkpeedika.onrender.com/api';
 const BACKEND_URL = API_URL.replace(/\/api\/?$/, '');
 
-export default function getImageUrl(image) {
+export default function getImageUrl(image, width = 'auto') {
   if (!image) return '';
 
   // Handle objects with url/path properties
@@ -29,7 +29,7 @@ export default function getImageUrl(image) {
   ) {
     // If it's a Cloudinary URL, apply performance transformations
     if (value.includes('res.cloudinary.com') && !value.includes('/upload/w_') && !value.includes('/upload/f_auto')) {
-      return value.replace('/upload/', '/upload/f_auto,q_auto,w_auto/');
+      return value.replace('/upload/', `/upload/f_auto,q_auto,w_${width},c_limit/`);
     }
     return value;
   }

@@ -217,12 +217,12 @@ export default function HomePage() {
         {/* 1. LOADING STATE */}
         {isProductsLoading ? (
           <div className="mt-2 space-y-3">
-            <div className="flex items-center gap-2 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded-xl p-3 shadow-xs">
-              <RefreshCcw size={15} className="animate-spin text-amber-600 shrink-0" />
-              <span>
+            <div className="flex items-center gap-2 text-xs text-[#0B1B2B] bg-white border border-[#EDEDED] rounded-xl p-3 shadow-sm">
+              <RefreshCcw size={15} className="animate-spin text-[#0B1B2B] shrink-0" />
+              <span className="font-medium">
                 {isServerWakingUp
-                  ? 'Waking up the server, this may take a moment...'
-                  : 'Fetching products...'}
+                  ? 'Fetching the latest products for you. This might take a few extra seconds...'
+                  : 'Loading products...'}
               </span>
             </div>
             <div className="product-grid">
@@ -239,48 +239,22 @@ export default function HomePage() {
             </div>
           </div>
         ) : productsError ? (
-          /* 2. ERROR STATE (with Retry Button & Debug Banner) */
+          /* 2. ERROR STATE */
           <div className="mt-2 space-y-3">
             <div className="rounded-xl border border-red-200 bg-red-50/90 px-4 py-8 text-center shadow-sm">
               <AlertCircle size={36} className="mx-auto mb-2 text-red-500" />
-              <h4 className="text-sm font-bold text-red-900">Failed to Load Products</h4>
+              <h4 className="text-sm font-bold text-red-900">Oops, something went wrong</h4>
               <p className="mt-1 text-xs text-red-700 max-w-md mx-auto">
                 {productsError}
-              </p>
-              <p className="mt-2 text-[11px] text-gray-500 max-w-sm mx-auto">
-                The backend server on Render free tier sleeps when inactive. Please wait a moment and click Retry.
               </p>
               <button
                 onClick={() => refetchProducts()}
                 className="mt-4 inline-flex items-center gap-2 bg-[#0B1B2B] text-white text-xs font-semibold px-5 py-2.5 rounded-xl hover:bg-[#122b44] transition-colors shadow-sm cursor-pointer"
               >
                 <RefreshCcw size={14} />
-                Retry Loading Products
+                Try Again
               </button>
             </div>
-
-            {/* Debug Banner showing raw API response */}
-            {rawApiResponse && (
-              <div className="rounded-xl border border-slate-700 bg-slate-900 text-slate-100 p-3.5 text-xs font-mono shadow-md">
-                <div className="flex items-center justify-between border-b border-slate-700 pb-2 mb-2">
-                  <span className="font-bold text-amber-400 flex items-center gap-1.5">
-                    <Terminal size={14} /> Raw API Debug Response (/products)
-                  </span>
-                  <span className="text-[10px] text-slate-400">{rawApiResponse.timestamp}</span>
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-[11px] mb-2">
-                  <div><span className="text-slate-400">Status:</span> <span className={rawApiResponse.error ? "text-red-400 font-bold" : "text-green-400 font-bold"}>{rawApiResponse.status} ({rawApiResponse.statusText})</span></div>
-                  <div><span className="text-slate-400">Duration:</span> {rawApiResponse.durationMs}ms</div>
-                  <div><span className="text-slate-400">Is Array:</span> {Array.isArray(rawApiResponse.data) ? 'Yes' : 'No'}</div>
-                  <div><span className="text-slate-400">Items:</span> {Array.isArray(rawApiResponse.data) ? rawApiResponse.data.length : 'N/A'}</div>
-                </div>
-                {rawApiResponse.error && (
-                  <div className="text-red-300 bg-red-950/60 p-2 rounded border border-red-800 text-[11px] overflow-x-auto">
-                    Error Detail: {rawApiResponse.error}
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         ) : filteredProducts.length === 0 ? (
           /* 3. EMPTY STATE (Only shown when API fetch succeeded AND product array is empty or no filter match) */
@@ -291,27 +265,9 @@ export default function HomePage() {
               <p className="mt-1 text-xs text-gray-400">
                 {selectedCategory !== 'All' || searchQuery
                   ? 'Try relaxing your filters or searching for another item.'
-                  : 'There are currently no active products in the database.'}
+                  : 'There are currently no products available.'}
               </p>
             </div>
-
-            {/* Debug Banner showing raw API response */}
-            {rawApiResponse && (
-              <div className="rounded-xl border border-slate-700 bg-slate-900 text-slate-100 p-3.5 text-xs font-mono shadow-md">
-                <div className="flex items-center justify-between border-b border-slate-700 pb-2 mb-2">
-                  <span className="font-bold text-emerald-400 flex items-center gap-1.5">
-                    <Terminal size={14} /> Raw API Debug Response (/products)
-                  </span>
-                  <span className="text-[10px] text-slate-400">{rawApiResponse.timestamp}</span>
-                </div>
-                <div className="grid grid-cols-2 gap-2 text-[11px]">
-                  <div><span className="text-slate-400">Status:</span> <span className="text-green-400 font-bold">{rawApiResponse.status} ({rawApiResponse.statusText})</span></div>
-                  <div><span className="text-slate-400">Duration:</span> {rawApiResponse.durationMs}ms</div>
-                  <div><span className="text-slate-400">Is Array:</span> {Array.isArray(rawApiResponse.data) ? 'Yes' : 'No'}</div>
-                  <div><span className="text-slate-400">Returned Items:</span> {Array.isArray(rawApiResponse.data) ? rawApiResponse.data.length : 0} items</div>
-                </div>
-              </div>
-            )}
           </div>
         ) : (
           /* 4. SUCCESS STATE */
@@ -320,8 +276,8 @@ export default function HomePage() {
               className="product-grid"
               style={{ animation: 'fadeIn 0.25s ease-out' }}
             >
-              {filteredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
+              {filteredProducts.map((product, idx) => (
+                <ProductCard key={product.id} product={product} priority={idx < 4} />
               ))}
             </div>
           </div>

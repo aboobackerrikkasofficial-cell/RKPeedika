@@ -19,9 +19,9 @@ const OrdersPage = React.lazy(() => import('./pages/OrdersPage'));
 const WishlistPage = React.lazy(() => import('./pages/WishlistPage'));
 import { Mail, ShieldCheck, Landmark, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import SessionTimeoutHandler from './components/SessionTimeoutHandler';
-import PopupDialog from './components/PopupDialog';
-import CookieConsent from './components/CookieConsent';
+const SessionTimeoutHandler = React.lazy(() => import('./components/SessionTimeoutHandler'));
+const PopupDialog = React.lazy(() => import('./components/PopupDialog'));
+const CookieConsent = React.lazy(() => import('./components/CookieConsent'));
 
 
 // Custom Brand SVG Icons

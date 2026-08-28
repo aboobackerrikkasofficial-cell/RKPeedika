@@ -652,8 +652,8 @@ export default function ProductsPage() {
             /* 4. SUCCESS STATE */
             <>
               <div className="product-grid">
-                {paginatedProducts.map((product) => (
-                  <ProductCard key={product.id} product={product} />
+                {paginatedProducts.map((product, idx) => (
+                  <ProductCard key={product.id} product={product} priority={idx < 4} />
                 ))}
               </div>
 

@@ -17,7 +17,7 @@ import getImageUrl from '../utils/imageUrl';
 |--------------------------------------------------------------------------
 */
 
-export default function ProductCard({ product }) {
+export default function ProductCard({ product, priority = false }) {
   const {
     wishlist,
     toggleWishlist,
@@ -76,8 +76,7 @@ export default function ProductCard({ product }) {
     } catch {
       images = product.images ? [product.images] : [];
     }
-  }
-  const normalizedImages = images.map(getImageUrl);
+  const normalizedImages = images.map((img) => getImageUrl(img, 400));
   const imageUrl = normalizedImages[imageIndex] || normalizedImages[0] || '';
 
   /* ------------------------------------------------------------------
@@ -136,7 +135,8 @@ export default function ProductCard({ product }) {
           <img
             src={imageUrl}
             alt={product?.name || 'Product'}
-            loading="lazy"
+            loading={priority ? "eager" : "lazy"}
+            fetchPriority={priority ? "high" : "auto"}
             decoding="async"
             width="400"
             height="400"
